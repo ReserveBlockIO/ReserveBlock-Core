@@ -127,7 +127,8 @@ namespace ReserveBlockCore.Data
                         tx.ToAddress != "DecShop_Base" && 
                         tx.ToAddress != "Topic_Base" && 
                         tx.ToAddress != "Vote_Base" && 
-                        tx.ToAddress != "Reserve_Base")
+                        tx.ToAddress != "Reserve_Base" &&
+                        tx.ToAddress != "Token_Base")
                     {
                         var to = GetSpecificAccountStateTrei(tx.ToAddress);
                         if (tx.TransactionType == TransactionType.TX)
@@ -216,6 +217,9 @@ namespace ReserveBlockCore.Data
                                         break;
                                     case "TokenPause()":
                                         TokenPause(tx);
+                                        break;
+                                    case "TokenBanAddress()":
+                                        TokenBanAddress(tx);
                                         break;
                                     case "TokenContractOwnerChange()":
                                         TokenContractOwnerChange(tx);
@@ -449,7 +453,8 @@ namespace ReserveBlockCore.Data
                             rtx.ToAddress != "DecShop_Base" &&
                             rtx.ToAddress != "Topic_Base" &&
                             rtx.ToAddress != "Vote_Base" &&
-                            rtx.ToAddress != "Reserve_Base")
+                            rtx.ToAddress != "Reserve_Base" &&
+                            rtx.ToAddress != "Token_Base")
                         {
                             var to = GetSpecificAccountStateTrei(rtx.ToAddress);
                             if (rtx.TransactionType == TransactionType.TX)
@@ -1244,6 +1249,40 @@ namespace ReserveBlockCore.Data
                     SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
                 }
             }
+        }
+        private static void TokenBanAddress(Transaction tx)
+        {
+            var txData = tx.Data;
+            var jobj = JObject.Parse(txData);
+
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var banAddress = jobj["BanAddress"]?.ToObject<string?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    var banList = scStateTreiRec.TokenDetails.AddressBlackList;
+                    if(banList?.Count > 0)
+                    {
+                        var exist = scStateTreiRec.TokenDetails.AddressBlackList.Exists(x => x == banAddress);
+                        if(!exist)
+                        {
+                            scStateTreiRec.TokenDetails.AddressBlackList.Add(banAddress);
+                        }
+                    }
+                    else
+                    {
+                        scStateTreiRec.TokenDetails.AddressBlackList = new List<string> { banAddress };
+                    }
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+
         }
         private static void TokenPause(Transaction tx)
         {

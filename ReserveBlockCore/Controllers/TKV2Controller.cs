@@ -240,6 +240,52 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="fromAddress"></param>
+        /// <param name="banAddress"></param>
+        /// <returns></returns>
+        /// [HttpGet]
+        [Route("BanAddress/{scUID}/{fromAddress}/{toAddress}")]
+        public async Task<string> BanAddress(string scUID, string fromAddress, string banAddress)
+        {
+            try
+            {
+                var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+
+                if (sc.IsToken == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.IsToken.Value == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.TokenDetails == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Token details are null." });
+
+                var account = AccountData.GetSingleAccount(fromAddress);
+
+                if (account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+
+                if (account.Address != sc.TokenDetails.ContractOwner)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+
+                banAddress = banAddress.Replace(" ", "").ToAddressNormalize();
+
+                var result = await TokenContractService.BanAddress(sc, fromAddress, banAddress);
+
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
+        /// Change contract owner. Only current owner can do this.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fromAddress"></param>
         /// <param name="toAddress"></param>
         /// <returns></returns>
         [HttpGet]

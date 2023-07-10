@@ -73,7 +73,8 @@ namespace ReserveBlockCore.Services
                 txRequest.ToAddress != "DecShop_Base" && 
                 txRequest.ToAddress != "Topic_Base" && 
                 txRequest.ToAddress != "Vote_Base" && 
-                txRequest.ToAddress != "Reserve_Base")
+                txRequest.ToAddress != "Reserve_Base" &&
+                txRequest.ToAddress != "Token_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
                     return (txResult, "To Address failed to validate");
@@ -228,6 +229,9 @@ namespace ReserveBlockCore.Services
                                             if (txRequest.FromAddress.StartsWith("xRBX"))
                                                 return (txResult, "A reserve account may not mint a smart contract.");
 
+                                            if(txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
                                             break;
                                         }
 
@@ -259,6 +263,9 @@ namespace ReserveBlockCore.Services
                                             if(amount.Value < 1.0M)
                                                 return (txResult, "You must mint at least 1 token.");
 
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
                                             break;
                                         }
 
@@ -281,6 +288,9 @@ namespace ReserveBlockCore.Services
 
                                             if(scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
                                                 return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
 
                                             break;
                                         }
@@ -307,6 +317,35 @@ namespace ReserveBlockCore.Services
 
                                             if (scStateTreiRec.TokenDetails.IsPaused)
                                                 return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            break;
+                                        }
+
+                                    case "TokenBanAddress()" :
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var banAddress = jobj["BanAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
 
                                             break;
                                         }
@@ -338,6 +377,12 @@ namespace ReserveBlockCore.Services
 
                                             if(tokenDetails.IsPaused)
                                                 return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if(tokenDetails.AddressBlackList?.Count > 0)
+                                            {
+                                                if(tokenDetails.AddressBlackList.Exists(x => x == txRequest.FromAddress))
+                                                    return (txResult, "This address has been blacklisted and may no longer perform transfers.");
+                                            }
 
                                             var tokenAccounts = stateAccount.TokenAccounts;
 
@@ -404,6 +449,9 @@ namespace ReserveBlockCore.Services
 
                                             if (decimalsUsed > tokenDetails.DecimalPlaces)
                                                 return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
 
                                             break;
                                         }

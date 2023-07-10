@@ -92,7 +92,8 @@ namespace ReserveBlockCore.Services
                                             x.ToAddress != "DecShop_Base" && 
                                             x.ToAddress != "Topic_Base" && 
                                             x.ToAddress != "Vote_Base" && 
-                                            x.ToAddress != "Reserve_Base")
+                                            x.ToAddress != "Reserve_Base" &&
+                                            x.ToAddress != "Token_Base")
                                         {
                                             if (x.TransactionType == TransactionType.TX)
                                             {
