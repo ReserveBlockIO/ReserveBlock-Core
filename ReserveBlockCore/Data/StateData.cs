@@ -1369,6 +1369,11 @@ namespace ReserveBlockCore.Data
                             fromAccount.TokenAccounts = tokenAccounts;
                             stDB.UpdateSafe(fromAccount);
                         }
+                        else
+                        {
+                            fromAccount.TokenAccounts.Add(nTokenAccountT0);
+                            stDB.UpdateSafe(fromAccount);
+                        }
                     }
                     scStateTreiRec.TokenDetails.CurrentSupply += amount.Value;
                     SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
