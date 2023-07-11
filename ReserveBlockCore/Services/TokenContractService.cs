@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
                 var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
 
-                var txData = JsonConvert.SerializeObject(new { Function = "TokenTransfer()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress, Amount = amount });
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenTransfer()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress, Amount = amount, TokenTicker = tokenAccount.TokenTicker, TokenName = tokenAccount.TokenName });
                 
                 tokenTx = new Transaction
                 {
@@ -239,7 +239,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
                 var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
 
-                var txData = JsonConvert.SerializeObject(new { Function = "TokenBurn()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount });
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenBurn()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount, TokenTicker = tokenAccount.TokenTicker, TokenName = tokenAccount.TokenName });
 
                 tokenTx = new Transaction
                 {
