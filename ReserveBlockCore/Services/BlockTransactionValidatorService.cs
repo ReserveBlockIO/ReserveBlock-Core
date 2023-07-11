@@ -162,11 +162,30 @@ namespace ReserveBlockCore.Services
                     if (tx.TransactionType == TransactionType.NFT_TX)
                     {
                         NFTLogUtility.Log($"NFT TX Detected (TX): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                        var scData = scDataArray[0];
+                        string function = "";
+                        string data = "";
+                        bool skip = false;
+                        JToken? scData = null;
+                        try
+                        {
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            scData = scDataArray[0];
+                            function = (string?)scData["Function"];
+                            data = (string?)scData["Data"];
 
-                        var data = (string?)scData["Data"];
-                        var function = (string?)scData["Function"];
+                            skip = true;
+                        }
+                        catch { }
+
+                        try
+                        {
+                            if (!skip)
+                            {
+                                var jobj = JObject.Parse(tx.Data);
+                                function = jobj["Function"]?.ToObject<string?>();
+                            }
+                        }
+                        catch { }
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
@@ -267,6 +286,46 @@ namespace ReserveBlockCore.Services
                                         }
                                     }
                                     break;
+                                case "TokenContractOwnerChange()":
+                                    {
+                                        var jobj = JObject.Parse(tx.Data);
+          
+                                        var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
+                                        var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+
+                                        NFTLogUtility.Log($"NFT Transfer: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+
+                                        var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                        if (sc != null)
+                                        {
+                                            
+                                        }
+                                        else
+                                        {
+                                            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if(scState != null)
+                                            {
+                                                var trill = scState.ContractData;
+                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(trill); });
+                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                                //testing
+                                                //bool isCompletedSuccessfully = true;
+                                                //transferTask.Wait();
+                                                if (!isCompletedSuccessfully)
+                                                {
+                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                                }
+                                                else
+                                                {
+                                                    //download files here.
+
+                                                }
+
+                                            }
+                                        }
+                                        break;
+                                    }
                                 default:
                                     break;
                             }

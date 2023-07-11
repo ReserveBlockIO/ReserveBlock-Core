@@ -151,7 +151,6 @@ namespace ReserveBlockCore.Controllers
                    .ToList();
                 }
 
-
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
 
@@ -259,7 +258,6 @@ namespace ReserveBlockCore.Controllers
                    .ToList();
                 }
 
-
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
 
@@ -298,11 +296,6 @@ namespace ReserveBlockCore.Controllers
                             if (isToken && (exist || rExist))
                                 scStateMainBag.Add(scState);
                         }
-                        
-
-                        //if (!isToken && (exist || rExist))
-                        //if ((exist || rExist))
-                        //    scStateMainBag.Add(scState);
                     }
                 }
 
