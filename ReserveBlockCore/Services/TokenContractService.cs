@@ -138,6 +138,11 @@ namespace ReserveBlockCore.Services
 
                 var txData = JsonConvert.SerializeObject(new { Function = "TokenMint()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount });
 
+                if(sc.TokenDetails != null)
+                {
+                    txData = JsonConvert.SerializeObject(new { Function = "TokenMint()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount, TokenTicker = sc.TokenDetails.TokenTicker, TokenName = sc.TokenDetails.TokenName });
+                }
+
                 tokenTx = new Transaction
                 {
                     Timestamp = TimeUtil.GetTime(),
