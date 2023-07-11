@@ -121,6 +121,7 @@ namespace ReserveBlockCore.Services
                                 strBuild = tokenSource.Item1;
                                 strTokenBld = tokenSource.Item2;
                                 isToken = true;
+                                scMain.IsToken = true;
                             }
                             if (strBuild.ToString() == "Failed")
                             {
@@ -217,6 +218,7 @@ namespace ReserveBlockCore.Services
                                     strBuild = tokenSource.Item1;
                                     strTokenBld = tokenSource.Item2;
                                     isToken = true;
+                                    scMain.IsToken = true;
                                 }
                                 if (strBuild.ToString() == "Failed")
                                 {

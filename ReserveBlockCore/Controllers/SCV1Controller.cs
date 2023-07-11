@@ -169,8 +169,140 @@ namespace ReserveBlockCore.Controllers
                         }
                         if (rExist)
                             rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : true;
-                        if (exist || rExist)
+
+                        if ((exist || rExist))
                             scStateMainBag.Add(scState);
+                    }
+                }
+
+                scStateMainList = scStateMainBag.ToList();
+
+                var scStateCount = scStateMainList.Count();
+
+                if (maxIndex > scStateCount)
+                    range = (range - (maxIndex - scStateCount));
+
+                scStateMainList = scStateMainList.GetRange(startIndex, range);
+
+                if (scStateMainList.Count > 0)
+                {
+                    foreach (var scState in scStateMainList)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                        var scMainRec = scs.Where(x => x.SmartContractUID == scMain.SmartContractUID).FirstOrDefault();
+
+                        scMain.Id = scMainRec != null ? scMainRec.Id : 0;
+                        scMainList.Add(scMain);
+                    }
+                    if (scMainList.Count() > 0)
+                    {
+                        var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
+                        var json = JsonConvert.SerializeObject(new { Count = scStateCount, Results = orderedMainList });
+                        output = json;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Count = 0, Results = scMainList }); ;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Count = 0, Results = "null" }); ;
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Allows you to search or dump out all smart contracts associated to your wallet
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <param name="excludeToken"></param>
+        /// <param name="tokensOnly"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetAllSmartContracts/{pageNumber}/{excludeToken?}")]
+        [Route("GetAllSmartContracts/{pageNumber}/{excludeToken?}/{tokensOnly?}")]
+        [Route("GetAllSmartContracts/{pageNumber}/{excludeToken?}/{tokensOnly?}/{**search}")]
+        public async Task<string> GetAllSmartContracts(int pageNumber = 1, bool? excludeToken = false, bool? tokensOnly = false, string? search = "")
+        {
+            var output = "";
+            Stopwatch stopwatch3 = Stopwatch.StartNew();
+            try
+            {
+                List<SmartContractMain> scs = new List<SmartContractMain>();
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+                List<SmartContractStateTrei> scStateMainList = new List<SmartContractStateTrei>();
+                ConcurrentBag<SmartContractStateTrei> scStateMainBag = new ConcurrentBag<SmartContractStateTrei>();
+
+                var maxIndex = pageNumber * 9;
+                var startIndex = ((maxIndex - 9));
+                var range = 9;
+
+                if (search != "" && search != "~")
+                {
+                    if (search != null)
+                    {
+                        var result = await NFTSearchUtility.Search(search);
+                        if (result != null)
+                        {
+                            scs = result;
+                        }
+                    }
+                }
+                else
+                {
+                    scs = SmartContractMain.SmartContractData.GetSCs()
+                   .FindAll()
+                   .ToList();
+                }
+
+
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                var accounts = AccountData.GetAccounts().FindAll().ToList();
+
+                foreach (var sc in scs)
+                {
+                    var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
+                    if (scState != null)
+                    {
+                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress || x.Address == scState.NextOwner);
+                        var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
+                        if (!rExist)
+                        {
+                            if (scState.NextOwner != null)
+                                rExist = ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false;
+                        }
+                        if (rExist)
+                            rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : true;
+
+                        var isToken = scState.IsToken != null ? scState.IsToken.Value : false;
+
+                        if(!tokensOnly.Value)
+                        {
+                            if (excludeToken.Value)
+                            {
+                                if (!isToken && (exist || rExist))
+                                    scStateMainBag.Add(scState);
+                            }
+                            else
+                            {
+                                if ((exist || rExist))
+                                    scStateMainBag.Add(scState);
+                            }
+                        }
+                        else
+                        {
+                            if (isToken && (exist || rExist))
+                                scStateMainBag.Add(scState);
+                        }
+                        
+
+                        //if (!isToken && (exist || rExist))
+                        //if ((exist || rExist))
+                        //    scStateMainBag.Add(scState);
                     }
                 }
 

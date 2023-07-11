@@ -191,6 +191,7 @@ namespace ReserveBlockCore.Services
                             strBuild = tokenSource.Item1;
                             strTokenBld = tokenSource.Item2;
                             isToken = true;
+                            scMain.IsToken = true;
                         }
                     }
                     else
@@ -239,6 +240,7 @@ namespace ReserveBlockCore.Services
                                 strBuild = tokenSource.Item1;
                                 strTokenBld = tokenSource.Item2;
                                 isToken = true;
+                                scMain.IsToken = true;
                             }
 
                             if (x.FeatureName == FeatureName.Evolving)

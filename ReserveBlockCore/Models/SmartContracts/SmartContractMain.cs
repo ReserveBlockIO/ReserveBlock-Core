@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string SmartContractUID { get; set; }//System Set
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsToken { get; set; }
         public int? SCVersion { get; set; }
         public bool IsLocked { get { return SmartContractData.GetSmartContractLockState(SmartContractUID); } }
         public string? NextOwner { get { return SmartContractData.GetSmartContractNextOwner(SmartContractUID); } }
@@ -277,6 +278,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                                 scFeature.FeatureName = FeatureName.Token;
                                                 scFeature.FeatureFeatures = tokenFeature;
                                                 featuresList.Add(scFeature);
+                                                smartContractMain.IsToken = true;
                                             }
                                         }
                                         break;
@@ -366,6 +368,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             scFeature.FeatureName = FeatureName.Token;
                                             scFeature.FeatureFeatures = tokenFeature;
                                             featuresList.Add(scFeature);
+                                            smartContractMain.IsToken = true;
                                         }
                                     }
                                     break;
@@ -523,6 +526,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             scFeature.FeatureName = FeatureName.Token;
                                             scFeature.FeatureFeatures = tokenFeature;
                                             featuresList.Add(scFeature);
+                                            smartContractMain.IsToken = true;
                                         }
                                     }
                                     break;
@@ -627,6 +631,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                         scFeature.FeatureName = FeatureName.Token;
                                         scFeature.FeatureFeatures = tokenFeature;
                                         featuresList.Add(scFeature);
+                                        smartContractMain.IsToken = true;
                                     }
                                 }
                                 break;
@@ -709,6 +714,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             scMain.IsPublished = true;
             scMain.MinterName = minterName;
             scMain.MinterAddress = minterAddress;
+            scMain.SCVersion = scVersion;
 
             return scMain;
         }
