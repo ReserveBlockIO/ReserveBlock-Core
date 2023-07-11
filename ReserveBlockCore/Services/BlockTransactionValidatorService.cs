@@ -42,6 +42,7 @@ namespace ReserveBlockCore.Services
                 string scUID = "";
                 string function = "";
                 bool skip = false;
+                bool isToken = false;
                 JToken? scData = null;
                 JArray? scDataArray = null;
                 try
@@ -58,6 +59,7 @@ namespace ReserveBlockCore.Services
                     {
                         var jobj = JObject.Parse(tx.Data);
                         function = jobj["Function"]?.ToObject<string?>();
+                        isToken = true;
                     }
                 }
                 catch { }
@@ -76,21 +78,24 @@ namespace ReserveBlockCore.Services
                                 tx.TransactionStatus = TransactionStatus.Success;
                                 txdata.InsertSafe(tx);
                             }
-
-                            if(function == "TokenTransfer()")
-                            {
-                                var txdata = TransactionData.GetAll();
-                                tx.TransactionStatus = TransactionStatus.Success;
-                                txdata.InsertSafe(tx);
-                            }
-
-                            if (function == "TokenContractOwnerChange()")
-                            {
-                                var txdata = TransactionData.GetAll();
-                                tx.TransactionStatus = TransactionStatus.Success;
-                                txdata.InsertSafe(tx);
-                            }
                         }
+                    }
+                }
+
+                if(isToken && !skip)
+                {
+                    if (function == "TokenTransfer()")
+                    {
+                        var txdata = TransactionData.GetAll();
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txdata.InsertSafe(tx);
+                    }
+
+                    if (function == "TokenContractOwnerChange()")
+                    {
+                        var txdata = TransactionData.GetAll();
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txdata.InsertSafe(tx);
                     }
                 }
 
