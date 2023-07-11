@@ -52,6 +52,16 @@ namespace ReserveBlockCore.Services
                 }
                 catch { }
 
+                try
+                {
+                    if (!skip)
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        function = jobj["Function"]?.ToObject<string?>();
+                    }
+                }
+                catch { }
+
                 if (scDataArray != null && skip)
                 {
                     scData = scDataArray[0];
@@ -61,6 +71,20 @@ namespace ReserveBlockCore.Services
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             if (function == "Transfer()")
+                            {
+                                var txdata = TransactionData.GetAll();
+                                tx.TransactionStatus = TransactionStatus.Success;
+                                txdata.InsertSafe(tx);
+                            }
+
+                            if(function == "TokenTransfer()")
+                            {
+                                var txdata = TransactionData.GetAll();
+                                tx.TransactionStatus = TransactionStatus.Success;
+                                txdata.InsertSafe(tx);
+                            }
+
+                            if (function == "TokenContractOwnerChange()")
                             {
                                 var txdata = TransactionData.GetAll();
                                 tx.TransactionStatus = TransactionStatus.Success;
