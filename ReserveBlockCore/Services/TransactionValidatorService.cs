@@ -514,7 +514,7 @@ namespace ReserveBlockCore.Services
 
                                             var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
                                             var topicUID = jobj["TopicUID"]?.ToObject<string?>();
-                                            var voteType = jobj["TopicUID"]?.ToObject<VoteType?>();
+                                            var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
 
                                             var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
