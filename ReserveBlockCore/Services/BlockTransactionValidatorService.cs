@@ -101,6 +101,7 @@ namespace ReserveBlockCore.Services
                     if (function == "TokenVoteTopicCast()")
                     {
                         var jobj = JObject.Parse(tx.Data);
+                        scUID = jobj["ContractUID"]?.ToObject<string?>();
                         var topicUID = jobj["TopicUID"]?.ToObject<string?>();
                         var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
 
