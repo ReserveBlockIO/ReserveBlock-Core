@@ -1326,7 +1326,7 @@ namespace ReserveBlockCore.Data
             var scUID = jobj["ContractUID"]?.ToObject<string?>();
             var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
             var topicUID = jobj["TopicUID"]?.ToObject<string?>();
-            var voteType = jobj["TopicUID"]?.ToObject<VoteType?>();
+            var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scStateTreiRec != null)
