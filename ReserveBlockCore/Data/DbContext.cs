@@ -102,6 +102,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_LOCAL_TIMES = "rsrv_local_time";
         public const string RSRV_TOPIC_TREI = "rsrv_topic_trei";
         public const string RSRV_VOTE = "rsrv_vote";
+        public const string RSRV_TOKEN_VOTE = "rsrv_token_vote";
         public const string RSRV_SETTINGS = "rsrv_settings";
         public const string RSRV_MOTHER = "rsrv_mother";
         public const string RSRV_ADJ_BENCH = "rsrv_adj_bench";

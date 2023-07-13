@@ -1210,7 +1210,7 @@ namespace ReserveBlockCore.Data
                                         var tokenAccount = TokenAccount.CreateTokenAccount(sc.SmartContractUID, tokenFeature.TokenName,
                                             tokenFeature.TokenTicker, tokenFeature.TokenSupply, tokenFeature.TokenDecimalPlaces);
 
-                                        if(toAddress.TokenAccounts.Count > 0)
+                                        if(toAddress.TokenAccounts?.Count > 0)
                                         {
                                             toAddress.TokenAccounts.Add(tokenAccount);
                                         }

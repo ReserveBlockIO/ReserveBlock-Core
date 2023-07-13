@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
@@ -29,6 +30,118 @@ namespace ReserveBlockCore.Controllers
         public IEnumerable<string> Get()
         {
             return new string[] { "RBX-Wallet", "Token API Standard V2" };
+        }
+
+        /// <summary>
+        /// Gets in memory token list for all tokens associated with wallet accounts.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="getAll"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetTokens/{scUID}/{getAll}")]
+        public async Task<string> GetTokens(string scUID, bool getAll)
+        {
+            if(getAll)
+            {
+                var tokenList = Globals.Tokens.Values.ToList(); 
+                if(tokenList.Count == 0)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"No tokens found in memory. Please restart wallet and try again." });
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Token Found", Tokens = tokenList });
+            }
+            else
+            {
+                if(Globals.Tokens.TryGetValue(scUID, out var token))
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = $"Token Found", Token = token });
+                }
+                else
+                {
+                    var tokenState = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if(tokenState == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+                    
+                    if(tokenState.TokenDetails == null )
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the token details." });
+
+                    //Adding to memory to alleviate next query.
+                    Globals.Tokens.TryAdd(scUID, tokenState.TokenDetails);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = $"Token Found", Token = tokenState.TokenDetails });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets in memory token list for all tokens and updates it.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetTokensUpdate")]
+        public async Task<string> GetTokensUpdate()
+        {
+            Globals.Tokens.Clear();
+            Globals.Tokens = new ConcurrentDictionary<string, TokenDetails>();
+
+            var accounts = AccountData.GetAccounts().Query().Where(x => true).ToList();
+            var rAccounts = ReserveAccount.GetReserveAccounts();
+
+            if (accounts?.Count > 0)
+            {
+                foreach (var account in accounts)
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if (stateAccount != null)
+                    {
+                        if (stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach (var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if (tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if (tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (rAccounts?.Count > 0)
+            {
+                foreach (var rAccount in rAccounts)
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                    if (stateAccount != null)
+                    {
+                        if (stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach (var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if (tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if (tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Token List Updated." });
         }
 
         /// <summary>
@@ -70,10 +183,10 @@ namespace ReserveBlockCore.Controllers
                 if (stateAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
 
-                if (stateAccount.TokenAccounts.Count == 0)
+                if (stateAccount.TokenAccounts?.Count == 0)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
 
-                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                var tokenAccount = stateAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
 
                 if (tokenAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
@@ -126,10 +239,10 @@ namespace ReserveBlockCore.Controllers
                 if (stateAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
 
-                if (stateAccount.TokenAccounts.Count == 0)
+                if (stateAccount.TokenAccounts?.Count == 0)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
 
-                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                var tokenAccount = stateAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
 
                 if (tokenAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
@@ -440,10 +553,10 @@ namespace ReserveBlockCore.Controllers
                 if (stateAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
 
-                if (stateAccount.TokenAccounts.Count == 0)
+                if (stateAccount.TokenAccounts?.Count == 0)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
 
-                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                var tokenAccount = stateAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
 
                 if (tokenAccount == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
@@ -459,6 +572,66 @@ namespace ReserveBlockCore.Controllers
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
             }
+        }
+
+        /// <summary>
+        /// Gets your vote result.  Success variable = Vote
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("GetVoteBySmartContractUID/{scUID}")]
+        public async Task<string> GetVoteBySmartContractUID(string scUID)
+        {
+            var vote = TokenVote.GetSpecificTopicVotesBySCUID(scUID);
+            if(vote == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find vote with SCUID : {scUID}" });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Vote Found!", Vote = vote });
+        }
+
+        /// <summary>
+        /// Gets your vote result.  Success variable = Vote
+        /// </summary>
+        /// <param name="topicUID"></param>
+        /// <returns></returns>
+        [HttpGet("GetVoteByTopic/{topicUID}")]
+        public async Task<string> GetVoteByTopic(string topicUID)
+        {
+            var vote = TokenVote.GetSpecificTopicVotesByTUID(topicUID);
+            if (vote == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find vote with TUID : {topicUID}" });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Vote Found!", Vote = vote });
+        }
+
+        /// <summary>
+        /// Gets your vote result. Success variable = VoteList
+        /// </summary>
+        /// <param name="fromAddress"></param>
+        /// <returns></returns>
+        [HttpGet("GetVotesByAddress/{fromAddress}")]
+        public async Task<string> GetVotesByAddress(string fromAddress)
+        {
+            var votes = TokenVote.GetSpecificAddressVotes(fromAddress);
+            if (votes?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find votes with Address : {fromAddress}" });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Vote Found!", VoteList = votes });
+        }
+
+        /// <summary>
+        /// Gets all vote results for owner. Success variable = VoteList
+        /// </summary>
+        /// <param name="tUID"></param>
+        /// <returns></returns>
+        [HttpGet("GetVotesByAddress/{fromAddress}")]
+        public async Task<string> GetTokenOwnerVoteList(string tUID)
+        {
+            var votes = TokenVote.GetOwnerVoteList(tUID);
+            if (votes?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find votes with TUID : {tUID}" });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Vote Found!", VoteList = votes });
         }
 
     }

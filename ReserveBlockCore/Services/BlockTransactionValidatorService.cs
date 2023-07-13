@@ -97,6 +97,25 @@ namespace ReserveBlockCore.Services
                         tx.TransactionStatus = TransactionStatus.Success;
                         txdata.InsertSafe(tx);
                     }
+
+                    if (function == "TokenVoteTopicCast()")
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                        var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
+
+                        var vote = new TokenVote
+                        {
+                            Address = tx.FromAddress,
+                            BlockHeight = blockHeight,
+                            TopicUID = topicUID,
+                            TransactionHash = tx.Hash,
+                            VoteType = voteType.Value,
+                            SmartContractUID = scUID
+                        };
+
+                        TokenVote.SaveVote(vote);
+                    }
                 }
 
             }
@@ -397,15 +416,115 @@ namespace ReserveBlockCore.Services
             {
                 if (tx.TransactionType == TransactionType.NFT_TX)
                 {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                    var scData = scDataArray[0];
+                    string scUID = "";
+                    string function = "";
+                    bool skip = false;
+                    bool isToken = false;
+                    JToken? scData = null;
+                    JArray? scDataArray = null;
+                    try
+                    {
+                        scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                        scData = scDataArray[0];
+                        scUID = (string?)scData["ContractUID"];
+                        function = (string?)scData["Function"];
+                        skip = true;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        if (!skip)
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            function = jobj["Function"]?.ToObject<string?>();
+                            scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            isToken = true;
+                        }
+                    }
+                    catch { }
 
                     //do transfer logic here! This is for person giving away or feature actions
-                    var scUID = (string?)scData["ContractUID"];
-                    var function = (string?)scData["Function"];
+                    
+                    
 
                     if (!string.IsNullOrWhiteSpace(function))
                     {
+                        if(function == "TokenDeploy()")
+                        {
+                            if(scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if(stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if(tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails); 
+                                        }
+                                    }
+                                }
+                            }
+                            
+                        }
+                        if (function == "TokenMint()")
+                        {
+                            if (scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if (tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if(function == "TokenBurn()")
+                        {
+                            if (scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if (tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if(function == "TokenVoteTopicCast()")
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                            var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
+
+                            var vote = new TokenVote { 
+                                Address = tx.FromAddress,
+                                BlockHeight = blockHeight,
+                                TopicUID = topicUID,
+                                TransactionHash = tx.Hash,
+                                VoteType = voteType.Value,
+                                SmartContractUID = scUID
+                            };
+
+                            TokenVote.SaveVote(vote);
+                        }
+
                         if (function == "Transfer()")
                         {
                             if (!string.IsNullOrWhiteSpace(scUID))

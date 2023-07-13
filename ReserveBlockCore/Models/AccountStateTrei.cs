@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Models
         public decimal LockedBalance { get; set; }
         public string StateRoot { get; set; }
         public string CodeHash { get; set; }
-        public List<TokenAccount> TokenAccounts { get; set; }
+        public List<TokenAccount>? TokenAccounts { get; set; }
 
         public static decimal GetAccountBalance(string address)
         {

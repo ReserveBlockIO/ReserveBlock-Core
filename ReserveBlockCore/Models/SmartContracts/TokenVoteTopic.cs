@@ -86,9 +86,10 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var tokenAccountHolders = acState.Query().Where(x => x.TokenAccounts != null).ToEnumerable();
                 foreach(var account in tokenAccountHolders)
                 {
-                    if(account.TokenAccounts.Exists(x => x.SmartContractUID == scUID))
+                    if(account.TokenAccounts != null)
                     {
-                        count += 1;
+                        if(account.TokenAccounts.Exists(x => x.SmartContractUID == scUID))
+                            count += 1;
                     }
                 }
             }

@@ -751,7 +751,7 @@ namespace ReserveBlockCore.Services
                 {
                     Timestamp = TimeUtil.GetTime(),
                     FromAddress = fromAddress,
-                    ToAddress = "Token_Base",
+                    ToAddress = sc.OwnerAddress,
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),

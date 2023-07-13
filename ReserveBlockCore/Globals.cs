@@ -4,6 +4,7 @@ using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -45,6 +46,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
+        public static ConcurrentDictionary<string, TokenDetails> Tokens = new ConcurrentDictionary<string, TokenDetails>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();

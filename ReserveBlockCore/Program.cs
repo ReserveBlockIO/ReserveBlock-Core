@@ -270,6 +270,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight(); //sets current block height
             StartupService.SetLastBlock(); //puts last known block into memory
             StartupService.StartupMemBlocks(); //puts 400 blocks into memory (height, hash)
+            StartupService.PopulateTokenDictionary();
 
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb(); //checks check ID

@@ -49,6 +49,67 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        internal static void PopulateTokenDictionary()
+        {
+            var accounts = AccountData.GetAccounts().Query().Where(x => true).ToList();
+            var rAccounts = ReserveAccount.GetReserveAccounts();
+
+            if(accounts?.Count > 0)
+            {
+                foreach(var account in accounts) 
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if(stateAccount != null)
+                    {
+                        if(stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach(var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if(tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if(tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (rAccounts?.Count > 0)
+            {
+                foreach (var rAccount in rAccounts)
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                    if (stateAccount != null)
+                    {
+                        if (stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach (var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if (tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if (tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -920,7 +981,7 @@ namespace ReserveBlockCore.Services
                     var lastBlock = Globals.LastBlock;
                     var currentTimestamp = TimeUtil.GetTime(-90);
 
-                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.IsTestNet)
+                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null)
                     {
                         DateTime endTime = DateTime.UtcNow;
                         ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
