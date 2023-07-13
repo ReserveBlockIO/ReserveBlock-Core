@@ -557,9 +557,6 @@ namespace ReserveBlockCore.Services
                                             if (tokenAccount.Balance < topic.MinimumVoteRequirement)
                                                 return (txResult, "Insufficient Balance to cast a vote.");
 
-                                            if (txRequest.ToAddress != "Token_Base")
-                                                return (txResult, "To Address must be 'Token_Base'.");
-
                                             break;
                                         }
 
