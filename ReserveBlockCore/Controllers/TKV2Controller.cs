@@ -624,7 +624,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="tUID"></param>
         /// <returns></returns>
-        [HttpGet("GetVotesByAddress/{tUID}")]
+        [HttpGet("GetTokenOwnerVoteList/{tUID}")]
         public async Task<string> GetTokenOwnerVoteList(string tUID)
         {
             var votes = TokenVote.GetOwnerVoteList(tUID);
