@@ -1158,6 +1158,5 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
-
     }
 }

@@ -8,6 +8,7 @@ using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Diagnostics;
 using System.Security.Principal;
 using System.Text;
 
@@ -68,8 +69,10 @@ namespace ReserveBlockCore.Services
                         var (block, ipAddress) = blockInfo;
 
                         var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
-
-                        var result = await ValidateBlock(block, false, startupDownload);                        
+                        var stopwatch1 = new Stopwatch();
+                        stopwatch1.Start();
+                        var result = await ValidateBlock(block, false, startupDownload);
+                        stopwatch1.Stop();
                         if (!result && block.Height == Globals.LastBlock.Height + 1)
                         {
                             if (Globals.AdjudicateAccount != null)
@@ -96,7 +99,7 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} ");
+                                ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} - Speed: {stopwatch1.ElapsedMilliseconds}/ms");
                             }
                                 
                         }

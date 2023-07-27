@@ -5,6 +5,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -27,6 +28,9 @@ namespace ReserveBlockCore.Services
                     await Task.Delay(1000);
                     return;
                 }
+
+                var stopwatch1 = new Stopwatch();
+                stopwatch1.Start();
                     
                 await Globals.BlocksDownloadV2Slim.WaitAsync();
                 var coolDownTime = TimeUtil.GetTime();
@@ -57,6 +61,8 @@ namespace ReserveBlockCore.Services
 
                         if (blockStart != 0)
                         {
+                            if(blockStart != Globals.LastBlock.Height)
+                                blockStart = Globals.LastBlock.Height;
                             var maxBlockHeight = await P2PClient.GetBlockSpan(blockStart, MaxBlockRequestBuffer, node);
                             if (maxBlockHeight != null)
                             {
@@ -125,7 +131,17 @@ namespace ReserveBlockCore.Services
                             BlockDict[block.Item1.Height] = (block.Item1, block.Item2);
                         }
 
+                        var stopwatch2 = new Stopwatch();
+                        stopwatch2.Start();
+                        stopwatch1.Stop();
+                        Console.WriteLine($"Block Download time: {stopwatch1.ElapsedMilliseconds}");
+
                         await BlockValidatorService.ValidateBlocks();
+
+                        stopwatch2.Stop();
+
+                        
+                        Console.WriteLine($"Block Processing time: {stopwatch2.ElapsedMilliseconds}");
 
                         _ = P2PClient.DropLowBandwidthPeers();
                         var AvailableNode = Globals.Nodes.Values.Where(x => x.IsSendingBlock == 0).OrderByDescending(x => x.NodeHeight).FirstOrDefault();

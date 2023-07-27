@@ -13,6 +13,7 @@ using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using ReserveBlockCore.Extensions;
 using System.Security.Principal;
+using LiteDB;
 
 namespace ReserveBlockCore.Data
 {
@@ -314,7 +315,7 @@ namespace ReserveBlockCore.Data
             }
             var blocks = GetBlocks();            
             //only input block if null
-            var blockCheck = blocks.FindOne(x => x.Height == block.Height);
+            var blockCheck = blocks.Find(Query.All(Query.Descending)).Take(100).Where(x => x.Height == block.Height).FirstOrDefault();
             if (blockCheck == null)
             {
                 //Update in memory fields.

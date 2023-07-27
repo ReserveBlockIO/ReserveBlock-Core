@@ -56,11 +56,12 @@ namespace ReserveBlockCore.Models
             var blockchain = GetBlockchain();
             if (blockchain != null)
             {
-                var blockExist = blockchain.Query().Where(x => x.Height == block.Height).FirstOrDefault();
+                var blockExist = blockchain.Find(Query.All(Query.Descending)).Take(50).Where(x => x.Height == block.Height).FirstOrDefault();
                 if (blockExist == null)
                 {
                     var cumulativeSize = Globals.Blockchain != null ? Globals.Blockchain.CumulativeSize : 0;
-                    Blockchain rec = new Blockchain {
+                    Blockchain rec = new Blockchain
+                    {
                         Hash = block.Hash,
                         Height = block.Height,
                         Size = block.Size,
@@ -151,7 +152,7 @@ namespace ReserveBlockCore.Models
                             foreach (Block block in blocks)
                             {
                                 AnsiConsole.Markup($"\rBlock: [blue]{block.Height}[/][red]/[/][green]{lastBlock}[/]");
-                                var blockExist = blockchain.Query().Where(x => x.Height == block.Height).FirstOrDefault();
+                                var blockExist = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Height == block.Height).FirstOrDefault();
                                 if (blockExist == null)
                                 {
                                     Blockchain bHeader = new Blockchain
