@@ -395,68 +395,114 @@ namespace ReserveBlockCore.Data
                                 tx.TransactionType != TransactionType.RESERVE &&
                                 tx.TransactionType != TransactionType.NFT_SALE)
                             {
-                                string scUID = "";
-                                string function = "";
-                                bool skip = false;
-                                JToken? scData = null;
-                                JArray? scDataArray = null;
-                                try
-                                {
-                                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                                    scData = scDataArray[0];
+                                var scInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                                if (!scInfo.Item1)
+                                    reject = true;
 
-                                    function = (string?)scData["Function"];
-                                    scUID = (string?)scData["ContractUID"];
-                                    skip = true;
-                                }
-                                catch { }
-
-                                try
-                                {
-                                    if (!skip)
-                                    {
-                                        var jobj = JObject.Parse(tx.Data);
-                                        scUID = jobj["ContractUID"]?.ToObject<string?>();
-                                        function = jobj["Function"]?.ToObject<string?>();
-                                    }
-                                }
-                                catch { }
+                                string scUID = scInfo.Item3;
+                                string function = scInfo.Item4;
+                                JArray? scDataArray = scInfo.Item5;
+                                bool skip = scInfo.Item2;
 
                                 if (scDataArray != null && skip)
                                 {
                                     
                                     if (!string.IsNullOrWhiteSpace(function))
                                     {
-                                        var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
-                                        if (otherTxs.Count() > 0)
+                                        switch(function)
                                         {
-                                            foreach (var otx in otherTxs)
-                                            {
-                                                if (otx.TransactionType == TransactionType.NFT_TX ||
-                                                otx.TransactionType == TransactionType.NFT_BURN ||
-                                                otx.TransactionType == TransactionType.NFT_MINT)
+                                            case "Transfer()":
                                                 {
-                                                    if (otx.Data != null)
+                                                    var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                                    if (otherTxs.Count() > 0)
                                                     {
-                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                        if (ottxDataArray != null)
+                                                        foreach (var otx in otherTxs)
                                                         {
-                                                            var ottxData = ottxDataArray[0];
-
-                                                            var ottxFunction = (string?)ottxData["Function"];
-                                                            var ottxscUID = (string?)ottxData["ContractUID"];
-                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                                            otx.TransactionType == TransactionType.NFT_MINT)
                                                             {
-                                                                if (ottxscUID == scUID)
+                                                                if (otx.Data != null)
                                                                 {
-                                                                    reject = true;
+                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                                                                    if (memscInfo.Item2)
+                                                                    {
+                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                        if (ottxDataArray != null)
+                                                                        {
+                                                                            var ottxData = ottxDataArray[0];
+
+                                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                            {
+                                                                                if (ottxscUID == scUID)
+                                                                                {
+                                                                                    //FAIL
+                                                                                    reject = true; break;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
-                                            }
+                                                break;
+                                            case "Burn()":
+                                                {
+                                                    var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                                    if (otherTxs.Count() > 0)
+                                                    {
+                                                        foreach (var otx in otherTxs)
+                                                        {
+                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                                            otx.TransactionType == TransactionType.NFT_MINT)
+                                                            {
+                                                                if (otx.Data != null)
+                                                                {
+                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                                                                    if (memscInfo.Item2)
+                                                                    {
+                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                        if (ottxDataArray != null)
+                                                                        {
+                                                                            var ottxData = ottxDataArray[0];
+
+                                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                            {
+                                                                                if (ottxscUID == scUID)
+                                                                                {
+                                                                                    //FAIL
+                                                                                    reject = true; break;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                break;
+                                            case "TokenTransfer()":
+                                                {
+                                                    var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                                }
+                                                break;
+                                            case "TokenBurn()":
+                                                {
+
+                                                }
+                                                break;
+                                            default:
+                                                break;
                                         }
+                                        
                                     }
                                 }
                             }
@@ -615,7 +661,8 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> DoubleSpendReplayCheck(Transaction tx)
         {
             bool result = false;
-            
+            AccountStateTrei? stateTreiAcct = null;
+
             if (Globals.MemBlocks.Any())
             {
                 var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
@@ -636,7 +683,7 @@ namespace ReserveBlockCore.Data
             if(txs.Count() > 0)
             {
                 var amount = txs.Sum(x => x.Amount + x.Fee);
-                var stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
                 if(stateTreiAcct != null)
                 {
                     var amountTotal = amount + tx.Amount + tx.Fee;
@@ -663,36 +710,18 @@ namespace ReserveBlockCore.Data
             {
                 if(tx.Data != null)
                 {
-                    string scUID = "";
-                    string function = "";
-                    bool skip = false;
-                    JToken? scData = null;
-                    JArray? scDataArray = null;
-                    try
-                    {
-                        scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                        scData = scDataArray[0];
+                    var scInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                    if (!scInfo.Item1)
+                        return false;
 
-                        function = (string?)scData["Function"];
-                        scUID = (string?)scData["ContractUID"];
-                        skip = true;
-                    }
-                    catch { }
-
-                    try
-                    {
-                        if (!skip)
-                        {
-                            var jobj = JObject.Parse(tx.Data);
-                            scUID = jobj["ContractUID"]?.ToObject<string?>();
-                            function = jobj["Function"]?.ToObject<string?>();
-                        }
-                    }
-                    catch { }
+                    string scUID = scInfo.Item3;
+                    string function = scInfo.Item4;
+                    JArray? scDataArray = scInfo.Item5;
+                    bool skip = scInfo.Item2;
 
                     if (scDataArray != null && skip)
                     {
-                        scData = scDataArray[0];
+                        var scData = scDataArray[0];
 
                         function = (string?)scData["Function"];
                         scUID = (string?)scData["ContractUID"];
@@ -711,19 +740,23 @@ namespace ReserveBlockCore.Data
                                             {
                                                 if(ottx.Data != null)
                                                 {
-                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(ottx.Data);
-                                                    if(ottxDataArray != null)
+                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                                                    if(memscInfo.Item1 && memscInfo.Item2)
                                                     {
-                                                        var ottxData = ottxDataArray[0];
-
-                                                        var ottxFunction = (string?)ottxData["Function"];
-                                                        var ottxscUID = (string?)ottxData["ContractUID"];
-                                                        if(!string.IsNullOrWhiteSpace(ottxFunction))
+                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(ottx.Data);
+                                                        if (ottxDataArray != null)
                                                         {
-                                                            if(ottxscUID == scUID)
+                                                            var ottxData = ottxDataArray[0];
+
+                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
                                                             {
-                                                                //FAIL
-                                                                return false;
+                                                                if (ottxscUID == scUID)
+                                                                {
+                                                                    //FAIL
+                                                                    return false;
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -743,24 +776,89 @@ namespace ReserveBlockCore.Data
                                             {
                                                 if (obtx.Data != null)
                                                 {
-                                                    var obtxDataArray = JsonConvert.DeserializeObject<JArray>(obtx.Data);
-                                                    if (obtxDataArray != null)
+                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(tx);
+                                                    if(memscInfo.Item1 && memscInfo.Item2)
                                                     {
-                                                        var obtxData = obtxDataArray[0];
-
-                                                        var obtxFunction = (string?)obtxData["Function"];
-                                                        var obtxscUID = (string?)obtxData["ContractUID"];
-                                                        if (!string.IsNullOrWhiteSpace(obtxFunction))
+                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(obtx.Data);
+                                                        if (ottxDataArray != null)
                                                         {
-                                                            if (obtxscUID == scUID)
+                                                            var ottxData = ottxDataArray[0];
+
+                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
                                                             {
-                                                                //FAIL
-                                                                return false;
+                                                                if (ottxscUID == scUID)
+                                                                {
+                                                                    //FAIL
+                                                                    return false;
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
+                                        }
+                                    }
+                                    break;
+                                case string i when i == "TokenTransfer()" || i == "TokenBurn()":
+                                    {
+                                        var otherTxs = mempool.Find(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                        if(otherTxs.Count() > 0)
+                                        {
+                                            decimal xferBurnAmount = 0.0M;
+                                            var originaljobj = JObject.Parse(tx.Data);
+                                            var tokenTicker = originaljobj["TokenTicker"]?.ToObject<string?>();
+                                            var amount = originaljobj["Amount"]?.ToObject<decimal?>();
+
+                                            if (amount == null)
+                                                return false;
+
+                                            var tokenAccount = stateTreiAcct.TokenAccounts?.Where(x => x.TokenTicker == tokenTicker).FirstOrDefault();
+
+                                            if (tokenAccount == null)
+                                                return false;
+
+                                            xferBurnAmount += amount.Value;
+
+                                            foreach (var otx in otherTxs)
+                                            {
+                                                if (otx.TransactionType == TransactionType.NFT_TX)
+                                                {
+                                                    if (otx.Data != null)
+                                                    {
+                                                        var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                        if(!memscInfo.Item2 && memscInfo.Item1)
+                                                        {
+                                                            var jobj = JObject.Parse(otx.Data);
+                                                            var otscUID = jobj["ContractUID"]?.ToObject<string?>();
+                                                            var otFunction = jobj["Function"]?.ToObject<string?>();
+
+                                                            if (otscUID == scUID)
+                                                            {
+                                                                var otTokenTicker = jobj["TokenTicker"]?.ToObject<string?>();
+                                                                var otAmount = jobj["Amount"]?.ToObject<decimal?>();
+                                                                if (otFunction != null)
+                                                                {
+                                                                    if (otFunction == "TokenTransfer()" || otFunction == "TokenBurn()")
+                                                                    {
+                                                                        if (otAmount != null)
+                                                                        {
+                                                                            if (otTokenTicker == tokenTicker)
+                                                                            {
+                                                                                xferBurnAmount += otAmount.Value;
+                                                                            }
+
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if(xferBurnAmount > tokenAccount.Balance) return false; //failed due to overspend/overburn
                                         }
                                     }
                                     break;

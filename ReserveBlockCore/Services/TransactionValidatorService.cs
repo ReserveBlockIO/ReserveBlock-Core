@@ -245,10 +245,10 @@ namespace ReserveBlockCore.Services
                                         {
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
-                                                return (txResult, "This smart contract has already been minted.");
+                                                return (txResult, "This smart contract has already been deployed.");
                                             
                                             if (txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not mint a smart contract.");
+                                                return (txResult, "A reserve account may not deploy a token smart contract.");
 
                                             break;
                                         }

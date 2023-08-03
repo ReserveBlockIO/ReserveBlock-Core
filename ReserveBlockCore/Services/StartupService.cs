@@ -1441,7 +1441,7 @@ namespace ReserveBlockCore.Services
                 {
                     AnsiConsole.MarkupLine("********************************************************************");
                     AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
-                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock is able to sync |[/]");
                     AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
                 }
                 if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
@@ -1452,8 +1452,8 @@ namespace ReserveBlockCore.Services
                 if(!Globals.MemoryOverload)
                 {
 
-                    AnsiConsole.MarkupLine($"[darkorange]|            **Memory Usage**          |[/]");
-                    AnsiConsole.MarkupLine($"[darkorange]|               {Globals.CurrentMemory} MB              |[/]");
+                    AnsiConsole.MarkupLine($"[yellow]|            **Memory Usage**          |[/]");
+                    AnsiConsole.MarkupLine($"[yellow]|               {Globals.CurrentMemory} MB              |[/]");
                 }
                 else
                 {

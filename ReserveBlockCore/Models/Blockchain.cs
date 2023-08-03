@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Models
             var blockchain = GetBlockchain();
             if (blockchain != null)
             {
-                var blockExist = blockchain.Find(Query.All(Query.Descending)).Take(50).Where(x => x.Height == block.Height).FirstOrDefault();
+                var blockExist = blockchain.Find(Query.All(Query.Descending)).Take(100).Where(x => x.Height == block.Height).FirstOrDefault();
                 if (blockExist == null)
                 {
                     var cumulativeSize = Globals.Blockchain != null ? Globals.Blockchain.CumulativeSize : 0;
