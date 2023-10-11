@@ -60,6 +60,7 @@ namespace ReserveBlockCore
         public static long BlockTimeDiff = 0;
         public static Block? LastWonBlock = null;
         public static Process GUIProcess;
+        public static bool IsFork = false;
         public static Blockchain Blockchain { get; set; }
 
         public static DateTime? RemoteCraftLockTime = null;        

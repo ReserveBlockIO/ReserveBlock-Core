@@ -22,6 +22,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Reflection;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Engines;
+using ReserveBlockCore.Config;
 
 namespace ReserveBlockCore
 {
@@ -123,6 +124,15 @@ namespace ReserveBlockCore
                 argList.ForEach(async x =>
                 {
                     var argC = x.ToLower();
+                    if(argC.Contains("cFork"))
+                    {
+                        Globals.IsFork = true;
+                        var forkSplit = argC.Split(new char[] { '=' });
+                        if (string.IsNullOrEmpty(forkSplit[1]))
+                            await ForkConfiguration.RunForkedConfiguration();
+                        else
+                            await ForkConfiguration.RunForkedConfiguration(forkSplit[1]);
+                    }
                     if(argC == "version")
                     {
                         Console.WriteLine(Globals.CLIVersion);
