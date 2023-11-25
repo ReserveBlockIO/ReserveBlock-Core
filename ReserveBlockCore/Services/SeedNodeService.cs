@@ -256,7 +256,7 @@ namespace ReserveBlockCore.Services
                         new AdjBench { IPAddress = "154.12.251.107", PulledFromBench= false, RBXAddress= "REM8GPUPGDH2HrqbnipmtCc7qWkghagWDS", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         new AdjBench { IPAddress = "207.244.234.76", PulledFromBench= false, RBXAddress= "RPQcVPnTkaX7pcw5ercpb1sm8gWgFwxAQC", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         new AdjBench { IPAddress = "207.244.230.235", PulledFromBench= false, RBXAddress= "RPrAEQ7a93WDDPmepBeLgVfawDdFFnDYVR", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                        new AdjBench { IPAddress = "15.204.9.193", PulledFromBench= false, RBXAddress= "RHW6PSFE7cP47WvZns8y4ijt8PCmJgNdTA", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        //new AdjBench { IPAddress = "15.204.9.193", PulledFromBench= false, RBXAddress= "RHW6PSFE7cP47WvZns8y4ijt8PCmJgNdTA", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         //new AdjBench { IPAddress = "135.148.121.99", PulledFromBench= false, RBXAddress= "RURosLmRx1Ay85hSeXyr5sjJ7gAhz4rFJd", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                     };
 
