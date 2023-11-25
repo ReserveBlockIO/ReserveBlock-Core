@@ -544,6 +544,11 @@ namespace ReserveBlockCore.Commands
                             peerRec.IsOutgoing = !peerRec.IsOutgoing;
                             peers.UpdateSafe(peerRec);
 
+                            if(peerRec.IsOutgoing)
+                            {
+                                await P2PClient.ManualConnectToPeers(peerRec);
+                            }
+
                             StartupService.MainMenu();
                             Console.WriteLine("Peer already exist...");
                             Console.WriteLine($"Peer Outgoing has been set to {peerRec.IsOutgoing}");
