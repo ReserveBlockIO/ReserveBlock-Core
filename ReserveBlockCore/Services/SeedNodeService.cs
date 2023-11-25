@@ -246,7 +246,7 @@ namespace ReserveBlockCore.Services
                         //Original
                         //new AdjBench { IPAddress = "154.12.251.106", PulledFromBench = true, RBXAddress = "RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         //Newly Added
-                        new AdjBench { IPAddress = "135.148.121.99", PulledFromBench = true, RBXAddress = "RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "15.204.9.193", PulledFromBench = true, RBXAddress = "RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
 
                     };
 
