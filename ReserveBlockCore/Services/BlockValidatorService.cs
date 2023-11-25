@@ -193,9 +193,9 @@ namespace ReserveBlockCore.Services
                     if (block.Version > 2 && !ignoreAdjSignatures)
                     {
                         var version3Result = await BlockVersionUtility.Version3Rules(block);
-                        if (!version3Result)
+                        if (!version3Result.Item1)
                         {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-7");
+                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7. {version3Result.Item2}");
                             return result;
                         }
                             

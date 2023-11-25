@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Utilities
             return result;            
         }
 
-        public static async Task<bool> Version3Rules(Block block)
+        public static async Task<(bool, string)> Version3Rules(Block block)
         {
             if (!string.IsNullOrWhiteSpace(block.AdjudicatorSignature))
             {
@@ -56,14 +56,14 @@ namespace ReserveBlockCore.Utilities
                         var split = AddressSignature.Split(':');
                         var (Address, Signature) = (split[0], split[1]);
                         if (!Globals.Signers.ContainsKey(Address))
-                            return false;
+                            return (false, "Signers Did Not Have Key.");
                         if (!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
-                            return false;
+                            return (false, "Signature Failed to verify");
                         ValidCount++;
                         Addresses.Add(Address);
                     }
                     if (ValidCount == Addresses.Count && ValidCount >= Signer.Majority())
-                        return true;
+                        return (true, "");
                 }
 
                 foreach (var AddressSignature in AddressSignatures)
@@ -71,17 +71,17 @@ namespace ReserveBlockCore.Utilities
                     var split = AddressSignature.Split(':');
                     var (Address, Signature) = (split[0], split[1]);
                     if (!Globals.Signers.ContainsKey(Address))
-                        return false;
-                    if(!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
-                        return false;
+                        return (false, "Signers Did Not Have Key.");
+                    if (!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
+                        return (false, "Signature Failed to verify");
                     ValidCount++;
                     Addresses.Add(Address);
                 }
                 if (ValidCount == Addresses.Count && ValidCount >= Signer.Majority())
-                    return true;
+                    return (true, "");
             }
 
-            return false;
+            return (false, "Unknown Error.");
         }
     }
 }

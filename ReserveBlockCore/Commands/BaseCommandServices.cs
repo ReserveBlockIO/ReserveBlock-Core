@@ -534,6 +534,11 @@ namespace ReserveBlockCore.Commands
 
                             peers.InsertSafe(nPeer);
 
+                            if (nPeer.IsOutgoing)
+                            {
+                                await P2PClient.ManualConnectToPeers(nPeer);
+                            }
+
                             StartupService.MainMenu();
                             Console.WriteLine("Success! Peer added.");
                             Console.WriteLine("Returned to main menu...");
