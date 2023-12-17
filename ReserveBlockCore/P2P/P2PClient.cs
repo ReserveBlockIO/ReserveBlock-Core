@@ -442,6 +442,11 @@ namespace ReserveBlockCore.P2P
             return Globals.MaxPeers != 0;         
         }
 
+        public static async Task ManualConnectToPeers(Peers peer)
+        {
+            _ = Connect(peer);
+        }
+
         public static async Task<bool> ConnectToPeersThroughFortis()
         {
             var fortisList = Globals.FortisPoolCache != "" ? JsonConvert.DeserializeObject<List<string>>(Globals.FortisPoolCache) : new List<string>();

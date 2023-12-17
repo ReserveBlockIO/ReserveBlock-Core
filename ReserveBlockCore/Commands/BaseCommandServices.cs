@@ -535,6 +535,11 @@ namespace ReserveBlockCore.Commands
 
                             peers.InsertSafe(nPeer);
 
+                            if (nPeer.IsOutgoing)
+                            {
+                                await P2PClient.ManualConnectToPeers(nPeer);
+                            }
+
                             StartupService.MainMenu();
                             Console.WriteLine("Success! Peer added.");
                             Console.WriteLine("Returned to main menu...");
@@ -544,6 +549,11 @@ namespace ReserveBlockCore.Commands
                             var peerRec = peers.FindOne(x => x.PeerIP == peer);
                             peerRec.IsOutgoing = !peerRec.IsOutgoing;
                             peers.UpdateSafe(peerRec);
+
+                            if(peerRec.IsOutgoing)
+                            {
+                                await P2PClient.ManualConnectToPeers(peerRec);
+                            }
 
                             StartupService.MainMenu();
                             Console.WriteLine("Peer already exist...");
