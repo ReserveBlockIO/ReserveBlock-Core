@@ -263,6 +263,9 @@ namespace ReserveBlockCore.Commands
                     }
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/satoff":
+                    Globals.StopAllTimers = false;
+                    break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);
