@@ -1448,6 +1448,69 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Adds peer and connects to it
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("AddPeer/{**ipAddr}")]
+        public static async Task<string> AddPeer(string ipAddr)
+        {
+            IPAddress ip;
+            var peer = ipAddr;
+            if (!string.IsNullOrWhiteSpace(peer))
+            {
+                try
+                {
+                    bool ValidateIP = IPAddress.TryParse(peer, out ip);
+                    if (ValidateIP)
+                    {
+                        var peers = Peers.GetAll();
+                        var peerExist = peers.Exists(x => x.PeerIP == peer);
+                        if (!peerExist)
+                        {
+                            Peers nPeer = new Peers
+                            {
+                                IsIncoming = false,
+                                IsOutgoing = true,
+                                PeerIP = peer,
+                                FailCount = 0,
+                                BanCount = 0
+                            };
+
+                            peers.InsertSafe(nPeer);
+
+                            if (nPeer.IsOutgoing)
+                            {
+                                _ = P2PClient.ManualConnectToPeers(nPeer);
+                            }
+
+                            return JsonConvert.SerializeObject(new { Result = "Success", Message = $"Peer: {ipAddr} has been added." });
+                        }
+                        else
+                        {
+                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
+                            
+                            if (peerRec.IsOutgoing)
+                            {
+                                _ = P2PClient.ManualConnectToPeers(peerRec);
+                            }
+
+                            return JsonConvert.SerializeObject(new { Result = "Success", Message = $"Peer: {ipAddr} has been added." });
+                        }
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Peer: {ipAddr} was not a valid IP." });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Peer: {ipAddr} caused the error: {ex.ToString()}" });
+                }
+            }
+            return JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Peer: {ipAddr} was empty or not valid." });
+        }
+
+        /// <summary>
         /// Starts the mother process
         /// </summary>
         /// <returns></returns>

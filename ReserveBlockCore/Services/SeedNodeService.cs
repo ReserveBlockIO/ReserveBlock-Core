@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ImageMagick;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
@@ -11,6 +12,26 @@ namespace ReserveBlockCore.Services
     public class SeedNodeService
     {
         public static List<SeedNode> SeedNodeList = new List<SeedNode>();
+        static SemaphoreSlim SeedNodeServiceLock = new SemaphoreSlim(1, 1);
+        public static async Task Start()
+        {
+            while(true)
+            {
+                var delay = Task.Delay(new TimeSpan(0,15,0));
+                
+                await SeedNodeServiceLock.WaitAsync();
+                try
+                {
+                    //do something
+                }
+                finally
+                {
+                    SeedNodeServiceLock.Release();
+                }
+
+                await delay;
+            }
+        }
                         
         public static async Task<string> PingSeedNode()
         {
@@ -230,7 +251,7 @@ namespace ReserveBlockCore.Services
         public static void SeedBench()
         {
             var benches = AdjBench.GetBench().FindAll().ToList();
-            if(benches?.Count() <= 12)
+            if(benches?.Count() <= 99)
             {
                 if (!Globals.IsTestNet)
                 {

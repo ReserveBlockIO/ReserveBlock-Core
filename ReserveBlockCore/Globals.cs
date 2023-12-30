@@ -93,8 +93,8 @@ namespace ReserveBlockCore
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 4;
-        public static int MinorVer = 0;
-        public static int RevisionVer = 1;
+        public static int MinorVer = 1;
+        public static int RevisionVer = 0;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
@@ -207,7 +207,8 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 14;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, Peers> BannedIPs;        
+        public static ConcurrentDictionary<string, Peers> BannedIPs;
+        public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
 
         #endregion
 
