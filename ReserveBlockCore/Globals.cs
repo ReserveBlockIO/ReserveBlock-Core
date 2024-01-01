@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using ImageMagick;
+using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
@@ -177,6 +178,7 @@ namespace ReserveBlockCore
         public static bool ShowSTUNMessagesInConsole = false;
         public static bool STUNServerRunning = false;
         public static bool LogMemory = false;
+        public static bool BlockSeedCalls = false;
         
         public static CancellationToken CancelledToken;
 

@@ -15,21 +15,24 @@ namespace ReserveBlockCore.Services
         static SemaphoreSlim SeedNodeServiceLock = new SemaphoreSlim(1, 1);
         public static async Task Start()
         {
-            while(true)
+            if(!Globals.BlockSeedCalls)
             {
-                var delay = Task.Delay(new TimeSpan(0,15,0));
-                
-                await SeedNodeServiceLock.WaitAsync();
-                try
+                while (true)
                 {
-                    //do something
-                }
-                finally
-                {
-                    SeedNodeServiceLock.Release();
-                }
+                    var delay = Task.Delay(new TimeSpan(0, 15, 0));
 
-                await delay;
+                    await SeedNodeServiceLock.WaitAsync();
+                    try
+                    {
+                        //do something
+                    }
+                    finally
+                    {
+                        SeedNodeServiceLock.Release();
+                    }
+
+                    await delay;
+                }
             }
         }
                         
@@ -201,7 +204,7 @@ namespace ReserveBlockCore.Services
         
         internal static async Task CallToSeed()
         {
-            if (!Globals.RefuseToCallSeed)
+            if (!Globals.BlockSeedCalls)
             {
                 if (Globals.IsTestNet == false)
                 {

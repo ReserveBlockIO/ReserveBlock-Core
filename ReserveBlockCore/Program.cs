@@ -193,6 +193,10 @@ namespace ReserveBlockCore
                         var apiToken = apiTokens[1];
                         Globals.APIToken = apiToken.ToSecureString();
                     }
+                    if(argC.Contains("blockseedcalls"))
+                    {
+                        Globals.BlockSeedCalls = true;
+                    }
                     if(argC.Contains("keslog"))
                     {
                         keslog = true;

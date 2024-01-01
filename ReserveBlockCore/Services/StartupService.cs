@@ -1220,7 +1220,9 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.AdjudicateAccount != null)
                     return;
-                var delay = Globals.Nodes.Count == 0 ? Task.Delay(1000) : Task.Delay(10000);
+
+                var startupCount = Globals.Nodes.Count / 2 + 1;
+                var delay = Globals.Nodes.Count < startupCount ? Task.Delay(1000) : Task.Delay(10000);
                 try
                 {
                     var ConnectedCount = Globals.Nodes.Values.Where(x => x.IsConnected).Count();
