@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Services
                     await SeedNodeServiceLock.WaitAsync();
                     try
                     {
-                        //do something
+                        await CallToSeed();
                     }
                     finally
                     {
@@ -210,36 +210,37 @@ namespace ReserveBlockCore.Services
                 {
                     try
                     {
-                        var settingsDB = Settings.GetSettingsDb();
-                        var settings = Settings.GetSettings();
-                        if(settings?.CalledToSeed == false)
+                        var seedNodes = SeedNodes();
+                        int count = 0;
+                        foreach (var seedNode in seedNodes)
                         {
-                            var seedNodes = SeedNodes();
-                            int count = 0;
-                            foreach (var seedNode in seedNodes)
+                            using (var client = Globals.HttpClientFactory.CreateClient())
                             {
-                                using (var client = Globals.HttpClientFactory.CreateClient())
+                                string endpoint = !string.IsNullOrEmpty(Globals.ValidatorAddress) ? seedNode.NodeUrl + "/api/V1/GetCallToNode" :
+                                    seedNode.NodeUrl + "/api/V1/GetCallToNode/true";
+                                using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
                                 {
-                                    string endpoint = seedNode.NodeUrl + "/api/V1/GetCallToNode";
-                                    using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
+                                    if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                     {
-                                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                                        if(Globals.SeedDict.TryGetValue(seedNode.NodeUrl, out string value))
                                         {
-                                            count += 1;
+                                            Globals.SeedDict[seedNode.NodeUrl] = "Online";
+                                        }
+                                        else
+                                        {
+                                            Globals.SeedDict.TryAdd(seedNode.NodeUrl, "Online");
                                         }
                                     }
-
-                                }
-                            }
-
-                            if (count == seedNodes.Count())
-                            {
-                                if (settingsDB != null)
-                                {
-                                    if (settings != null)
+                                    else
                                     {
-                                        settings.CalledToSeed = true;
-                                        settingsDB.UpdateSafe(settings);
+                                        if (Globals.SeedDict.TryGetValue(seedNode.NodeUrl, out string value))
+                                        {
+                                            Globals.SeedDict[seedNode.NodeUrl] = "Offline";
+                                        }
+                                        else
+                                        {
+                                            Globals.SeedDict.TryAdd(seedNode.NodeUrl, "Offline");
+                                        }
                                     }
                                 }
 

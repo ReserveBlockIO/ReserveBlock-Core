@@ -46,6 +46,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
+        public static ConcurrentDictionary<string, string> SeedDict = new ConcurrentDictionary<string, string>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();
