@@ -542,14 +542,14 @@ namespace ReserveBlockCore.Services
                         }
 
                         var adjNodes = Globals.AdjNodes.Values.Where(x => x.IsConnected).ToList();
-                        if(adjNodes.Count < 3)
+                        if(adjNodes.Count < 1)
                         {
                             Globals.ValidatorIssueCount += 1;
-                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 1 or less.");
                         }
                         else
                         {
-                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("ADJ Connections are 2 or less."));
+                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("ADJ Connections are 1 or less."));
                             var currentTime = DateTime.Now.AddMinutes(-2);
 
                             var lastSendTime = adjNodes.Max(x => x.LastTaskSentTime);

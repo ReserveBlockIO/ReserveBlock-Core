@@ -1216,12 +1216,13 @@ namespace ReserveBlockCore.Services
         }
         internal static async Task StartupPeers()
         {
-            int failCount = 0;
             while (true)
             {
                 if (Globals.AdjudicateAccount != null)
                     return;
-                var delay = Task.Delay(10000);
+
+                var startupCount = Globals.Nodes.Count / 2 + 1;
+                var delay = Globals.Nodes.Count < startupCount ? Task.Delay(1000) : Task.Delay(10000);
                 try
                 {
                     var ConnectedCount = Globals.Nodes.Values.Where(x => x.IsConnected).Count();
