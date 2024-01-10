@@ -99,41 +99,51 @@ namespace ReserveBlockCore.Services
                 {
                     using (var client = Globals.HttpClientFactory.CreateClient())
                     {
-                        string endpoint = url + "/api/V1/GetNodes";
+                        string endpoint = url + "/api/V1/GetPeers";
                         using (var Response = await client.GetAsync(endpoint))
                         {
                             if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
                                 string data = await Response.Content.ReadAsStringAsync();
-                                var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
-                                var peerCount = peers.Count() - 1;
-                                for (var i = 0; i <= peerCount; i++)
+                                var response = JsonConvert.DeserializeObject<SeedResponse>(data); 
+                                if(response != null)
                                 {
-                                    var peer = peers[i];
-                                    if (peer != "No Nodes")
+                                    if(response.Success)
                                     {
-                                        Peers nPeer = new Peers
+                                        var peers = response.Nodes;
+                                        if(peers.Any())
                                         {
-                                            IsIncoming = false,
-                                            IsOutgoing = true,
-                                            PeerIP = peer,
-                                            FailCount = 0
-                                        };
+                                            foreach (var peer in peers)
+                                            {
+                                                if (peer != "No Nodes")
+                                                {
+                                                    Peers nPeer = new Peers
+                                                    {
+                                                        IsIncoming = false,
+                                                        IsOutgoing = true,
+                                                        PeerIP = peer,
+                                                        FailCount = 0
+                                                    };
 
-                                        var dbPeers = Peers.GetAll();
-                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
-                                        if (peerExist == null)
-                                        {
-                                            dbPeers.InsertSafe(nPeer);
-                                        }
-                                        else
-                                        {
-                                            peerExist.FailCount = 0;
-                                            dbPeers.UpdateSafe(peerExist);
+                                                    var dbPeers = Peers.GetAll();
+                                                    var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
+                                                    if (peerExist == null)
+                                                    {
+                                                        dbPeers.InsertSafe(nPeer);
+                                                    }
+                                                    else
+                                                    {
+                                                        peerExist.FailCount = 0;
+                                                        dbPeers.UpdateSafe(peerExist);
+                                                    }
+                                                }
+
+                                            }
                                         }
                                     }
-
                                 }
+                                
+                               
                             }
                             else
                             {
@@ -322,11 +332,12 @@ namespace ReserveBlockCore.Services
                 {
                     NodeUrl = "https://seed2.rbx.network"
                 });
+                seedNodes.Add(new SeedNode
+                {
+                    NodeUrl = "https://seed3.rbx.network"
+                });
 
-                //seedNodes.Add(new SeedNode
-                //{
-                //    NodeUrl = "https://marigold.rbx.network"
-                //});
+
                 //seedNodes.Add(new SeedNode
                 //{
                 //    NodeUrl = "https://daisy.rbx.network"
@@ -351,5 +362,11 @@ namespace ReserveBlockCore.Services
             return seedNodes;
         }
 
+        private class SeedResponse
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; }
+            public List<string> Nodes { get; set; }
+        }
     }
 }
