@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Models
             var peers = GetAll();
             var bannedPeers = peers.Query().Where(x => x.IsBanned && !x.IsPermaBanned).ToEnumerable();
             if(unbanPerma)
-                bannedPeers = peers.Query().Where(x => x.IsBanned && x.IsPermaBanned).ToEnumerable();
+                bannedPeers = peers.Query().Where(x => x.IsBanned || x.IsPermaBanned).ToEnumerable();
             var count = 0;
             foreach(var peer in bannedPeers)
             {

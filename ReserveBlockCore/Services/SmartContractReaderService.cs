@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Services
 {
     public static class SmartContractReaderService
     {
-        public static async Task<(string?, SmartContractMain)> ReadSmartContract(SmartContractMain scMain, int? activeEvoState = null)
+        public static async Task<(string?, SmartContractMain, bool)> ReadSmartContract(SmartContractMain scMain, int? activeEvoState = null)
         {
             try
             {
@@ -21,6 +21,8 @@ namespace ReserveBlockCore.Services
                 StringBuilder strRoyaltyBld = new StringBuilder();
                 StringBuilder strEvolveBld = new StringBuilder();
                 StringBuilder strMultiAssetBld = new StringBuilder();
+                StringBuilder strTokenBld = new StringBuilder();
+                var isToken = false;
 
                 var appendChar = "\"|->\"";
 
@@ -177,9 +179,19 @@ namespace ReserveBlockCore.Services
                                 strMultiAssetBld = multiAssetSource.Item2;
                             }
                         }
-                        else if (feature.FeatureName == FeatureName.Ticket)
+                        else if (feature.FeatureName == FeatureName.Token)
                         {
+                            var token = ((TokenFeature)feature.FeatureFeatures);
+                            feature.FeatureFeatures = token;
 
+                            Flist.Add(feature);
+
+                            //create royalty code block
+                            var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                            strBuild = tokenSource.Item1;
+                            strTokenBld = tokenSource.Item2;
+                            isToken = true;
+                            scMain.IsToken = true;
                         }
                     }
                     else
@@ -215,6 +227,20 @@ namespace ReserveBlockCore.Services
                                 var royaltySource = await RoyaltySourceGenerator.Build(royalty);
                                 strBuild = royaltySource.Item1;
                                 strRoyaltyBld = royaltySource.Item2;
+                            }
+                            if (x.FeatureName == FeatureName.Token)
+                            {
+                                var token = ((TokenFeature)x.FeatureFeatures);
+                                x.FeatureFeatures = token;
+
+                                Flist.Add(x);
+
+                                //create royalty code block
+                                var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                                strBuild = tokenSource.Item1;
+                                strTokenBld = tokenSource.Item2;
+                                isToken = true;
+                                scMain.IsToken = true;
                             }
 
                             if (x.FeatureName == FeatureName.Evolving)
@@ -323,17 +349,14 @@ namespace ReserveBlockCore.Services
                 //NFT Main Data
                 strBuild.AppendLine(("let Name = \"{#NFTName}\"").Replace("{#NFTName}", scMain.Name));
                 strBuild.AppendLine(("let Description = \"{#Description}\"").Replace("{#Description}", scMain.Description));
-                //strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
                 strBuild.AppendLine(("let MinterAddress = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
                 strBuild.AppendLine(("let MinterName = \"{#MinterName}\"").Replace("{#MinterName}", scMain.MinterName));
                 strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
-                //strBuild.AppendLine(("let Signature = \"" + signature + "\""));
                 strBuild.AppendLine(("let Features = \"" + features + "\""));
+                strBuild.AppendLine(("let SCVersion = " + scMain.SCVersion.ToString()));
 
                 //NFT asset Data
-                //strBuild.AppendLine(("let Extension = \"" + scAsset.Extension + "\""));
                 strBuild.AppendLine(("let FileSize = \"" + scAsset.FileSize.ToString() + "\""));
-                //strBuild.AppendLine(("let Location = \"" + scAsset.Location + "\""));
                 strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
                 strBuild.AppendLine(("let AssetAuthorName = \"" + scAsset.AssetAuthorName + "\""));
 
@@ -403,15 +426,19 @@ namespace ReserveBlockCore.Services
                     {
                         strBuild.Append(strMultiAssetBld);
                     }
+                    if (featuresList.Exists(x => x.FeatureName == FeatureName.Token))
+                    {
+                        strBuild.Append(strTokenBld);
+                    }
                 }
 
                 var scText = strBuild.ToString();
 
-                return (scText, scMain);
+                return (scText, scMain, isToken);
             }
             catch(Exception ex)
             {
-                return (null, scMain);
+                return (null, scMain, false);
             }
         }
     }

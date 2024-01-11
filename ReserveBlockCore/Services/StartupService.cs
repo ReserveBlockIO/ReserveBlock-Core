@@ -49,6 +49,67 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        internal static void PopulateTokenDictionary()
+        {
+            var accounts = AccountData.GetAccounts().Query().Where(x => true).ToList();
+            var rAccounts = ReserveAccount.GetReserveAccounts();
+
+            if(accounts?.Count > 0)
+            {
+                foreach(var account in accounts) 
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if(stateAccount != null)
+                    {
+                        if(stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach(var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if(tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if(tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (rAccounts?.Count > 0)
+            {
+                foreach (var rAccount in rAccounts)
+                {
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                    if (stateAccount != null)
+                    {
+                        if (stateAccount.TokenAccounts?.Count > 0)
+                        {
+                            var tokenAccountList = stateAccount.TokenAccounts;
+                            foreach (var tokenAccount in tokenAccountList)
+                            {
+                                var tokenContract = SmartContractStateTrei.GetSmartContractState(tokenAccount.SmartContractUID);
+                                if (tokenContract != null)
+                                {
+                                    var tokenDetails = tokenContract.TokenDetails;
+                                    if (tokenDetails != null)
+                                    {
+                                        Globals.Tokens.TryAdd(tokenAccount.SmartContractUID, tokenDetails);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -312,6 +373,26 @@ namespace ReserveBlockCore.Services
             if(Globals.LastBlock.Height != -1)
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock();
+            }
+        }
+
+        internal static async void SetLastBlockchainPoint()
+        {
+            if(Globals.LastBlock.Height != -1)
+            {
+                var header = Blockchain.GetLastBlockchainPoint();
+                if(header != null)
+                {
+                    Globals.Blockchain = header;
+                    if(header.Height < Globals.LastBlock.Height)
+                    {
+                        await Blockchain.PerformHeaderCreation(header.Height);
+                    }
+                }
+                else
+                {
+                    await Blockchain.PerformHeaderCreation(); //this only happens once.
+                }
             }
         }
         internal static async void RunStateSync()
@@ -890,13 +971,17 @@ namespace ReserveBlockCore.Services
                     {
                         ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                        await BlockDownloadService.GetAllBlocks();
+                        if(Globals.UseV2BlockDownload)
+                            await BlockDownloadService.GetAllBlocksV2();
+                        else
+                            await BlockDownloadService.GetAllBlocks();
+
                     }
 
                     var lastBlock = Globals.LastBlock;
                     var currentTimestamp = TimeUtil.GetTime(-90);
 
-                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.IsTestNet)
+                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null)
                     {
                         DateTime endTime = DateTime.UtcNow;
                         ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
@@ -1357,7 +1442,7 @@ namespace ReserveBlockCore.Services
                 {
                     AnsiConsole.MarkupLine("********************************************************************");
                     AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
-                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock is able to sync |[/]");
                     AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
                 }
                 if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
@@ -1368,8 +1453,8 @@ namespace ReserveBlockCore.Services
                 if(!Globals.MemoryOverload)
                 {
 
-                    AnsiConsole.MarkupLine($"[darkorange]|            **Memory Usage**          |[/]");
-                    AnsiConsole.MarkupLine($"[darkorange]|               {Globals.CurrentMemory} MB              |[/]");
+                    AnsiConsole.MarkupLine($"[yellow]|            **Memory Usage**          |[/]");
+                    AnsiConsole.MarkupLine($"[yellow]|               {Globals.CurrentMemory} MB              |[/]");
                 }
                 else
                 {

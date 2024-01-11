@@ -22,6 +22,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Reflection;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Engines;
+using ReserveBlockCore.Config;
 
 namespace ReserveBlockCore
 {
@@ -60,7 +61,7 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //Forced Testnet
-            //Globals.IsTestNet = true;
+            Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -123,6 +124,15 @@ namespace ReserveBlockCore
                 argList.ForEach(async x =>
                 {
                     var argC = x.ToLower();
+                    if(argC.Contains("cFork"))
+                    {
+                        Globals.IsFork = true;
+                        var forkSplit = argC.Split(new char[] { '=' });
+                        if (string.IsNullOrEmpty(forkSplit[1]))
+                            await ForkConfiguration.RunForkedConfiguration();
+                        else
+                            await ForkConfiguration.RunForkedConfiguration(forkSplit[1]);
+                    }
                     if(argC == "version")
                     {
                         Console.WriteLine(Globals.CLIVersion);
@@ -160,6 +170,10 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
+                    }
+                    if(argC == "blockv2")
+                    {
+                        Globals.UseV2BlockDownload = true;
                     }
                     if (argC == "unsafe")
                     {
@@ -244,6 +258,7 @@ namespace ReserveBlockCore
             }
 
             Globals.Platform = PlatformUtility.GetPlatform();
+            Globals.SystemMemory = MemoryService.GetTotalMemory();
 
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
@@ -260,24 +275,25 @@ namespace ReserveBlockCore
 
             APILogUtility.Log($"RBX API ver. - {logCLIVer}", "Main");
 
-            StartupService.AnotherInstanceCheck();
+            StartupService.AnotherInstanceCheck(); //checks for another instance
 
             StartupService.StartupDatabase();// initializes databases
 
-            await DbContext.CheckPoint();
+            await DbContext.CheckPoint(); //checkpoints db log files
 
-            StartupService.SetBlockHeight();
-            StartupService.SetLastBlock();
-            StartupService.StartupMemBlocks();
+            StartupService.SetBlockHeight(); //sets current block height
+            StartupService.SetLastBlock(); //puts last known block into memory
+            StartupService.StartupMemBlocks(); //puts 400 blocks into memory (height, hash)
+            StartupService.PopulateTokenDictionary();
 
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
-            StartupService.CheckBlockRefVerToDb();
+            StartupService.CheckBlockRefVerToDb(); //checks check ID
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
-            SeedNodeService.SeedNodes();
-            SeedNodeService.SeedBench();
-            await BadTransaction.PopulateBadTXList();
-            await WalletService.BalanceRectify();
+            SeedNodeService.SeedNodes(); //adds nodes to initial find blocks
+            SeedNodeService.SeedBench(); //seeds adj bench
+            await BadTransaction.PopulateBadTXList(); //adds bad txs to ignore
+            await WalletService.BalanceRectify(); //checks balance local against state
 
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
 
@@ -410,6 +426,7 @@ namespace ReserveBlockCore
             if (Globals.AdjudicateAccount != null)
             {
                 Globals.StopAllTimers = true;
+                StartupService.SetLastBlockchainPoint();
                 _ = Task.Run(BlockHeightCheckLoop);
                 _ = StartupService.DownloadBlocksOnStart();
                 _ = Task.Run(ClientCallService.DoWorkV3);
@@ -505,7 +522,9 @@ namespace ReserveBlockCore
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
 
-            if(Globals.AdjudicateAccount != null)
+            StartupService.SetLastBlockchainPoint();
+
+            if (Globals.AdjudicateAccount != null)
             {
                 _ = builder3.RunConsoleAsync();
             }
@@ -567,7 +586,7 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatorCountRun();
             _ = DSTClient.Run();
 
-            if(startGUI && Globals.IsTestNet)
+            if(startGUI)
             {
                 Process[] pname = Process.GetProcessesByName("RBXWallet");
 

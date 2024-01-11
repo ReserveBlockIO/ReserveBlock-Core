@@ -39,13 +39,37 @@ namespace ReserveBlockCore.Services
             }
             if (tx.TransactionType == TransactionType.NFT_TX)
             {
-                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                if (scDataArray != null)
+                string scUID = "";
+                string function = "";
+                bool skip = false;
+                bool isToken = false;
+                JToken? scData = null;
+                JArray? scDataArray = null;
+                try
                 {
-                    var scData = scDataArray[0];
+                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                    scData = scDataArray[0];
+                    skip = true;
+                }
+                catch { }
+
+                try
+                {
+                    if (!skip)
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        function = jobj["Function"]?.ToObject<string?>();
+                        isToken = true;
+                    }
+                }
+                catch { }
+
+                if (scDataArray != null && skip)
+                {
+                    scData = scDataArray[0];
                     if (scData != null)
                     {
-                        var function = (string?)scData["Function"];
+                        function = (string?)scData["Function"];
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             if (function == "Transfer()")
@@ -55,6 +79,43 @@ namespace ReserveBlockCore.Services
                                 txdata.InsertSafe(tx);
                             }
                         }
+                    }
+                }
+
+                if(isToken && !skip)
+                {
+                    if (function == "TokenTransfer()")
+                    {
+                        var txdata = TransactionData.GetAll();
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txdata.InsertSafe(tx);
+                    }
+
+                    if (function == "TokenContractOwnerChange()")
+                    {
+                        var txdata = TransactionData.GetAll();
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txdata.InsertSafe(tx);
+                    }
+
+                    if (function == "TokenVoteTopicCast()")
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        scUID = jobj["ContractUID"]?.ToObject<string?>();
+                        var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                        var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
+
+                        var vote = new TokenVote
+                        {
+                            Address = tx.FromAddress,
+                            BlockHeight = blockHeight,
+                            TopicUID = topicUID,
+                            TransactionHash = tx.Hash,
+                            VoteType = voteType.Value,
+                            SmartContractUID = scUID
+                        };
+
+                        TokenVote.SaveVote(vote);
                     }
                 }
 
@@ -150,11 +211,30 @@ namespace ReserveBlockCore.Services
                     if (tx.TransactionType == TransactionType.NFT_TX)
                     {
                         NFTLogUtility.Log($"NFT TX Detected (TX): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                        var scData = scDataArray[0];
+                        string function = "";
+                        string data = "";
+                        bool skip = false;
+                        JToken? scData = null;
+                        try
+                        {
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            scData = scDataArray[0];
+                            function = (string?)scData["Function"];
+                            data = (string?)scData["Data"];
 
-                        var data = (string?)scData["Data"];
-                        var function = (string?)scData["Function"];
+                            skip = true;
+                        }
+                        catch { }
+
+                        try
+                        {
+                            if (!skip)
+                            {
+                                var jobj = JObject.Parse(tx.Data);
+                                function = jobj["Function"]?.ToObject<string?>();
+                            }
+                        }
+                        catch { }
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
@@ -255,6 +335,46 @@ namespace ReserveBlockCore.Services
                                         }
                                     }
                                     break;
+                                case "TokenContractOwnerChange()":
+                                    {
+                                        var jobj = JObject.Parse(tx.Data);
+          
+                                        var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
+                                        var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+
+                                        NFTLogUtility.Log($"NFT Transfer: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+
+                                        var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                        if (sc != null)
+                                        {
+                                            
+                                        }
+                                        else
+                                        {
+                                            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if(scState != null)
+                                            {
+                                                var trill = scState.ContractData;
+                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(trill); });
+                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                                //testing
+                                                //bool isCompletedSuccessfully = true;
+                                                //transferTask.Wait();
+                                                if (!isCompletedSuccessfully)
+                                                {
+                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                                }
+                                                else
+                                                {
+                                                    //download files here.
+
+                                                }
+
+                                            }
+                                        }
+                                        break;
+                                    }
                                 default:
                                     break;
                             }
@@ -297,15 +417,115 @@ namespace ReserveBlockCore.Services
             {
                 if (tx.TransactionType == TransactionType.NFT_TX)
                 {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                    var scData = scDataArray[0];
+                    string scUID = "";
+                    string function = "";
+                    bool skip = false;
+                    bool isToken = false;
+                    JToken? scData = null;
+                    JArray? scDataArray = null;
+                    try
+                    {
+                        scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                        scData = scDataArray[0];
+                        scUID = (string?)scData["ContractUID"];
+                        function = (string?)scData["Function"];
+                        skip = true;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        if (!skip)
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            function = jobj["Function"]?.ToObject<string?>();
+                            scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            isToken = true;
+                        }
+                    }
+                    catch { }
 
                     //do transfer logic here! This is for person giving away or feature actions
-                    var scUID = (string?)scData["ContractUID"];
-                    var function = (string?)scData["Function"];
+                    
+                    
 
                     if (!string.IsNullOrWhiteSpace(function))
                     {
+                        if(function == "TokenDeploy()")
+                        {
+                            if(scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if(stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if(tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails); 
+                                        }
+                                    }
+                                }
+                            }
+                            
+                        }
+                        if (function == "TokenMint()")
+                        {
+                            if (scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if (tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if(function == "TokenBurn()")
+                        {
+                            if (scUID != null)
+                            {
+                                if (!Globals.Tokens.TryGetValue(scUID, out var token))
+                                {
+                                    var stateToken = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (stateToken != null)
+                                    {
+                                        var tokenDetails = stateToken.TokenDetails;
+                                        if (tokenDetails != null)
+                                        {
+                                            Globals.Tokens.TryAdd(scUID, tokenDetails);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if(function == "TokenVoteTopicCast()")
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                            var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
+
+                            var vote = new TokenVote { 
+                                Address = tx.FromAddress,
+                                BlockHeight = blockHeight,
+                                TopicUID = topicUID,
+                                TransactionHash = tx.Hash,
+                                VoteType = voteType.Value,
+                                SmartContractUID = scUID
+                            };
+
+                            TokenVote.SaveVote(vote);
+                        }
+
                         if (function == "Transfer()")
                         {
                             if (!string.IsNullOrWhiteSpace(scUID))
@@ -580,13 +800,35 @@ namespace ReserveBlockCore.Services
             }
             if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_SALE)
             {
-                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                if (scDataArray != null)
+                string scUID = "";
+                string function = "";
+                bool skip = false;
+                JToken? scData = null;
+                JArray? scDataArray = null;
+                try
                 {
-                    var scData = scDataArray[0];
+                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                    function = (string?)scData["Function"];
+                    scData = scDataArray[0];
+                    skip = true;
+                }
+                catch { }
+
+                try
+                {
+                    if (!skip)
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        function = jobj["Function"]?.ToObject<string?>();
+                    }
+                }
+                catch { }
+
+                if (scDataArray != null && skip)
+                {
+                    scData = scDataArray[0];
                     if (scData != null)
                     {
-                        var function = (string?)scData["Function"];
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             if (function == "Transfer()")
@@ -916,6 +1158,5 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
-
     }
 }

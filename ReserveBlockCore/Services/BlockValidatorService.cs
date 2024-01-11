@@ -8,6 +8,7 @@ using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Diagnostics;
 using System.Security.Principal;
 using System.Text;
 
@@ -68,8 +69,10 @@ namespace ReserveBlockCore.Services
                         var (block, ipAddress) = blockInfo;
 
                         var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
-
-                        var result = await ValidateBlock(block, false, startupDownload);                        
+                        var stopwatch1 = new Stopwatch();
+                        stopwatch1.Start();
+                        var result = await ValidateBlock(block, false, startupDownload);
+                        stopwatch1.Stop();
                         if (!result && block.Height == Globals.LastBlock.Height + 1)
                         {
                             if (Globals.AdjudicateAccount != null)
@@ -78,7 +81,7 @@ namespace ReserveBlockCore.Services
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
                             if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
                                 await node.Connection.DisposeAsync();
-                            ConsoleWriterService.Output("Block was rejected from: " + block.Validator);
+                            ConsoleWriterService.Output($"Block: {block.Height} was rejected from: {block.Validator}");
                         }
                         else
                         {
@@ -96,7 +99,7 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} ");
+                                ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} - Speed: {stopwatch1.ElapsedMilliseconds}/ms");
                             }
                                 
                         }
@@ -269,6 +272,10 @@ namespace ReserveBlockCore.Services
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads, true);
+                                    if(txResult.Item1 == false)
+                                    {
+                                        //testing
+                                    }
                                     if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
                                     {
                                         //if (!txResult.Item1)
@@ -288,46 +295,171 @@ namespace ReserveBlockCore.Services
                                         {
                                             try
                                             {
-                                                var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
-                                                if (scDataArray != null)
+                                                AccountStateTrei? stateTreiAcct = null;
+                                                stateTreiAcct = StateData.GetSpecificAccountStateTrei(blkTransaction.FromAddress);
+                                                var scInfo = TransactionUtility.GetSCTXFunctionAndUID(blkTransaction);
+                                                if (!scInfo.Item1)
+                                                    return false;
+
+                                                string scUID = scInfo.Item3;
+                                                string function = scInfo.Item4;
+                                                JArray? scDataArray = scInfo.Item5;
+                                                bool skip = scInfo.Item2;
+
+                                                if (scDataArray != null && skip)
                                                 {
                                                     var scData = scDataArray[0];
 
-                                                    var function = (string?)scData["Function"];
+                                                    function = (string?)scData["Function"];
 
                                                     if (!string.IsNullOrWhiteSpace(function))
                                                     {
-                                                        var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
-                                                        if (otherTxs.Count() > 0)
+                                                        switch(function)
                                                         {
-                                                            foreach (var otx in otherTxs)
-                                                            {
-                                                                if (otx.TransactionType == TransactionType.NFT_TX ||
-                                                                    otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                    otx.TransactionType == TransactionType.NFT_MINT)
+                                                            case "Transfer()":
                                                                 {
-                                                                    var scUID = (string?)scData["ContractUID"];
-                                                                    if (otx.Data != null)
+                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                    if (otherTxs.Count() > 0)
                                                                     {
-                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                                        if (ottxDataArray != null)
+                                                                        foreach (var otx in otherTxs)
                                                                         {
-                                                                            var ottxData = ottxDataArray[0];
-
-                                                                            var ottxFunction = (string?)ottxData["Function"];
-                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
-                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                                                otx.TransactionType == TransactionType.NFT_BURN ||
+                                                                                otx.TransactionType == TransactionType.NFT_MINT)
                                                                             {
-                                                                                if (ottxscUID == scUID)
+                                                                                scUID = (string?)scData["ContractUID"];
+                                                                                if (otx.Data != null)
                                                                                 {
-                                                                                    rejectBlock = true;
+                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                    if (memscInfo.Item2)
+                                                                                    {
+                                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                                        if (ottxDataArray != null)
+                                                                                        {
+                                                                                            var ottxData = ottxDataArray[0];
+
+                                                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                            {
+                                                                                                if (ottxscUID == scUID)
+                                                                                                {
+                                                                                                    rejectBlock = true;
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                    
                                                                                 }
                                                                             }
                                                                         }
                                                                     }
                                                                 }
-                                                            }
+                                                                break;
+                                                            case "Burn()":
+                                                                {
+                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                    if (otherTxs.Count() > 0)
+                                                                    {
+                                                                        foreach (var otx in otherTxs)
+                                                                        {
+                                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                                                otx.TransactionType == TransactionType.NFT_BURN ||
+                                                                                otx.TransactionType == TransactionType.NFT_MINT)
+                                                                            {
+                                                                                scUID = (string?)scData["ContractUID"];
+                                                                                if (otx.Data != null)
+                                                                                {
+                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                    if (memscInfo.Item2)
+                                                                                    {
+                                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                                        if (ottxDataArray != null)
+                                                                                        {
+                                                                                            var ottxData = ottxDataArray[0];
+
+                                                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                            {
+                                                                                                if (ottxscUID == scUID)
+                                                                                                {
+                                                                                                    rejectBlock = true;
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                                break;
+                                                            case string i when i == "TokenTransfer()" || i == "TokenBurn()":
+                                                                {
+                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                    if (otherTxs.Count() > 0)
+                                                                    {
+                                                                        decimal xferBurnAmount = 0.0M;
+                                                                        var originaljobj = JObject.Parse(blkTransaction.Data);
+                                                                        var tokenTicker = originaljobj["TokenTicker"]?.ToObject<string?>();
+                                                                        var amount = originaljobj["Amount"]?.ToObject<decimal?>();
+
+                                                                        if (amount == null)
+                                                                            rejectBlock = true;
+
+                                                                        var tokenAccount = stateTreiAcct.TokenAccounts?.Where(x => x.TokenTicker == tokenTicker).FirstOrDefault();
+
+                                                                        if (tokenAccount == null)
+                                                                            rejectBlock = true;
+
+                                                                        xferBurnAmount += amount.Value;
+
+                                                                        foreach (var otx in otherTxs)
+                                                                        {
+                                                                            if (otx.TransactionType == TransactionType.NFT_TX)
+                                                                            {
+                                                                                if (otx.Data != null)
+                                                                                {
+                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                    if (!memscInfo.Item2 && memscInfo.Item1)
+                                                                                    {
+                                                                                        var jobj = JObject.Parse(otx.Data);
+                                                                                        var otscUID = jobj["ContractUID"]?.ToObject<string?>();
+                                                                                        var otFunction = jobj["Function"]?.ToObject<string?>();
+
+                                                                                        if (otscUID == scUID)
+                                                                                        {
+                                                                                            var otTokenTicker = jobj["TokenTicker"]?.ToObject<string?>();
+                                                                                            var otAmount = jobj["Amount"]?.ToObject<decimal?>();
+                                                                                            if (otFunction != null)
+                                                                                            {
+                                                                                                if (otFunction == "TokenTransfer()" || otFunction == "TokenBurn()")
+                                                                                                {
+                                                                                                    if (otAmount != null)
+                                                                                                    {
+                                                                                                        if (otTokenTicker == tokenTicker)
+                                                                                                        {
+                                                                                                            xferBurnAmount += otAmount.Value;
+                                                                                                        }
+
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+
+                                                                        if (xferBurnAmount > tokenAccount.Balance) 
+                                                                            rejectBlock = true; //failed due to overspend/overburn
+                                                                    }
+                                                                }
+                                                                break;
+                                                            default: { } break;
                                                         }
+                                                        
                                                     }
                                                 }
                                             }

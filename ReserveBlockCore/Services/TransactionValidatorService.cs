@@ -57,8 +57,11 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            if(txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
-                return (txResult, "Reserve accounts cannot send to another Reserve Account.");
+            if(!Globals.IsTestNet)
+            {
+                if (txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
+                    return (txResult, "Reserve accounts cannot send to another Reserve Account.");
+            }
 
             //REMOVE AFTER ENABLED!
             //if (txRequest.ToAddress.StartsWith("xRBX"))
@@ -70,7 +73,8 @@ namespace ReserveBlockCore.Services
                 txRequest.ToAddress != "DecShop_Base" && 
                 txRequest.ToAddress != "Topic_Base" && 
                 txRequest.ToAddress != "Vote_Base" && 
-                txRequest.ToAddress != "Reserve_Base")
+                txRequest.ToAddress != "Reserve_Base" &&
+                txRequest.ToAddress != "Token_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
                     return (txResult, "To Address failed to validate");
@@ -88,7 +92,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Timestamp Check
-            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
             {
                 var currentTime = TimeUtil.GetTime();
                 var timeDiff = currentTime - txRequest.Timestamp;
@@ -195,11 +199,32 @@ namespace ReserveBlockCore.Services
                         var txData = txRequest.Data;
                         if(txData != null)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
-                            var scData = scDataArray[0];
+                            string scUID = "";
+                            string function = "";
+                            bool skip = false;
+                            JToken? scData = null;
+                            try
+                            {
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                                scData = scDataArray[0];
 
-                            var function = (string?)scData["Function"];
-                            var scUID = (string?)scData["ContractUID"];
+                                function = (string?)scData["Function"];
+                                scUID = (string?)scData["ContractUID"];
+                                skip = true;
+                            }
+                            catch{ }
+
+                            try
+                            {
+                                if(!skip)
+                                {
+                                    var jobj = JObject.Parse(txData);
+                                    scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                    function = jobj["Function"]?.ToObject<string?>();
+                                }
+                            }
+                            catch { }
+                            
 
                             if (!string.IsNullOrWhiteSpace(function))
                             {
@@ -209,11 +234,329 @@ namespace ReserveBlockCore.Services
                                         {
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
-                                            {
                                                 return (txResult, "This smart contract has already been minted.");
-                                            }
+                                            
                                             if(txRequest.FromAddress.StartsWith("xRBX"))
                                                 return (txResult, "A reserve account may not mint a smart contract.");
+                                            break;
+                                        }
+
+                                    case "TokenDeploy()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                                return (txResult, "This smart contract has already been deployed.");
+                                            
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not deploy a token smart contract.");
+
+                                            break;
+                                        }
+
+                                    case "TokenMint()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if(fromAddress == null || amount == null)
+                                                return (txResult, "Missing TX Data Fields.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if(scStateTreiRec.TokenDetails.StartingSupply > 0.0M)
+                                                return (txResult, "Token supply was not set to infinite.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (!scStateTreiRec.TokenDetails.TokenMintable)
+                                                return (txResult, "Minting not enabled on this contract");
+
+                                            if (amount.Value < 1.0M)
+                                                return (txResult, "You must mint at least 1 token.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
+                                            break;
+                                        }
+
+                                    case "TokenPause()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var pause = jobj["Pause"]?.ToObject<bool?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if(txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if(scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if(scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
+                                            break;
+                                        }
+
+                                    case "TokenContractOwnerChange()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            break;
+                                        }
+
+                                    case "TokenBanAddress()" :
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var banAddress = jobj["BanAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
+                                            break;
+                                        }
+
+                                    case "TokenTransfer()" :
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+
+                                            if(amount == null || toAddress == null || fromAddress == null)
+                                                return (txResult, $"TX Data was missing items.");
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if(tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if(tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if(tokenDetails.AddressBlackList?.Count > 0)
+                                            {
+                                                if(tokenDetails.AddressBlackList.Exists(x => x == txRequest.FromAddress))
+                                                    return (txResult, "This address has been blacklisted and may no longer perform transfers.");
+                                            }
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if(tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if(tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if(tokenAccount.Balance < amount.Value)
+                                                return (txResult, "Insufficient Balance.");
+
+                                            var decimalsUsed = BitConverter.GetBytes(decimal.GetBits(amount.Value)[3])[2];
+
+                                            if(decimalsUsed > tokenDetails.DecimalPlaces)
+                                                return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
+
+                                            break;
+                                        }
+
+                                    case "TokenBurn()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+
+                                            if (amount == null ||fromAddress == null)
+                                                return (txResult, $"TX Data was missing items.");
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if (tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if (tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if (tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if (tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if (!scStateTreiRec.TokenDetails.TokenBurnable)
+                                                return (txResult, "Burning not enabled on this contract");
+
+                                            if (tokenAccount.Balance < amount.Value)
+                                                return (txResult, "Insufficient Balance.");
+
+                                            var decimalsUsed = BitConverter.GetBytes(decimal.GetBits(amount.Value)[3])[2];
+
+                                            if (decimalsUsed > tokenDetails.DecimalPlaces)
+                                                return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
+                                            break;
+                                        }
+
+                                    case "TokenVoteTopicCreate()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (!scStateTreiRec.TokenDetails.TokenVoting)
+                                                return (txResult, "Voting not enabled on this contract");
+
+                                            break;
+                                        }
+
+                                    case "TokenVoteTopicCast()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                                            var voteType = jobj["VoteType"]?.ToObject<VoteType?>();
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if (tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if (tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (tokenDetails.AddressBlackList?.Count > 0)
+                                            {
+                                                if (tokenDetails.AddressBlackList.Exists(x => x == txRequest.FromAddress))
+                                                    return (txResult, "This address has been blacklisted and may no longer perform transfers.");
+                                            }
+
+                                            var topic = tokenDetails.TokenTopicList?.Where(x => x.TopicUID == topicUID).FirstOrDefault();
+
+                                            if (topic == null)
+                                                return (txResult, "Topic was not found.");
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if (tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if (tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if (tokenAccount.Balance < topic.MinimumVoteRequirement)
+                                                return (txResult, "Insufficient Balance to cast a vote.");
+
                                             break;
                                         }
 
@@ -231,6 +574,9 @@ namespace ReserveBlockCore.Services
                                                 
                                                 if(scStateTreiRec.NextOwner != null)
                                                     return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+
+                                                if(scStateTreiRec.IsToken != null && scStateTreiRec.IsToken.Value == true)
+                                                    return (txResult, "You are attempting to transfer a Token Smart contract, which is not allowed.");
                                             }
                                             else
                                             {
@@ -255,6 +601,8 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     return (txResult, "You are attempting to burn a Smart contract you don't own.");
                                                 }
+                                                if (scStateTreiRec.IsToken != null && scStateTreiRec.IsToken.Value == true)
+                                                    return (txResult, "You are attempting to burn a Token Smart contract, which is not allowed.");
                                             }
                                             else
                                             {
@@ -364,10 +712,6 @@ namespace ReserveBlockCore.Services
 
                         if(function == "Sale_Cancel()")
                         {
-                            //REMOVE AFTER LOCK!
-                            if (Globals.LastBlock.Height < Globals.BlockLock)
-                                return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
 
@@ -416,6 +760,9 @@ namespace ReserveBlockCore.Services
 
                             if (scStateTreiRec.NextOwner == null)
                                 return (txResult, "You are attempting to Cancel a Smart contract sale that has no next owner assigned to it.");
+                            if (scStateTreiRec.IsToken == true)
+
+                                return (txResult, "You are attempting to sell a Token Smart contract, which is not allowed.");
 
                             if (scStateTreiRec.PurchaseKeys != null)
                             {
@@ -426,13 +773,6 @@ namespace ReserveBlockCore.Services
 
                         if (function == "Sale_Start()" || function == "M_Sale_Start()")
                         {
-                            if(function == "M_Sale_Start()")
-                            {
-                                //REMOVE AFTER LOCK!
-                                if (Globals.LastBlock.Height < Globals.BlockLock)
-                                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-                            }
-
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
@@ -493,8 +833,11 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner != null)
                                         return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
-                                    
-                                    if(scStateTreiRec.PurchaseKeys != null)
+
+                                    if (scStateTreiRec.IsToken == true)
+                                        return (txResult, "You are attempting to sell a Token Smart contract, which is not allowed.");
+
+                                    if (scStateTreiRec.PurchaseKeys != null)
                                     {
                                         if(scStateTreiRec.PurchaseKeys.Contains(keySign))
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
@@ -570,6 +913,9 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner == null)
                                         return (txResult, "There is no next owner specified for this NFT.");
+
+                                    if (scStateTreiRec.IsToken == true)
+                                        return (txResult, "You are attempting to sell/buy a Token Smart contract, which is not allowed.");
 
                                     if (scStateTreiRec.PurchaseKeys != null)
                                     {
@@ -1005,7 +1351,7 @@ namespace ReserveBlockCore.Services
                                     if(voteExixt)
                                         return (txResult, "You have already voted on this topic and may not do so again.");
 
-                                    if(Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                    if(Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                     {
                                         var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
                                         if (stAcct != null)
@@ -1058,8 +1404,7 @@ namespace ReserveBlockCore.Services
                                 var function = (string?)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
-                                    //REMOVE AFTER LOCK!
-                                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                                    if (Globals.LastBlock.Height < Globals.TXHeightRule3)
                                     {
                                         if (txRequest.Amount < Globals.DecShopRequiredRBX)
                                             return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to delete a Auction House.");
@@ -1070,7 +1415,6 @@ namespace ReserveBlockCore.Services
                                             return (txResult, $"There must be at least {Globals.DecShopDeleteRequiredRBX} RBX to delete a Auction House.");
                                     }
                                     
-
                                     string dsUID = jobj["UniqueId"].ToObject<string?>();
                                     if (!string.IsNullOrEmpty(dsUID))
                                     {
@@ -1161,10 +1505,6 @@ namespace ReserveBlockCore.Services
                 }
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
-                    //REMOVE AFTER LOCK!
-                    if (Globals.LastBlock.Height < Globals.BlockLock)
-                        return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                     var txData = txRequest.Data;
                     if (txData != null)
                     {
@@ -1267,7 +1607,7 @@ namespace ReserveBlockCore.Services
                                             if (rTx.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
 
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                             {
                                                 if (rTx.ConfirmTimestamp <= currentTime)
                                                     return (txResult, "This TX has already passed and can no longer be called back.");
@@ -1286,7 +1626,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             var currentTime = TimeUtil.GetTime(-600);
 
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                             {
                                                 if (currentTime > sigTime)
                                                 return (txResult, "Recover request has expired.");
@@ -1322,10 +1662,6 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
             {
-                //REMOVE AFTER LOCK!
-                if (Globals.LastBlock.Height < Globals.BlockLock)
-                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                 if (txRequest.TransactionType != TransactionType.TX && txRequest.TransactionType != TransactionType.RESERVE && txRequest.TransactionType != TransactionType.NFT_TX)
                     return (txResult, "Invalid Transaction Type was selected.");
 
@@ -1336,7 +1672,7 @@ namespace ReserveBlockCore.Services
                 if(txRequest.UnlockTime == null)
                     return (txResult, "There must be an unlock time for this transaction");
 
-                if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                 {
                     var validUnlockTime = TimeUtil.GetReserveTime(-3);
 

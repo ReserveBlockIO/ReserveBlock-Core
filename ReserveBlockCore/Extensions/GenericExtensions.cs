@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
@@ -48,6 +49,13 @@ namespace ReserveBlockCore.Extensions
             return byteArray;
         }
 
+        public static void AddRange<T>(this ConcurrentBag<T> @this, IEnumerable<T> toAdd)
+        {
+            foreach (var element in toAdd)
+            {
+                @this.Add(element);
+            }
+        }
         public static string ToHash(this string source)
         {
             if (!string.IsNullOrEmpty(source))

@@ -5,6 +5,7 @@ using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -47,6 +48,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
         public static ConcurrentDictionary<string, string> SeedDict = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<string, TokenDetails> Tokens = new ConcurrentDictionary<string, TokenDetails>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();
@@ -60,6 +62,8 @@ namespace ReserveBlockCore
         public static long BlockTimeDiff = 0;
         public static Block? LastWonBlock = null;
         public static Process GUIProcess;
+        public static bool IsFork = false;
+        public static Blockchain Blockchain { get; set; }
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
@@ -82,8 +86,10 @@ namespace ReserveBlockCore
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
         public static long TXHeightRule2 = 847847; //around April 7, 2023 at 18:30 UTC
+        public static long TXHeightRule3 = 1079488; //around June 13th, 2023 at 19:30 UTC
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
+        public static SemaphoreSlim BlocksDownloadV2Slim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
         public static int ChainCheckPointInterval = 0;
         public static int ChainCheckPointRetain = 0;
@@ -98,6 +104,7 @@ namespace ReserveBlockCore
         public static int MinorVer = 1;
         public static int RevisionVer = 0;
         public static int BuildVer = 0;
+        public static int SCVersion = 1;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;
@@ -118,6 +125,7 @@ namespace ReserveBlockCore
         public static decimal StartMemory = 0;
         public static decimal CurrentMemory = 0;
         public static decimal ProjectedMemory = 0;
+        public static long SystemMemory = 1;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
@@ -180,6 +188,7 @@ namespace ReserveBlockCore
         public static bool STUNServerRunning = false;
         public static bool LogMemory = false;
         public static bool BlockSeedCalls = false;
+        public static bool UseV2BlockDownload = false;
         
         public static CancellationToken CancelledToken;
 

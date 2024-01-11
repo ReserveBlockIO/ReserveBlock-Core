@@ -49,12 +49,17 @@ namespace ReserveBlockCore.Services
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Item1);
                 var scBase64 = bytes.ToCompress().ToBase64();
+                string function = scData.Item3 ? "TokenDeploy()" : "Mint()";
                 var newSCInfo = new[]
                 {
-                    new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
+                    new { Function = function, ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);
+            }
+            else
+            {
+                return null;
             }
 
             scTx = new Transaction

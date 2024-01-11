@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Controllers
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = ip,
-                Port = Globals.Port + 20000,
+                Port = port != 0 ? port : Globals.Port + 20000 + 1,
                 Name = name,
                 BeaconUID = bUID
             };
@@ -54,7 +54,7 @@ namespace ReserveBlockCore.Controllers
             {
                 IPAddress = ip,
                 Name = name,
-                Port = port != 0 ? port : Globals.Port + 20000,
+                Port = port != 0 ? port : Globals.Port + 20000 + 1,
                 BeaconUID = bUID,
                 DefaultBeacon = false,
                 AutoDeleteAfterDownload = autoDelete,
@@ -119,7 +119,7 @@ namespace ReserveBlockCore.Controllers
             Beacons beacon = new Beacons {
                 IPAddress = ip,
                 Name = name,
-                Port = Globals.Port + 20000,
+                Port = port == 0 ? Globals.Port + 20000 + 1 : port,
                 BeaconUID = bUID,
                 DefaultBeacon = false,
                 AutoDeleteAfterDownload = false,

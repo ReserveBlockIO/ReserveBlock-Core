@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Models.SmartContracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,6 +77,10 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<TaskNumberAnswerV2>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskQuestion>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskWinner>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Token>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TokenAccount>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TokenDetails>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TokenFeature>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TopicTrei>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Transaction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Validators>>();

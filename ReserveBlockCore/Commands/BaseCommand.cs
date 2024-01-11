@@ -32,6 +32,11 @@ namespace ReserveBlockCore.Commands
                 case "/debug":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
+                case "/chain":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.PrintChainInfo();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/printkeys":
                     BaseCommandServices.PrintKeys();
                     break;
@@ -161,6 +166,12 @@ namespace ReserveBlockCore.Commands
                 case "/unbanpeer":
                     Globals.StopConsoleOutput = true;
                     BaseCommandServices.UnbanPeer();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/unbanall":
+                    Globals.StopConsoleOutput = true;
+                    var banResult = await Peers.UnbanAllPeers(true);
+                    AnsiConsole.MarkupLine("Number of peers unbanned: [green]{0}[/]", banResult);
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/creatednr":
