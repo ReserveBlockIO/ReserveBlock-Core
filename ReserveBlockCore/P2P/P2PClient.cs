@@ -183,7 +183,15 @@ namespace ReserveBlockCore.P2P
 
                 await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
                 if (hubConnection.ConnectionId == null)
+                {
+                    Globals.SkipPeers.TryAdd(peer.PeerIP, 0);
+                    peer.FailCount += 1;
+                    if (peer.FailCount > 4)
+                        peer.IsOutgoing = false;
+                    Peers.GetAll()?.UpdateSafe(peer);
                     return;
+                }
+                    
 
                 var node = new NodeInfo
                 {
@@ -230,7 +238,14 @@ namespace ReserveBlockCore.P2P
                     await node.Connection.DisposeAsync();
                 }                                
             }
-            catch { }
+            catch 
+            {
+                Globals.SkipPeers.TryAdd(peer.PeerIP, 0);
+                peer.FailCount += 1;
+                if (peer.FailCount > 4)
+                    peer.IsOutgoing = false;
+                Peers.GetAll()?.UpdateSafe(peer);
+            }
             finally
             {
                 ConnectLock.TryRemove(url, out _);
@@ -415,11 +430,13 @@ namespace ReserveBlockCore.P2P
 
             var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
+                .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
             if (Globals.IsTestNet)
                 SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
+                .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
             Random rnd = new Random();

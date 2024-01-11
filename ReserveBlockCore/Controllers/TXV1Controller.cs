@@ -413,7 +413,7 @@ namespace ReserveBlockCore.Controllers
                         bool resultFound = false;
 
                         var integerList = startAtBeginning ? Enumerable.Range(startAtBlock, height + 1) : Enumerable.Range(startAtBlock, height + 1).Reverse();
-                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount == 4 ? 2 : 4 }, (blockHeight, loopState) =>
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount <= 4 ? 2 : 4 }, (blockHeight, loopState) =>
                         {
                             var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
                             if (block != null)

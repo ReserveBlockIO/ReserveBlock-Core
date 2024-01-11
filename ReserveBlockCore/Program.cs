@@ -207,6 +207,10 @@ namespace ReserveBlockCore
                         var apiToken = apiTokens[1];
                         Globals.APIToken = apiToken.ToSecureString();
                     }
+                    if(argC.Contains("blockseedcalls"))
+                    {
+                        Globals.BlockSeedCalls = true;
+                    }
                     if(argC.Contains("keslog"))
                     {
                         keslog = true;
@@ -573,6 +577,7 @@ namespace ReserveBlockCore
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
+            _ = SeedNodeService.Start();
             _ = SeedNodeService.CallToSeed();
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();

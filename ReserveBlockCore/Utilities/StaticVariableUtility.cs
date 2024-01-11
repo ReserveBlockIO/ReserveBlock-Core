@@ -29,7 +29,8 @@ namespace ReserveBlockCore.Utilities
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
-            var nodes = Globals.Nodes;            
+            var nodes = Globals.Nodes;
+            var seeds = Globals.SeedDict;
             var lastBlock = Globals.LastBlock;
             var adjudicator = (Globals.AdjudicateAccount != null).ToString();
             var adjudicatorConnection = Globals.AdjNodes.Values.Any(x => x.IsConnected).ToString();
@@ -244,6 +245,14 @@ namespace ReserveBlockCore.Utilities
                     strBld.AppendLine("Node: " + ip + " - Last Checked: " + lastcheck + " - Height: " + height + " - Latency: " + latency);
                     strBld.AppendLine("---------------------------------------------------------------------");
                 });
+            }
+            if(seeds.Count() > 0)
+            {
+                foreach (var seed in seeds.ToList())
+                {
+                    strBld.AppendLine("Seed URL: " + seed.Key + " - Status: " + seed.Value);
+                    strBld.AppendLine("---------------------------------------------------------------------");
+                }
             }
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(reportedIPText);

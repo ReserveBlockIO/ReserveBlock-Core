@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using ImageMagick;
+using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
@@ -46,6 +47,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
+        public static ConcurrentDictionary<string, string> SeedDict = new ConcurrentDictionary<string, string>();
         public static ConcurrentDictionary<string, TokenDetails> Tokens = new ConcurrentDictionary<string, TokenDetails>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
@@ -99,8 +101,8 @@ namespace ReserveBlockCore
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 4;
-        public static int MinorVer = 0;
-        public static int RevisionVer = 1;
+        public static int MinorVer = 1;
+        public static int RevisionVer = 0;
         public static int BuildVer = 0;
         public static int SCVersion = 1;
         public static int ValidatorIssueCount = 0;
@@ -185,6 +187,7 @@ namespace ReserveBlockCore
         public static bool ShowSTUNMessagesInConsole = false;
         public static bool STUNServerRunning = false;
         public static bool LogMemory = false;
+        public static bool BlockSeedCalls = false;
         public static bool UseV2BlockDownload = false;
         
         public static CancellationToken CancelledToken;
@@ -216,7 +219,8 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 14;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, Peers> BannedIPs;        
+        public static ConcurrentDictionary<string, Peers> BannedIPs;
+        public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
 
         #endregion
 

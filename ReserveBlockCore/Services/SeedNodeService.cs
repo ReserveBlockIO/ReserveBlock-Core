@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ImageMagick;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
@@ -11,6 +12,29 @@ namespace ReserveBlockCore.Services
     public class SeedNodeService
     {
         public static List<SeedNode> SeedNodeList = new List<SeedNode>();
+        static SemaphoreSlim SeedNodeServiceLock = new SemaphoreSlim(1, 1);
+        public static async Task Start()
+        {
+            if(!Globals.BlockSeedCalls)
+            {
+                while (true)
+                {
+                    var delay = Task.Delay(new TimeSpan(0, 15, 0));
+
+                    await SeedNodeServiceLock.WaitAsync();
+                    try
+                    {
+                        await CallToSeed();
+                    }
+                    finally
+                    {
+                        SeedNodeServiceLock.Release();
+                    }
+
+                    await delay;
+                }
+            }
+        }
                         
         public static async Task<string> PingSeedNode()
         {
@@ -75,41 +99,51 @@ namespace ReserveBlockCore.Services
                 {
                     using (var client = Globals.HttpClientFactory.CreateClient())
                     {
-                        string endpoint = url + "/api/V1/GetNodes";
+                        string endpoint = url + "/api/V1/GetPeers";
                         using (var Response = await client.GetAsync(endpoint))
                         {
                             if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
                                 string data = await Response.Content.ReadAsStringAsync();
-                                var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
-                                var peerCount = peers.Count() - 1;
-                                for (var i = 0; i <= peerCount; i++)
+                                var response = JsonConvert.DeserializeObject<SeedResponse>(data); 
+                                if(response != null)
                                 {
-                                    var peer = peers[i];
-                                    if (peer != "No Nodes")
+                                    if(response.Success)
                                     {
-                                        Peers nPeer = new Peers
+                                        var peers = response.Nodes;
+                                        if(peers.Any())
                                         {
-                                            IsIncoming = false,
-                                            IsOutgoing = true,
-                                            PeerIP = peer,
-                                            FailCount = 0
-                                        };
+                                            foreach (var peer in peers)
+                                            {
+                                                if (peer != "No Nodes")
+                                                {
+                                                    Peers nPeer = new Peers
+                                                    {
+                                                        IsIncoming = false,
+                                                        IsOutgoing = true,
+                                                        PeerIP = peer,
+                                                        FailCount = 0
+                                                    };
 
-                                        var dbPeers = Peers.GetAll();
-                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
-                                        if (peerExist == null)
-                                        {
-                                            dbPeers.InsertSafe(nPeer);
-                                        }
-                                        else
-                                        {
-                                            peerExist.FailCount = 0;
-                                            dbPeers.UpdateSafe(peerExist);
+                                                    var dbPeers = Peers.GetAll();
+                                                    var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
+                                                    if (peerExist == null)
+                                                    {
+                                                        dbPeers.InsertSafe(nPeer);
+                                                    }
+                                                    else
+                                                    {
+                                                        peerExist.FailCount = 0;
+                                                        dbPeers.UpdateSafe(peerExist);
+                                                    }
+                                                }
+
+                                            }
                                         }
                                     }
-
                                 }
+                                
+                               
                             }
                             else
                             {
@@ -180,42 +214,43 @@ namespace ReserveBlockCore.Services
         
         internal static async Task CallToSeed()
         {
-            if (!Globals.RefuseToCallSeed)
+            if (!Globals.BlockSeedCalls)
             {
                 if (Globals.IsTestNet == false)
                 {
                     try
                     {
-                        var settingsDB = Settings.GetSettingsDb();
-                        var settings = Settings.GetSettings();
-                        if(settings?.CalledToSeed == false)
+                        var seedNodes = SeedNodes();
+                        int count = 0;
+                        foreach (var seedNode in seedNodes)
                         {
-                            var seedNodes = SeedNodes();
-                            int count = 0;
-                            foreach (var seedNode in seedNodes)
+                            using (var client = Globals.HttpClientFactory.CreateClient())
                             {
-                                using (var client = Globals.HttpClientFactory.CreateClient())
+                                string endpoint = string.IsNullOrEmpty(Globals.ValidatorAddress) ? seedNode.NodeUrl + "/api/V1/GetCallToNode" :
+                                    seedNode.NodeUrl + "/api/V1/GetCallToNode/true";
+                                using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
                                 {
-                                    string endpoint = seedNode.NodeUrl + "/api/V1/GetCallToNode";
-                                    using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
+                                    if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                     {
-                                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                                        if(Globals.SeedDict.TryGetValue(seedNode.NodeUrl, out string value))
                                         {
-                                            count += 1;
+                                            Globals.SeedDict[seedNode.NodeUrl] = "Online";
+                                        }
+                                        else
+                                        {
+                                            Globals.SeedDict.TryAdd(seedNode.NodeUrl, "Online");
                                         }
                                     }
-
-                                }
-                            }
-
-                            if (count == seedNodes.Count())
-                            {
-                                if (settingsDB != null)
-                                {
-                                    if (settings != null)
+                                    else
                                     {
-                                        settings.CalledToSeed = true;
-                                        settingsDB.UpdateSafe(settings);
+                                        if (Globals.SeedDict.TryGetValue(seedNode.NodeUrl, out string value))
+                                        {
+                                            Globals.SeedDict[seedNode.NodeUrl] = "Offline";
+                                        }
+                                        else
+                                        {
+                                            Globals.SeedDict.TryAdd(seedNode.NodeUrl, "Offline");
+                                        }
                                     }
                                 }
 
@@ -230,7 +265,7 @@ namespace ReserveBlockCore.Services
         public static void SeedBench()
         {
             var benches = AdjBench.GetBench().FindAll().ToList();
-            if(benches?.Count() <= 12)
+            if(benches?.Count() <= 99)
             {
                 if (!Globals.IsTestNet)
                 {
@@ -297,11 +332,12 @@ namespace ReserveBlockCore.Services
                 {
                     NodeUrl = "https://seed2.rbx.network"
                 });
+                seedNodes.Add(new SeedNode
+                {
+                    NodeUrl = "https://seed3.rbx.network"
+                });
 
-                //seedNodes.Add(new SeedNode
-                //{
-                //    NodeUrl = "https://marigold.rbx.network"
-                //});
+
                 //seedNodes.Add(new SeedNode
                 //{
                 //    NodeUrl = "https://daisy.rbx.network"
@@ -326,5 +362,11 @@ namespace ReserveBlockCore.Services
             return seedNodes;
         }
 
+        private class SeedResponse
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; }
+            public List<string> Nodes { get; set; }
+        }
     }
 }

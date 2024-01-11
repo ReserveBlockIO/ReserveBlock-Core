@@ -45,6 +45,7 @@ namespace ReserveBlockCore.Config
 		public bool SelfSTUNServer { get; set; }
         public int SelfSTUNPort { get; set; }
 		public bool LogMemory { get; set; }
+		public bool BlockSeedCalls { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -102,6 +103,7 @@ namespace ReserveBlockCore.Config
                 config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
                 config.SelfSTUNPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
                 config.LogMemory = dict.ContainsKey("LogMemory") ? Convert.ToBoolean(dict["LogMemory"]) : false;
+                config.BlockSeedCalls = dict.ContainsKey("BlockSeedCalls") ? Convert.ToBoolean(dict["BlockSeedCalls"]) : false;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -181,6 +183,7 @@ namespace ReserveBlockCore.Config
             Globals.SelfSTUNPort = config.SelfSTUNPort;
 			Globals.SelfSTUNServer = config.SelfSTUNServer;
 			Globals.LogMemory = config.LogMemory;
+			Globals.BlockSeedCalls = config.BlockSeedCalls;
 			
 			if (config.STUNServers?.Count() > 0)
 			{
