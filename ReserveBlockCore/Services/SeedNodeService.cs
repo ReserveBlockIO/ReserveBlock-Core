@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Services
                         {
                             using (var client = Globals.HttpClientFactory.CreateClient())
                             {
-                                string endpoint = !string.IsNullOrEmpty(Globals.ValidatorAddress) ? seedNode.NodeUrl + "/api/V1/GetCallToNode" :
+                                string endpoint = string.IsNullOrEmpty(Globals.ValidatorAddress) ? seedNode.NodeUrl + "/api/V1/GetCallToNode" :
                                     seedNode.NodeUrl + "/api/V1/GetCallToNode/true";
                                 using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
                                 {
