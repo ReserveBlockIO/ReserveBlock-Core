@@ -1,4 +1,7 @@
-﻿namespace ReserveBlockCore.Models
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Client;
+
+namespace ReserveBlockCore.Models
 {
     public class NetworkValidator
     {
@@ -9,5 +12,6 @@
         public string Signature { get; set; }
         public long BlockStart { get; set; } //make them wait 144 blocks = 1 hour
         public long LastBlockProof { get; set; }
+        public HubCallerContext? Context { get; set; }
     }
 }

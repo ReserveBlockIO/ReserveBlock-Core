@@ -225,6 +225,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, Peers> BannedIPs;
         public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, NetworkValidator> NetworkValidators = new ConcurrentDictionary<string, NetworkValidator>();
+        public static ConcurrentDictionary<string, NodeInfo> ValidatorNodes = new ConcurrentDictionary<string, NodeInfo>();
         public static ConcurrentDictionary<long, Proof> WinningProofs = new ConcurrentDictionary<long, Proof>();
 
         #endregion

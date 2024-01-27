@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.P2P
 {
-    public class P2PValidator : P2PServer
+    public class P2PValidatorServer : P2PServer
     {
         #region On Connected 
         public override async Task OnConnectedAsync()
@@ -83,7 +84,7 @@ namespace ReserveBlockCore.P2P
                 var verifySig = SignatureService.VerifySignature(address, SignedMessage, signature);
                 if (!verifySig)
                 {
-                    _ = EndOnConnect(peerIP,
+                    EndOnConnect(peerIP,
                         "Connected, but your address signature failed to verify. You are being disconnected.",
                         "Connected, but your address signature failed to verify with ADJ: " + address);
                     return;
@@ -97,10 +98,13 @@ namespace ReserveBlockCore.P2P
                     LastBlockProof = 0,
                     PublicKey = publicKey,
                     Signature = signature,
-                    UniqueName = uName
+                    UniqueName = uName,
+                    Context = Context
                 };
 
                 Globals.NetworkValidators.TryAdd(address, netVal);
+
+                _ = Clients.All.SendAsync("GetAdjMessage", "1", peerIP, new CancellationTokenSource(6000).Token);
 
             }
             catch (Exception ex)
