@@ -20,6 +20,7 @@ namespace ReserveBlockCore.Models
         public int FailCount { get; set; }
         public bool IsBanned { get; set; }
         public bool IsPermaBanned { get; set; }
+        public bool IsValidator { get; set; }
         public int BanCount { get; set; }
         public DateTime? InitialBanDate { get; set; }
         public DateTime? LastBanDate { get; set; }

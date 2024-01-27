@@ -102,6 +102,7 @@ namespace ReserveBlockCore
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
+        public static int APIPortSSL = 7777;
         public static int MajorVer = 5;
         public static int MinorVer = 0;
         public static int RevisionVer = 0;
@@ -225,8 +226,10 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, Peers> BannedIPs;
         public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, NetworkValidator> NetworkValidators = new ConcurrentDictionary<string, NetworkValidator>();
+        public static ConcurrentDictionary<string, Peers> ValidatorPool = new ConcurrentDictionary<string, Peers>();
         public static ConcurrentDictionary<string, NodeInfo> ValidatorNodes = new ConcurrentDictionary<string, NodeInfo>();
         public static ConcurrentDictionary<long, Proof> WinningProofs = new ConcurrentDictionary<long, Proof>();
+        public static ConcurrentDictionary<long, List<Proof>> BackupProofs = new ConcurrentDictionary<long, List<Proof>>();
 
         #endregion
 

@@ -159,6 +159,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
+
         public static async Task GetSeedNodePeersTestnet()
         {
 
@@ -171,28 +172,21 @@ namespace ReserveBlockCore.Services
                     IsIncoming = false,
                     IsOutgoing = true,
                     PeerIP = "162.248.14.123",
-                    FailCount = 0
+                    FailCount = 0,
+                    IsValidator = true
                 };
 
                 Peers n2Peer = new Peers
                 {
                     IsIncoming = false,
                     IsOutgoing = true,
-                    PeerIP = "164.92.105.169",
-                    FailCount = 0
-                };
-
-                Peers n3Peer = new Peers
-                {
-                    IsIncoming = false,
-                    IsOutgoing = true,
-                    PeerIP = "137.184.158.154",
-                    FailCount = 0
+                    PeerIP = "144.126.156.102",
+                    FailCount = 0,
+                    IsValidator = true
                 };
 
                 peerList.Add(nPeer);
                 peerList.Add(n2Peer);
-                peerList.Add(n3Peer);
 
                 var dbPeers = Peers.GetAll();
 
@@ -206,6 +200,7 @@ namespace ReserveBlockCore.Services
                     else
                     {
                         peerExist.FailCount = 0;
+                        peerExist.IsValidator = true;
                         dbPeers.UpdateSafe(peerExist);
                     }
                 }

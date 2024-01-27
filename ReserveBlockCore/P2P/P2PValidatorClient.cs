@@ -33,7 +33,7 @@ namespace ReserveBlockCore.P2P
         #region Remove Node from Validator Nodes
         public static async Task RemoveNode(NodeInfo node)
         {
-            if(Globals.ValidatorAddress != null && Globals.ValidatorNodes.TryRemove(node.NodeIP, out _) && node.Connection != null)
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.ValidatorNodes.TryRemove(node.NodeIP, out _) && node.Connection != null)
                 await node.Connection.DisposeAsync();            
         }
 
@@ -190,7 +190,6 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
                     
-
                 var node = new NodeInfo
                 {
                     Connection = hubConnection,
@@ -252,8 +251,8 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Connect to Peers
-        public static async Task<bool> ConnectToPeers()
+        #region Connect to Validators
+        public static async Task<bool> ConnectToValidators()
         {
             await NodeConnector.StartNodeConnecting(); //TODO: update this for validator peers!
             var peerDB = Peers.GetAll();
@@ -265,21 +264,11 @@ namespace ReserveBlockCore.P2P
                 .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
-            if (Globals.IsTestNet)
-                SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
-                .Union(Globals.BannedIPs.Keys)
-                .Union(Globals.SkipPeers.Keys)
-                .Union(Globals.ReportedIPs.Keys));
-
             Random rnd = new Random();
-            var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
+            var newPeers = peerDB.Find(x => x.IsValidator).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
                 .OrderBy(x => rnd.Next())
-                .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
-                .Where(x => !SkipIPs.Contains(x.PeerIP))
-                .ToArray()
-                .OrderBy(x => rnd.Next()))
                 .ToArray();
 
             var Diff = Globals.MaxValPeers - Globals.ValidatorNodes.Count;

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 using LiteDB;
 using System.Linq;
+using ReserveBlockCore.Beacon;
 
 namespace ReserveBlockCore.Services
 {
@@ -17,6 +18,37 @@ namespace ReserveBlockCore.Services
     {
         static SemaphoreSlim ValidatorMonitorServiceLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim ValidatorCountServiceLock = new SemaphoreSlim(1, 1);
+
+        public static async Task StartValidatorServer()
+        {
+            try
+            {
+                string url = "http://*:" + Globals.ValPort;
+
+                if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                {
+                    var builder = Host.CreateDefaultBuilder()
+                    .ConfigureWebHostDefaults(webBuilder =>
+                    {
+                        webBuilder.UseKestrel()
+                        .UseStartup<StartupP2PValidator>()
+                        .UseUrls(url)
+                        .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                        webBuilder.ConfigureKestrel(options =>
+                        {
+
+
+                        });
+                    });
+
+                    _ = builder.RunConsoleAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
         public static async void DoValidate()
         {
             try
@@ -190,8 +222,10 @@ namespace ReserveBlockCore.Services
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        if(!argsPassed)
-                            _ = StartupService.GetAdjudicatorPool();
+                        if (!argsPassed)
+                            _ = StartValidatorServer();
+
+                        //TODO: start performing some looped actions
                     }
                 }
                 else

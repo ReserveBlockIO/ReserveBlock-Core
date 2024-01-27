@@ -222,11 +222,13 @@ namespace ReserveBlockCore.Config
             if (config.TestNet == true)
             {
                 Globals.ADJPort = 13339;
+				Globals.ValPort = 13339;
                 Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;
-				Globals.AddressPrefix = 0x89; //address prefix 'x'
+                Globals.APIPortSSL = 17777;
+                Globals.AddressPrefix = 0x89; //address prefix 'x'
 				Globals.V1ValHeight = 200;
 				Globals.TXHeightRule1 = 200;
 				Globals.TXHeightRule2 = 200;

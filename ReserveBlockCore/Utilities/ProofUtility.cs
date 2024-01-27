@@ -153,6 +153,12 @@ namespace ReserveBlockCore.Utilities
                             //Closer to zero wins.
                             if (currentWinningProof.Value.VRFNumber > proof.VRFNumber)
                             {
+                                var backupProofs = Globals.BackupProofs[proof.BlockHeight];
+                                if (backupProofs != null)
+                                {
+                                    backupProofs.Add(currentWinningProof.Value);
+                                    Globals.BackupProofs[proof.BlockHeight] = backupProofs.OrderBy(x => x.VRFNumber).ToList();
+                                }
                                 //Update winning proof with new proof if the value is greater.
                                 Globals.WinningProofs[proof.BlockHeight] = proof;
                             }

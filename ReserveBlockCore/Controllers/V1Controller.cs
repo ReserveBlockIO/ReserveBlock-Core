@@ -1657,7 +1657,7 @@ namespace ReserveBlockCore.Controllers
             var url = $"http://localhost:{Globals.APIPort}/api/v1/mother";
 
             if(Globals.TestURL)
-                url = $"https://localhost:7777/api/v1/mother";
+                url = $"https://localhost:{Globals.APIPortSSL}/api/v1/mother";
 
             output = url;
 
