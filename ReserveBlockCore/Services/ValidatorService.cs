@@ -157,7 +157,7 @@ namespace ReserveBlockCore.Services
 
                     var validatorTable = Validators.Validator.GetAll();
 
-                    var validatorCount = validatorTable.FindAll().Count();
+                    var validatorCount = validatorTable.Query().Where(x => x.NodeIP != "SELF").Count();
                     if (validatorCount > 0)
                     {
                         output = "Account is already a validator";

@@ -298,8 +298,8 @@ namespace ReserveBlockCore
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
 
             Globals.BlockLock = Globals.IsTestNet ? 0 : Globals.BlockLock;
-            //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
-            //if(adjGenAccount != null)
+
+            //uncomment to create genesis block
             //await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
@@ -382,12 +382,10 @@ namespace ReserveBlockCore
                 StartupService.SetConfigValidator();
             }
 
+            //deprecate in v5.0.1 or greater
             StartupService.SetAdjudicatorAddresses();
+            //deprecate in v5.0.1 or greater
             Signer.UpdateSigningAddresses();
-
-            //check for new IPs here
-            //_ = StartupService.GetAdjudicatorPool_New();
-
 
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
             {
@@ -414,15 +412,24 @@ namespace ReserveBlockCore
             await StartupService.RunSettingChecks(skipStateSync);
 
             //This is for consensus start.
+
+            //deprecate in v5.0.1 or greater
             await StartupService.GetAdjudicatorPool();
             StartupService.DisplayValidatorAddress();
             StartupService.CheckForDuplicateBlocks();
+
+
             await StartupService.SetSelfBeacon();
 
             _ = Task.Run(LogUtility.LogLoop);
+
+            //deprecate in v5.0.1 or greater
             _ = Task.Run(P2PClient.UpdateMethodCodes);
+
             _ = Task.Run(StartupService.StartupPeers);
 
+            //This is the ADJ code and not required.
+            //deprecate in v5.0.1 or greater//////////////////////
             if (Globals.AdjudicateAccount != null)
             {
                 Globals.StopAllTimers = true;
@@ -431,7 +438,8 @@ namespace ReserveBlockCore
                 _ = StartupService.DownloadBlocksOnStart();
                 _ = Task.Run(ClientCallService.DoWorkV3);
             }
-
+            //////////////////////////////////////////////////////
+            
             await StartupService.ClearStaleMempool();
 
             StartupService.RunRules(); //rules for cleaning up wallet data.
@@ -442,12 +450,6 @@ namespace ReserveBlockCore
 
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
-
-            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
-
-            //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
@@ -574,15 +576,19 @@ namespace ReserveBlockCore
 
             await TransactionData.UpdateWalletTXTask();
 
-            _ = StartupService.ConnectToAdjudicators();
+            ////deprecate in v5.0.1 or greater
+            _ = StartupService.ConnectToAdjudicators();//MODIFY - Connect to other VALS
+
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
             _ = SeedNodeService.Start();
             _ = SeedNodeService.CallToSeed();
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
+
             _ = ValidatorService.ValidatingMonitorService();
-            _ = ValidatorService.GetActiveValidators();
+
+            _ = ValidatorService.GetActiveValidators();//MODIFY
             _ = ValidatorService.ValidatorCountRun();
             _ = DSTClient.Run();
 
@@ -624,16 +630,14 @@ namespace ReserveBlockCore
             if (Globals.SelfSTUNServer)
                 _ = Task.Run(() => { StartupService.StartDSTServer(); });//launching off the main thread.
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _ = WindowsUtilities.AdjAutoRestart();
+            //deprecate in v5.0.1 or greater
+            //if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            //    _ = WindowsUtilities.AdjAutoRestart();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _ = LinuxUtilities.AdjAutoRestart();
+            //if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            //    _ = LinuxUtilities.AdjAutoRestart();
 
-            
-            await Task.Delay(2000);
-
-            //_ = DSTServer.Run();
+            await Task.Delay(1000);
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console

@@ -96,12 +96,14 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static int NFTTimeout = 0;
         public static int Port = 3338;
+        //deprecate in v5.0.1 or greater
         public static int ADJPort = 3339;
+        public static int ValPort = 3339;
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
-        public static int MajorVer = 4;
-        public static int MinorVer = 1;
+        public static int MajorVer = 5;
+        public static int MinorVer = 0;
         public static int RevisionVer = 0;
         public static int BuildVer = 0;
         public static int SCVersion = 1;
@@ -217,10 +219,13 @@ namespace ReserveBlockCore
 
         #region P2P Client Variables
 
-        public const int MaxPeers = 14;
+        public const int MaxPeers = 10;
+        public const int MaxValPeers = 10;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, Peers> BannedIPs;
         public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
+        public static ConcurrentDictionary<string, NetworkValidator> NetworkValidators = new ConcurrentDictionary<string, NetworkValidator>();
+        public static ConcurrentDictionary<long, Proof> WinningProofs = new ConcurrentDictionary<long, Proof>();
 
         #endregion
 

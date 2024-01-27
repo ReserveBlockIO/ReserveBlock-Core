@@ -148,6 +148,12 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.SwitchBeaconState();
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/testbeacon":
+                    Globals.StopConsoleOutput = true;
+                    var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                    Console.WriteLine($"Beacon Connection Result: {beaconConnectionResult}");
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/unlock":
                     Globals.StopConsoleOutput = true;
                     BaseCommandServices.UnlockWallet();
