@@ -300,7 +300,7 @@ namespace ReserveBlockCore
             Globals.BlockLock = Globals.IsTestNet ? 0 : Globals.BlockLock;
 
             //uncomment to create genesis block
-            //await BlockchainData.InitializeChain();
+            await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
@@ -502,6 +502,7 @@ namespace ReserveBlockCore
             if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 _ = ValidatorService.StartValidatorServer();
+                _ = ValidatorService.StartupValidators();
             }
             
             Globals.StopAllTimers = true;

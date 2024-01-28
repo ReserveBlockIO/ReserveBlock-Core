@@ -49,6 +49,30 @@ namespace ReserveBlockCore.Services
                 Console.WriteLine(ex.ToString());
             }
         }
+
+        internal static async Task StartupValidators()
+        {
+            while (true)
+            {
+                if (string.IsNullOrEmpty(Globals.ValidatorAddress))
+                    return;
+
+                var startupCount = Globals.ValidatorNodes.Count / 2 + 1;
+                var delay = Globals.ValidatorNodes.Count < startupCount ? Task.Delay(1000) : Task.Delay(10000);
+                try
+                {
+                    var ConnectedCount = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).Count();
+                    if (ConnectedCount < Globals.MaxValPeers)
+                        await P2PValidatorClient.ConnectToValidators();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+
+                await delay;
+            }
+        }
         public static async void DoValidate()
         {
             try
@@ -223,7 +247,10 @@ namespace ReserveBlockCore.Services
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
                         if (!argsPassed)
+                        {
                             _ = StartValidatorServer();
+                            _ = StartupValidators();
+                        }
 
                         //TODO: start performing some looped actions
                     }
@@ -382,8 +409,6 @@ namespace ReserveBlockCore.Services
 
         public static async void StopValidating(Validators validator)
         {           
-            //Validators.Validator.GetAll().DeleteSafe(validator.Id);
-
             var accounts = AccountData.GetAccounts();
             var myAccount = accounts.FindOne(x => x.Address == validator.Address);
 
@@ -393,10 +418,9 @@ namespace ReserveBlockCore.Services
             var validators = Validators.Validator.GetAll();
             validators.Delete(validator.Id);
 
-            await P2PClient.DisconnectAdjudicators();
+            await P2PValidatorClient.DisconnectValidators();
 
-            ValidatorLogUtility.Log($"Funds have dropped below {ValidatorService.ValidatorRequiredAmount()} RBX. Removing from pool.", "ValidatorService.StopValidating()");
-
+            ValidatorLogUtility.Log($"Validating has stopped.", "ValidatorService.StopValidating()");
         }
 
         public static int ValidatorRequiredAmount()

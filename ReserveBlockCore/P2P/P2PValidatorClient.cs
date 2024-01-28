@@ -146,14 +146,27 @@ namespace ReserveBlockCore.P2P
             {
                 if (!ConnectLock.TryAdd(url, true))
                     return;
+
+                var account = AccountData.GetLocalValidator();
+                var validators = Validators.Validator.GetAll();
+                var validator = validators.FindOne(x => x.Address == account.Address);
+                if (validator == null)
+                    return;
+
+                var time = TimeUtil.GetTime().ToString();
+                var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+
+
                 var hubConnection = new HubConnectionBuilder()
                        .WithUrl(url, options =>
                        {
-                           //options.Headers.Add("address", address);
-                           //options.Headers.Add("time", time);
-                           //options.Headers.Add("uName", uName);
-                           //options.Headers.Add("signature", signature);
+                           options.Headers.Add("address", validator.Address);
+                           options.Headers.Add("time", time);
+                           options.Headers.Add("uName", validator.UniqueName);
+                           options.Headers.Add("signature", signature);
                            options.Headers.Add("walver", Globals.CLIVersion);
+                           options.Headers.Add("publicKey", account.PublicKey);
+                           options.Headers.Add("blockStart", Globals.LastBlock.Height < 144 ? "0" : (Globals.LastBlock.Height + 144).ToString());
                        })                       
                        .Build();
 
@@ -277,13 +290,32 @@ namespace ReserveBlockCore.P2P
                 _ = Connect(peer);
             });
 
-            return Globals.MaxPeers != 0;         
+            return Globals.MaxValPeers != 0;         
         }
 
         public static async Task ManualConnectToVal(Peers peer)
         {
             _ = Connect(peer);
         }
+
+        #endregion
+
+        #region Disconnect Validators
+        public static async Task DisconnectValidators()
+        {
+            try
+            {
+                Globals.ValidatorAddress = "";
+                foreach (var node in Globals.ValidatorNodes.Values)
+                    if (node.Connection != null)
+                        await node.Connection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.ToString(), "DisconnectAdjudicator()");
+            }
+        }
+
 
         #endregion
 

@@ -6,14 +6,15 @@
         {
             
             Dictionary<string, decimal> balanceSheet = new Dictionary<string, decimal> {
-                                {"Insert Address", 1.0M },// Address, Amount in Decimal
+                    {"Insert Address", 1.0M },// Address, Amount in Decimal
                                 
             };
 
             if(Globals.IsTestNet == true)
             {
                 balanceSheet = new Dictionary<string, decimal> {
-                                {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 25_000_000M },
+                    {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 25_000_000M},
+                    {"xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 100_000M }
                 }; // Address, Amount in Decimal
             }
 
