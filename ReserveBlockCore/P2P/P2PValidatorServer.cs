@@ -115,6 +115,8 @@ namespace ReserveBlockCore.P2P
 
                 Globals.NetworkValidators.TryAdd(address, netVal);
 
+
+                _ = Peers.UpdatePeerAsVal(peerIP);
                 _ = Clients.Caller.SendAsync("GetValMessage", "1", peerIP, new CancellationTokenSource(2000).Token);
                 _ = Clients.All.SendAsync("GetValMessage", "2", JsonConvert.SerializeObject(netVal), new CancellationTokenSource(6000).Token);
 

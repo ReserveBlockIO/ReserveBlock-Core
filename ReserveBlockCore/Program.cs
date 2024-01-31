@@ -830,63 +830,7 @@ namespace ReserveBlockCore
 
         #endregion
 
-        private static async Task BlockHeightCheckLoopForVals()
-        {
-            bool dupMessageShown = false;
-
-            while (true)
-            {
-                try
-                {
-                    while (!Globals.ValidatorNodes.Any())
-                        await Task.Delay(20);
-
-                    await P2PValidatorClient.UpdateNodeHeights();
-
-                    var maxHeight = Globals.ValidatorNodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
-                    if (maxHeight > Globals.LastBlock.Height)
-                    {
-                        P2PValidatorClient.UpdateMaxHeight(maxHeight);
-                        //TODO: Update this method for getting block sync
-                        _ = BlockDownloadService.GetAllBlocks();
-                    }
-                    else
-                        P2PClient.UpdateMaxHeight(maxHeight);
-
-                    var MaxHeight = P2PClient.MaxHeight();
-                    foreach (var node in Globals.Nodes.Values)
-                    {
-                        if (node.NodeHeight < MaxHeight - 3)
-                            await P2PClient.RemoveNode(node);
-                    }
-
-                    DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
-                    if (Globals.DuplicateAdjAddr)
-                    {
-                        if (!dupMessageShown)
-                            StartupService.MainMenu();
-                        dupMessageShown = true;
-                    }
-
-                    if (Globals.DuplicateAdjIP)
-                    {
-                        if (!dupMessageShown)
-                            StartupService.MainMenu();
-                        dupMessageShown = true;
-                    }
-
-                    if (!Globals.DuplicateAdjIP && !Globals.DuplicateAdjAddr)
-                        dupMessageShown = false;
-
-                    var Now = TimeUtil.GetTime();
-                    foreach (var sig in Globals.Signatures.Where(x => Now - x.Value > 300))
-                        Globals.Signatures.TryRemove(sig.Key, out _);
-                }
-                catch { }
-
-                await Task.Delay(10000);
-            }
-        }
+        
 
         #region DB Commits
         private static async void dbCommitCheckTimer_Elapsed(object sender)

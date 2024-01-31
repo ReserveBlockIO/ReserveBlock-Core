@@ -136,7 +136,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Hubconnection Connect Methods 1-6
+        #region Connect
 
         private static ConcurrentDictionary<string, bool> ConnectLock = new ConcurrentDictionary<string, bool>();
         private static async Task Connect(Peers peer)

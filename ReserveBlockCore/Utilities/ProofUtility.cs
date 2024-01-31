@@ -7,9 +7,13 @@ namespace ReserveBlockCore.Utilities
 {
     public class ProofUtility
     {
-        public static async Task<List<Proof>> GenerateProofs(string address, string publicKey, long blockHeight)
+        public static async Task<List<Proof>> GenerateProofs(string address, string publicKey, long blockHeight, bool firstProof)
         {
             List<Proof> proofs = new List<Proof>();
+            if(firstProof)
+            {
+                blockHeight = blockHeight + 144;//if first proof of the day then push it out.
+            }
             var finalHeight = blockHeight + 144;
             for(long h = blockHeight; h <= finalHeight; h++)
             {
@@ -27,6 +31,8 @@ namespace ReserveBlockCore.Utilities
                     proofs.Add(_proof);
                 }
             }
+
+            Globals.LastProofBlockheight = finalHeight;
 
             return proofs;
         }

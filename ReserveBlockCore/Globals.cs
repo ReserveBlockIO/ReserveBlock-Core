@@ -222,6 +222,7 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 10;
         public const int MaxValPeers = 20;
+        public static long LastProofBlockheight = 0;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, Peers> BannedIPs;
         public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
@@ -232,6 +233,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<long, List<string>> WinningBlockVotes = new ConcurrentDictionary<long, List<string>>();
         public static ConcurrentDictionary<long, Block> NetworkBlockQueue = new ConcurrentDictionary<long, Block>();
         public static ConcurrentDictionary<long, List<Proof>> BackupProofs = new ConcurrentDictionary<long, List<Proof>>();
+        public static ConcurrentDictionary<string, DateTime?> ProofsBroadcasted = new ConcurrentDictionary<string, DateTime?>();
 
         #endregion
 

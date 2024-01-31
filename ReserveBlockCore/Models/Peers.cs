@@ -88,6 +88,17 @@ namespace ReserveBlockCore.Models
             return banned;
         }
 
+        public static async Task UpdatePeerAsVal(string ip)
+        {
+            var peers = GetAll();
+            var peer = peers?.Query().Where(x => x.PeerIP.Equals(ip)).FirstOrDefault();
+            if(peer != null)
+            {
+                peer.IsValidator = true;
+                peers?.Update(peer);
+            }
+        }
+
         public static List<Peers> ListBannedPeers()
         {
             var peers = GetAll();
