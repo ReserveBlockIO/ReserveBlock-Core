@@ -33,6 +33,8 @@ namespace ReserveBlockCore.P2P
 
             Globals.P2PPeerDict[peerIP] = Context;
 
+            var portOpen = PortUtility.IsPortOpen(peerIP, Globals.Port);
+
             //Save Peer here
             var peers = Peers.GetAll();
             var peerExist = peers.Find(x => x.PeerIP == peerIP).FirstOrDefault();
@@ -42,7 +44,7 @@ namespace ReserveBlockCore.P2P
                 {
                     FailCount = 0,
                     IsIncoming = true,
-                    IsOutgoing = false,
+                    IsOutgoing = portOpen,
                     PeerIP = peerIP
                 };
 

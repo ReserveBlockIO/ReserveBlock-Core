@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Models
         public string UniqueName { get; set; }
         public string PublicKey { get; set; }
         public string Signature { get; set; }
+        public string SignatureMessage { get; set; }
         public long BlockStart { get; set; } //make them wait 144 blocks = 1 hour
         public long LastBlockProof { get; set; }
         public HubCallerContext? Context { get; set; }

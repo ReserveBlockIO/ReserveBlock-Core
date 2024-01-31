@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.P2P;
+﻿using ReserveBlockCore.Nodes;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 
 
@@ -28,7 +29,7 @@ namespace ReserveBlockCore
             });
 
             //Create hosted service for just consensus measures
-            //services.AddHostedService<ClientCallService>();
+            services.AddHostedService<ValidatorProcessor>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

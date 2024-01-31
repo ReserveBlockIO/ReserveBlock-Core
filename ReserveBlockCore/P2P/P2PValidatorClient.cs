@@ -154,7 +154,7 @@ namespace ReserveBlockCore.P2P
                     return;
 
                 var time = TimeUtil.GetTime().ToString();
-                var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                var signature = SignatureService.ValidatorSignature(validator.Address + ":" + time + ":" + account.PublicKey);
 
 
                 var hubConnection = new HubConnectionBuilder()
@@ -172,24 +172,8 @@ namespace ReserveBlockCore.P2P
 
                 var IPAddress = GetPathUtility.IPFromURL(url);
                 hubConnection.On<string, string>("GetValMessage", async (message, data) =>
-                {            
-                    switch(message)
-                    {
-                        case "1": //connect - receives your IP back.
-                            var IP = data.ToString();
-                            if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
-                                Globals.ReportedIPs[IP]++;
-                            else
-                                Globals.ReportedIPs[IP] = 1;
-                            break;
-                        case "2": 
-                            break;
-                        case "3":
-                            break;
-                        default:
-                            break;
-                    }
-                                        
+                {
+                    _ = ValidatorProcessor.ProcessData(message, data, IPAddress);
                 });
 
                 await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
@@ -224,9 +208,9 @@ namespace ReserveBlockCore.P2P
                     peer.WalletVersion = walletVersion.Substring(0,3);
                     node.WalletVersion = walletVersion.Substring(0,3);
 
-                    Globals.Nodes.TryAdd(IPAddress, node);
+                    Globals.ValidatorNodes.TryAdd(IPAddress, node);
 
-                    if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                    if (Globals.ValidatorNodes.TryGetValue(IPAddress, out var currentNode))
                     {
                         currentNode.Connection = hubConnection;
                         currentNode.NodeIP = IPAddress;
@@ -235,7 +219,7 @@ namespace ReserveBlockCore.P2P
                         currentNode.NodeLatency = node.NodeLatency;
                     }
 
-                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/14");
+                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.ValidatorNodes.Count}/{Globals.MaxValPeers}");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     Peers.GetAll()?.UpdateSafe(peer);

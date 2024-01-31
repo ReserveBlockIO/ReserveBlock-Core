@@ -34,6 +34,27 @@ namespace ReserveBlockCore.Utilities
             }
         }
 
+        public static bool IsPortOpen(string host, int port)
+        {
+            using (TcpClient tcpClient = new TcpClient())
+            {
+                try
+                {
+                    var result = tcpClient.BeginConnect(host, port, null, null);
+                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(1));
+                    if (!success)
+                    {
+                        throw new SocketException();
+                    }
+                    return true;
+                }
+                catch (SocketException)
+                {
+                    return false;
+                }
+            }
+        }
+
         public static int FindOpenUDPPort(int port)
         {
             var portFound = false;

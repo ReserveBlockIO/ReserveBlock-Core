@@ -136,7 +136,6 @@ namespace ReserveBlockCore.Services
 
         public static async Task PeerBanUnbanService()
         {
-            bool RunLock = false;
             while(true)
             {
                 var delay = Task.Delay(60000);

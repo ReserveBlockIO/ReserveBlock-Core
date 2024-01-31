@@ -168,25 +168,32 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if (account == null) { throw new ArgumentNullException(nameof(account)); }
+            var valCount = Globals.Nodes.Values.Where(x => x.IsValidator).Count();
+            valCount = valCount == 0 ? Globals.ValidatorNodes.Count : valCount;
+            if(valCount == 0)
+            {
+                return "Validator connection count is currently zero. Please stop and restart wallet to attempt to reconnect to validators."; 
+            }    
+
+            if (account == null) 
+            {
+                return "Account not found locally. Please ensure the account specified is stored locally.";
+            }
             else
             {
                 var sTreiAcct = StateData.GetSpecificAccountStateTrei(account.Address);
 
                 if (sTreiAcct == null)
                 {
-                    output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
-                    return output;
+                    return "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                 }
                 if (sTreiAcct != null && sTreiAcct.Balance < ValidatorRequiredAmount())
                 {
-                    output = $"Account Found, but does not meet the minimum of {ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
-                    return output;
+                    return $"Account Found, but does not meet the minimum of {ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
                 {
-                    output = "Unique name has already been taken. Please choose another.";
-                    return output;
+                    return "Unique name has already been taken. Please choose another.";
                 }
                 if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorRequiredAmount())
                 {
@@ -197,8 +204,7 @@ namespace ReserveBlockCore.Services
 
                     if (verifySig == false)
                     {
-                        output = "Signature check has failed. Please provide correct private key for public address: " + account.Address;
-                        return output;
+                        return "Signature check has failed. Please provide correct private key for public address: " + account.Address;
                     }
 
                     //need to request validator list from someone. 
@@ -207,8 +213,7 @@ namespace ReserveBlockCore.Services
                     var IsThereValidator = accounts.FindOne(x => x.IsValidating == true);
                     if (IsThereValidator != null)
                     {
-                        output = "This wallet already has a validator active on it. You can only have 1 validator active per wallet: " + IsThereValidator.Address;
-                        return output;
+                        return "This wallet already has a validator active on it. You can only have 1 validator active per wallet: " + IsThereValidator.Address;
                     }
 
                     var validatorTable = Validators.Validator.GetAll();
@@ -216,8 +221,7 @@ namespace ReserveBlockCore.Services
                     var validatorCount = validatorTable.Query().Where(x => x.NodeIP != "SELF").Count();
                     if (validatorCount > 0)
                     {
-                        output = "Account is already a validator";
-                        return output;
+                        return "Account is already a validator";
                     }
                     else
                     {
@@ -257,7 +261,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    output = "Insufficient balance to validate.";
+                    return "Insufficient balance to validate.";
                 }
             }
 

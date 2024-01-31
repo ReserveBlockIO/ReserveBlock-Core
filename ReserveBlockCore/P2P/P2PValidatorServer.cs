@@ -28,7 +28,14 @@ namespace ReserveBlockCore.P2P
 
                 if (httpContext == null)
                 {
-                    EndOnConnect(peerIP, "httpContext is null", "httpContext is null");
+                    _ = EndOnConnect(peerIP, "httpContext is null", "httpContext is null");
+                    return;
+                }
+
+                var portCheck = PortUtility.IsPortOpen(peerIP, Globals.ValPort);
+                if(!portCheck) 
+                {
+                    _ = EndOnConnect(peerIP, $"Port: {Globals.ValPort} was not detected as open.", $"Port: {Globals.ValPort} was not detected as open for IP: {peerIP}.");
                     return;
                 }
 
@@ -40,18 +47,22 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
-                if (!Globals.NetworkValidators.ContainsKey(address))
+                if (Globals.ValidatorNodes.ContainsKey(peerIP))
                 {
-                    EndOnConnect(peerIP, address + " attempted to connect as adjudicator", address + " attempted to connect as adjudicator");
-                    return;
+                    var vNode = Globals.ValidatorNodes[peerIP];
+                    if(vNode.IsConnected)
+                    {
+                        _ = EndOnConnect(peerIP, address + " attempted to connect as adjudicator", address + " attempted to connect as adjudicator");
+                        return;
+                    }
                 }
 
                 var SignedMessage = address;
                 var Now = TimeUtil.GetTime();
-                SignedMessage = address + ":" + time;
+                SignedMessage = address + ":" + time + ":" + publicKey;
                 if (TimeUtil.GetTime() - long.Parse(time) > 300)
                 {
-                    EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
+                    _ = EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
                     return;
                 }
 
@@ -59,7 +70,7 @@ namespace ReserveBlockCore.P2P
 
                 if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(signature))
                 {
-                    EndOnConnect(peerIP,
+                    _ = EndOnConnect(peerIP,
                         "Connection Attempted, but missing field(s). Address, and Public Key required. You are being disconnected.",
                         "Connected, but missing field(s). Address, and Public Key required: " + address);
                     return;
@@ -67,7 +78,7 @@ namespace ReserveBlockCore.P2P
                 var stateAddress = StateData.GetSpecificAccountStateTrei(address);
                 if (stateAddress == null)
                 {
-                    EndOnConnect(peerIP,
+                    _ = EndOnConnect(peerIP,
                         "Connection Attempted, But failed to find the address in trie. You are being disconnected.",
                         "Connection Attempted, but missing field Address: " + address + " IP: " + peerIP);
                     return;
@@ -75,7 +86,7 @@ namespace ReserveBlockCore.P2P
 
                 if (stateAddress.Balance < ValidatorService.ValidatorRequiredAmount())
                 {
-                    EndOnConnect(peerIP,
+                    _ = EndOnConnect(peerIP,
                         $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX. You are being disconnected.",
                         $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX: " + address);
                     return;
@@ -84,13 +95,12 @@ namespace ReserveBlockCore.P2P
                 var verifySig = SignatureService.VerifySignature(address, SignedMessage, signature);
                 if (!verifySig)
                 {
-                    EndOnConnect(peerIP,
+                    _ = EndOnConnect(peerIP,
                         "Connected, but your address signature failed to verify. You are being disconnected.",
-                        "Connected, but your address signature failed to verify with ADJ: " + address);
+                        "Connected, but your address signature failed to verify with Val: " + address);
                     return;
                 }
 
-                //TO-DO: Add to Globals.NetworkValidators
                 var netVal = new NetworkValidator { 
                     Address = address,
                     BlockStart = Globals.LastBlock.Height + 144,
@@ -98,13 +108,15 @@ namespace ReserveBlockCore.P2P
                     LastBlockProof = 0,
                     PublicKey = publicKey,
                     Signature = signature,
+                    SignatureMessage = SignedMessage,
                     UniqueName = uName,
                     Context = Context
                 };
 
                 Globals.NetworkValidators.TryAdd(address, netVal);
 
-                _ = Clients.All.SendAsync("GetAdjMessage", "1", peerIP, new CancellationTokenSource(6000).Token);
+                _ = Clients.Caller.SendAsync("GetValMessage", "1", peerIP, new CancellationTokenSource(2000).Token);
+                _ = Clients.All.SendAsync("GetValMessage", "2", JsonConvert.SerializeObject(netVal), new CancellationTokenSource(6000).Token);
 
             }
             catch (Exception ex)
@@ -120,11 +132,54 @@ namespace ReserveBlockCore.P2P
             //var netVal = Globals.NetworkValidators.Where(x => x.Value.IPAddress == peerIP).FirstOrDefault();
 
             Globals.P2PPeerDict.TryRemove(peerIP, out _);
+            Globals.ValidatorNodes.TryRemove(peerIP, out _);
             Context?.Abort();
 
             await base.OnDisconnectedAsync(ex);
         }
+        private async Task SendValMessageSingle(string message, string data)
+        {
+            await Clients.Caller.SendAsync("GetValMessage", message, data, new CancellationTokenSource(1000).Token);
+        }
+        #endregion
 
+        #region Get Network Validator List - TODO: ADD PROTECTION
+        public async Task SendNetworkValidatorList(string data)
+        {
+            try
+            {
+                var peerIP = GetIP(Context);
+
+                if(!string.IsNullOrEmpty(data))
+                {
+                    var networkValList = JsonConvert.DeserializeObject<List<NetworkValidator>>(data);
+                    if(networkValList?.Count > 0)
+                    {
+                        foreach(var networkValidator in networkValList)
+                        {
+                            if(Globals.NetworkValidators.TryGetValue(networkValidator.Address, out var networkValidatorVal))
+                            {
+                                var verifySig = SignatureService.VerifySignature(
+                                    networkValidator.Address, 
+                                    networkValidator.SignatureMessage, 
+                                    networkValidator.Signature);
+
+                                //if(networkValidatorVal.PublicKey != networkValidator.PublicKey)
+
+                                if(verifySig && networkValidator.Signature.Contains(networkValidator.PublicKey))
+                                    Globals.NetworkValidators[networkValidator.Address] = networkValidator;
+
+                            }
+                            else
+                            {
+                                Globals.NetworkValidators.TryAdd(networkValidator.Address, networkValidator);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
         #endregion
 
         #region Receive Block - Receives Block and then Broadcast out.
@@ -226,8 +281,9 @@ namespace ReserveBlockCore.P2P
 
         #region End on Connect
 
-        private void EndOnConnect(string ipAddress, string adjMessage, string logMessage)
+        private async Task EndOnConnect(string ipAddress, string adjMessage, string logMessage)
         {
+            await SendValMessageSingle("9999", adjMessage);
             if (Globals.OptionalLogging == true)
             {
                 LogUtility.Log(logMessage, "Validator Connection");

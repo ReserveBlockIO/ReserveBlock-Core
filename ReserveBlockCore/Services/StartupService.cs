@@ -1414,8 +1414,15 @@ namespace ReserveBlockCore.Services
                 }
                 if (!Globals.UpToDate)
                 {
-                    AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
-                    AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
+                    if(Globals.IsTestNet)
+                    {
+                        AnsiConsole.MarkupLine($"[blue]|Testnet Build - {Globals.CLIVersion}        |[/]");
+                        AnsiConsole.MarkupLine($"[blue]|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|[/]");
+                    }
+                    else
+                    {
+
+                    }
                 }
                 else
                 {
