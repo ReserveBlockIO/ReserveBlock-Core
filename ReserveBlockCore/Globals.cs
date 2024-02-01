@@ -82,6 +82,7 @@ namespace ReserveBlockCore
 
         public const int ADNRLimit = 65;
         public static int BlockLock = 1079488;
+        public static long ValidatingV2 = 0;
         public static long V3Height = 579015;
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
@@ -142,6 +143,7 @@ namespace ReserveBlockCore
         public static string CLIVersion = "";
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
+        public static string GenesisValidator = "";
 
         public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;
@@ -230,7 +232,8 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, Peers> ValidatorPool = new ConcurrentDictionary<string, Peers>();
         public static ConcurrentDictionary<string, NodeInfo> ValidatorNodes = new ConcurrentDictionary<string, NodeInfo>(); //key = ipaddress
         public static ConcurrentDictionary<long, Proof> WinningProofs = new ConcurrentDictionary<long, Proof>();
-        public static ConcurrentDictionary<long, List<string>> WinningBlockVotes = new ConcurrentDictionary<long, List<string>>();
+        public static ConcurrentDictionary<long, List<Proof>> WinningBlockVotes = new ConcurrentDictionary<long, List<Proof>>();
+        public static ConcurrentDictionary<long, string> FinalizedWinner = new ConcurrentDictionary<long, string>();
         public static ConcurrentDictionary<long, Block> NetworkBlockQueue = new ConcurrentDictionary<long, Block>();
         public static ConcurrentDictionary<long, List<Proof>> BackupProofs = new ConcurrentDictionary<long, List<Proof>>();
         public static ConcurrentDictionary<string, DateTime?> ProofsBroadcasted = new ConcurrentDictionary<string, DateTime?>();

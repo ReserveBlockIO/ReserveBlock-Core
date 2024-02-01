@@ -21,6 +21,10 @@ namespace ReserveBlockCore.Nodes
         private readonly IHostApplicationLifetime _appLifetime;
         static SemaphoreSlim BroadcastNetworkValidatorLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim GenerateProofLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ProduceBlockLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim BlockCheckLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim SendWinningVoteLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim LockWinnerLock = new SemaphoreSlim(1, 1);
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -258,6 +262,170 @@ namespace ReserveBlockCore.Nodes
         #endregion
 
         #region Services
+
+        private async Task ProduceBlock()
+        {
+            while(true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+                await ProduceBlockLock.WaitAsync();
+                try
+                {
+                    for(int i = 1; i < 10; i++)
+                    {
+                        var nextblock = Globals.LastBlock.Height + i;
+                        if(Globals.FinalizedWinner.TryGetValue(nextblock, out var winner)) 
+                        {
+                            if(winner == Globals.ValidatorAddress)
+                            {
+                                //CraftNewBlock_V2
+                            }
+                            else
+                            {
+                                //request block
+                                //add to here --v--
+                                //Globals.NetworkBlockQueue.TryAdd();
+                            }
+                        }
+                        else
+                        {
+                            //no winner found.
+                            //Request winner list
+                        }
+                    }
+                }
+                finally
+                {
+                    ProduceBlockLock.Release();
+                    await delay;
+                }
+            }
+        }
+
+        private async Task LockWinner()
+        {
+            while(true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, 5));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+                await LockWinnerLock.WaitAsync();
+
+                try
+                {
+                    var nextBlock = Globals.LastBlock.Height + 30;
+                    if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+                    {
+                        if(Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
+                        {
+                            var winningProof = voteList.OrderBy(x => x.VRFNumber).FirstOrDefault();
+                            if(winningProof != null)
+                            {
+                                if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                {
+                                    Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //if missing must request winner from connected nodes
+                        }
+                    }
+                }
+                finally
+                {
+                    LockWinnerLock.Release();
+                    await delay;
+                }
+            }
+        }
+
+        private async Task SendWinningVote()
+        {
+            while (true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, 10));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+                await SendWinningVoteLock.WaitAsync();
+                try
+                {
+                    for (int i = 1; i < 40; i++)    
+                    {
+                        var nextBlock = Globals.LastBlock.Height + i;
+                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+                        {
+                            if(Globals.WinningProofs.TryGetValue(nextBlock, out var proof))
+                            {
+                                if(Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
+                                {
+                                    voteList.Add(proof);
+                                    //SEND PROOF! to Peers
+                                }
+                                else
+                                {
+                                    Globals.WinningBlockVotes.TryAdd(nextBlock, new List<Proof> { proof });
+                                    //SEND PROOF! to Peers
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    SendWinningVoteLock.Release();
+                    await delay;
+                }
+            }
+        }
+
+        private async Task BlockCheck()
+        {
+            while (true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+
+                await BlockCheckLock.WaitAsync();
+                try
+                {
+                    if(Globals.LastBlock.Timestamp + 20 <= TimeUtil.GetTime())
+                    {
+                        var nextBlock = Globals.LastBlock.Height + 1;
+                        if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
+                        {
+                            //add block and broadcast
+                            //do removals from proofs and other in memory variables
+                        }
+                        else
+                        {
+                            //request block
+                        }
+                    }
+                }
+                finally
+                {
+                    BlockCheckLock.Release();
+                    await delay;
+                }
+            }
+        }
 
         private async Task GenerateProofs()
         {

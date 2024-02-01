@@ -62,6 +62,9 @@ namespace ReserveBlockCore
 
             //Forced Testnet
             Globals.IsTestNet = true;
+            Globals.ValidatingV2 = Globals.IsTestNet ? 0 : 9999999;//change for mainnet.
+            Globals.GenesisValidator = Globals.IsTestNet ? "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC" : "SomeMainnetAddress";
+
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -503,7 +506,6 @@ namespace ReserveBlockCore
             {
                 _ = ValidatorService.StartValidatorServer();
                 _ = ValidatorService.StartupValidators();
-                _ = Task.Run(BlockHeightCheckLoopForVals);
             }
             
             Globals.StopAllTimers = true;
