@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Utilities
                 {
                     var split = AddressSignature.Split(':');
                     var (Address, Signature) = (split[0], split[1]);
-                    if (!Globals.Signers.ContainsKey(Address))
+                    if (!Globals.Signers.ContainsKey(Address) && !Globals.RetiredSigners.ContainsKey(Address))
                         return (false, "Signers Did Not Have Key.");
                     if (!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
                         return (false, "Signature Failed to verify");

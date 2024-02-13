@@ -44,6 +44,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'        
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address        
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
+        public static ConcurrentDictionary<string, bool> RetiredSigners = new ConcurrentDictionary<string, bool>();
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
         public static ConcurrentDictionary<string, string> SeedDict = new ConcurrentDictionary<string, string>();

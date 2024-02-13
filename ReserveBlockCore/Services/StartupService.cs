@@ -175,6 +175,14 @@ namespace ReserveBlockCore.Services
             var signerDB = Signer.GetSigners();
             var Signers = signerDB.FindAll().ToArray();
 
+            Globals.RetiredSigners = new ConcurrentDictionary<string, bool>
+            {
+                ["RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp"] = true,
+                ["RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m"] = true,
+                ["RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM"] = true,
+                ["RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE"] = true,
+            };
+
             if (Signers.Any())
             {
                 Signer.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
