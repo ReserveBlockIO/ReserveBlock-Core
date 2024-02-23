@@ -91,6 +91,11 @@ namespace ReserveBlockCore.Commands
                     await Voting.Voting.StartVoteProgram();
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/btc":
+                    Globals.StopConsoleOutput = true;
+                    await Bitcoin.Bitcoin.StartBitcoinProgram();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/benchip":
                     Globals.StopConsoleOutput = true;
                     await BaseCommandServices.BenchIP();

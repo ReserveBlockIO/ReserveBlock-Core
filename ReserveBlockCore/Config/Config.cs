@@ -184,8 +184,9 @@ namespace ReserveBlockCore.Config
 			Globals.SelfSTUNServer = config.SelfSTUNServer;
 			Globals.LogMemory = config.LogMemory;
 			Globals.BlockSeedCalls = config.BlockSeedCalls;
-			
-			if (config.STUNServers?.Count() > 0)
+            Globals.BTCNetwork = NBitcoin.Network.Main;
+
+            if (config.STUNServers?.Count() > 0)
 			{
 				var serverList = config.STUNServers.Split(',');
 				foreach( var server in serverList)
@@ -234,6 +235,7 @@ namespace ReserveBlockCore.Config
 				Globals.TXHeightRule2 = 200;
 				Globals.DSTClientPort = 13341;
                 Globals.SelfSTUNPort = 13340;
+				Globals.BTCNetwork = NBitcoin.Network.TestNet;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

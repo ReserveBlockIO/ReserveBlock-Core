@@ -39,6 +39,7 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Vote { set; get; }
         public static LiteDatabase DB_Settings { set; get; }
         public static LiteDatabase DB_Reserve { set; get; }
+        public static LiteDatabase DB_Bitcoin { set; get; }
 
 
         //Database names
@@ -64,6 +65,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_VOTE = @"rsrvvote.db";
         public const string RSRV_DB_SETTINGS = @"rsrvsettings.db";
         public const string RSRV_DB_RESERVE = @"rsrvreserve.db";
+        public const string RSRV_DB_BITCOIN = @"rsrvbitcoin.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -113,6 +115,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_BID = "rsrv_bid";
         public const string RSRV_LISTING = "rsrv_listing";
         public const string RSRV_CHAIN_SIZE = "rsrv_chain_size";
+        public const string RSRV_BITCOIN = "rsrv_bitcoin";
 
         internal static void Initialize()
         {
@@ -148,6 +151,7 @@ namespace ReserveBlockCore.Data
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Blockchain = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BLOCKCHAIN, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Bitcoin = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BITCOIN, Connection = ConnectionType.Direct, ReadOnly = false });
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
@@ -232,6 +236,7 @@ namespace ReserveBlockCore.Data
             DB_Settings.Commit();
             DB_Reserve.Commit();
             DB_Blockchain.Commit();
+            DB_Bitcoin.Commit();
         }
 
         public static void Rollback(string location = "")
@@ -309,6 +314,7 @@ namespace ReserveBlockCore.Data
             DB_Settings.Commit();
             DB_Reserve.Commit();
             DB_Blockchain.Commit();
+            DB_Bitcoin.Commit();
 
             //dispose connection to DB
             CloseDB();
@@ -354,6 +360,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_SETTINGS);
             File.Delete(path + RSRV_DB_RESERVE);
             File.Delete(path + RSRV_DB_BLOCKCHAIN);
+            File.Delete(path + RSRV_DB_BITCOIN);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -386,7 +393,7 @@ namespace ReserveBlockCore.Data
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Blockchain = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BLOCKCHAIN, Connection = ConnectionType.Direct, ReadOnly = false });
-
+            DB_Bitcoin = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BITCOIN, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
@@ -419,6 +426,7 @@ namespace ReserveBlockCore.Data
             DB_Settings.Dispose();
             DB_Reserve.Dispose();
             DB_Blockchain.Dispose();
+            DB_Bitcoin.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -526,6 +534,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_Blockchain.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Bitcoin.Checkpoint();
             }
             catch { }
         }

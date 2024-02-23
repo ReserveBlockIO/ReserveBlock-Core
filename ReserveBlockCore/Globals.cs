@@ -64,6 +64,7 @@ namespace ReserveBlockCore
         public static Process GUIProcess;
         public static bool IsFork = false;
         public static Blockchain Blockchain { get; set; }
+        public static NBitcoin.Network BTCNetwork { get; set; }
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
