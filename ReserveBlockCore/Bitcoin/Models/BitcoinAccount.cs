@@ -40,8 +40,60 @@ namespace ReserveBlockCore.Bitcoin.Models
 
         #endregion
 
+        #region Get Bitcoin Address List
+        public static List<BitcoinAccount>? GetBitcoinAccounts()
+        {
+            var bitcoin = GetBitcoin();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetBitcoin() returned a null value.", "BitcoinAccount.GetBitcoinAccounts()");
+            }
+            else
+            {
+                var btcRecs = bitcoin.FindAll().ToList();
+                if (btcRecs.Any())
+                {
+                    return btcRecs;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return null;
+
+        }
+        #endregion
+
+        #region Get Bitcoin Address
+        public static BitcoinAccount? GetBitcoinAccount(string address)
+        {
+            var bitcoin = GetBitcoin();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetBitcoin() returned a null value.", "BitcoinAccount.GetBitcoinAccount()");
+            }
+            else
+            {
+                var btcRec = bitcoin.Query().Where(x => x.Address == address).FirstOrDefault();
+                if (btcRec != null)
+                {
+                    return btcRec;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return null;
+
+        }
+        #endregion
+
         #region Save Bitcoin Address
-        public static string SaveBitcoinAddress(BitcoinAccount btcAddr)
+        public static bool SaveBitcoinAddress(BitcoinAccount btcAddr)
         {
             var bitcoin = GetBitcoin();
             if (bitcoin == null)
@@ -53,15 +105,16 @@ namespace ReserveBlockCore.Bitcoin.Models
                 var btcRec = bitcoin.FindOne(x => x.Address == btcAddr.Address);
                 if (btcRec != null)
                 {
-                    return "Address Already Exist";
+                    return false;
                 }
                 else
                 {
                     bitcoin.InsertSafe(btcAddr);
+                    return true;
                 }
             }
 
-            return "Error Saving ADNR";
+            return false;
 
         }
         #endregion

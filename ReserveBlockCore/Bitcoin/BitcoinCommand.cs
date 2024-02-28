@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Bitcoin.Models;
+﻿using NBitcoin;
+using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using Spectre.Console;
@@ -11,6 +12,34 @@ namespace ReserveBlockCore.Bitcoin
         {
             var account = BitcoinAccount.CreateAddress();
             BitcoinAccount.PrintAccountInfo(account);
+        }
+
+        public static async Task ImportAddress()
+        {
+            Console.WriteLine("Please paste in your private key");
+            var privateKey = Console.ReadLine();
+
+            if(privateKey == null)
+            {
+                Console.WriteLine("Key cannot be blank.");
+                await Bitcoin.BitcoinMenu();
+                return;
+            }
+            if(privateKey?.Length < 50)
+            {
+                Console.WriteLine("Incorrect key format. Please try again.");
+                await Bitcoin.BitcoinMenu();
+            }
+
+            //hex key
+            if(privateKey?.Length > 58)
+            {
+                BitcoinAccount.ImportPrivateKey(privateKey);
+            }
+            else
+            {
+                BitcoinAccount.ImportPrivateKeyWIF(privateKey);
+            }
         }
 
         public static async Task ShowBitcoinAccounts()

@@ -1,10 +1,15 @@
-﻿using ReserveBlockCore.Services;
+﻿using ReserveBlockCore.Bitcoin.Integrations;
+using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Services;
 using Spectre.Console;
 
 namespace ReserveBlockCore.Bitcoin
 {
+   
     public class Bitcoin
     {
+        static bool exit = false;
+        static SemaphoreSlim BalanceCheckLock = new SemaphoreSlim(1, 1);
         private enum CommandResult
         {
             MainMenu,
@@ -14,8 +19,12 @@ namespace ReserveBlockCore.Bitcoin
         public static async Task StartBitcoinProgram()
         {
             await BitcoinMenu();
+            exit = false;
 
-            bool exit = false;
+            Explorers.PopulateExplorerDictionary();
+
+            _ = BalanceCheck();
+
             while (!exit)
             {
                 var command = Console.ReadLine();
@@ -70,6 +79,40 @@ namespace ReserveBlockCore.Bitcoin
             }
 
             return result;
+        }
+
+        public static async Task BalanceCheck()
+        {
+            while(!exit)
+            {
+                var delay = Task.Delay(new TimeSpan(0,4,0));
+                await BalanceCheckLock.WaitAsync();
+
+                try
+                {
+                    var addressList = BitcoinAccount.GetBitcoin()?.FindAll().ToList();
+
+                    if (addressList?.Count != 0)
+                    {
+                        foreach (var address in addressList)
+                        {
+                            await Explorers.GetAddressInfo(address.Address);
+                            await Task.Delay(3000);
+                        }
+                    }
+                }
+                catch
+                {
+
+                }
+                finally
+                {
+                    BalanceCheckLock.Release();
+                }
+
+                await delay;
+            }
+            
         }
 
         public static async Task BitcoinMenu()
