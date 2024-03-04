@@ -122,6 +122,37 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Resets bitcoin accounts and their UTXOs
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ResetAccount")]
+        public async Task<string> ResetAccount()
+        {
+            var btcUtxoDb = BitcoinUTXO.GetBitcoinUTXO();
+            if (btcUtxoDb != null)
+                btcUtxoDb.DeleteAllSafe();
+
+            var btcAccounts = BitcoinAccount.GetBitcoinAccounts();
+
+            if (btcAccounts?.Count() > 0)
+            {
+                var btcADb = BitcoinAccount.GetBitcoin();
+                if (btcADb != null)
+                {
+                    foreach (var btcAccount in btcAccounts)
+                    {
+                        btcAccount.Balance = 0.0M;
+                        btcADb.UpdateSafe(btcAccount);
+                    }
+                }
+            }
+
+            _ = Bitcoin.AccountCheck();
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Bitcoin accounts reset." });
+        }
+
+        /// <summary>
         /// Get address UTXO List
         /// </summary>
         /// <returns></returns>
@@ -130,7 +161,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         {
             if (address == null)
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"address cannot be null." }); ;
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"address cannot be null." });
             }
 
             var utxoList = BitcoinUTXO.GetUTXOs(address);
