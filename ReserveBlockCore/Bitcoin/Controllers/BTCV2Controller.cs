@@ -72,6 +72,28 @@ namespace ReserveBlockCore.Bitcoin.Controllers
 
             return JsonConvert.SerializeObject(new { Success = true, Message = $"New address has been imported." });
         }
+        /// <summary>
+        /// Get all addresses
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetBitcoinAccountList/{omitKeys?}")]
+        public async Task<string> GetBitcoinAccountList(bool? omitKeys = false)
+        {
+            var btcAccounts = BitcoinAccount.GetBitcoinAccounts();
+
+            if (btcAccounts == null)
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"No Account Found For this Address." });
+
+            if (omitKeys.Value)
+            {
+                btcAccounts.ForEach(x => {
+                    x.PrivateKey = "REMOVED";
+                    x.WifKey = "REMOVED";
+                });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Accounts Founds", BitcoinAccounts = btcAccounts });
+        }
 
         /// <summary>
         /// Get address 
@@ -96,7 +118,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 btcAccount.WifKey = "REMOVED";
             }
 
-            return JsonConvert.SerializeObject(new { Success = true, Message = $"UTXOs Found For this Address.", BitcoinAccount = btcAccount });
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Account Found", BitcoinAccount = btcAccount });
         }
 
         /// <summary>

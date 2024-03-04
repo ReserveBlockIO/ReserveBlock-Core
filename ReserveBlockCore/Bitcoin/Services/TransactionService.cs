@@ -82,7 +82,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 if (coinList.Item2.Any())
                 {
                     coinList.Item2.ForEach(x => {
-                        BitcoinUTXO.SpendUTXO(x.TxId);
+                        BitcoinUTXO.SpendUTXO(x.TxId, x.Address);
                     });
                 }
 

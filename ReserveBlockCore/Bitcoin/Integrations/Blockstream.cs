@@ -64,8 +64,7 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                 var walletUtxoList = BitcoinUTXO.GetUTXOs(address);
                                 if (walletUtxoList != null)
                                 {
-                                    var txIds = walletUtxoList.Select(x => x.TxId);
-                                    var utxoList = transactions.Where(x => !txIds.Contains(x.txid)).ToList();
+                                    var utxoList = transactions;
                                     if (utxoList?.Count > 0)
                                     {
                                         foreach (var item in utxoList)

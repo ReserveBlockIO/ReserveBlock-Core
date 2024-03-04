@@ -242,6 +242,53 @@ namespace ReserveBlockCore.Bitcoin
             }
         }
 
+        public static async Task PrintUTXOs()
+        {
+            var accountList = BitcoinAccount.GetBitcoinAccounts();
+
+            if (accountList?.Count() > 0)
+            {
+                Console.Clear();
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+                AnsiConsole.Write(
+                new FigletText("Bitcoin UTXOs")
+                .Centered()
+                .Color(Color.Green));
+
+                foreach(var account in accountList)
+                {
+                    var table = new Table();
+
+                    table.Title($"[hotpink]Address: {account.Address}[/]").Centered();
+                    table.AddColumn(new TableColumn(new Panel("TxId")));
+                    table.AddColumn(new TableColumn(new Panel("Value"))).Centered();
+                    table.AddColumn(new TableColumn(new Panel("Vout"))).Centered();
+                    table.AddColumn(new TableColumn(new Panel("Is Used"))).Centered();
+
+                    var utxoList = BitcoinUTXO.GetUTXOs(account.Address);
+                    if(utxoList?.Count() > 0)
+                    {
+                        foreach(var utxo in utxoList)
+                        {
+                            table.AddRow($"[blue]{utxo.TxId}[/]", $"[green]{utxo.Value}[/]", $"[yellow]{utxo.Vout}[/]" ,$"[purple]{utxo.IsUsed}[/]");
+                        }
+                        
+                    }
+
+                    table.Border(TableBorder.Rounded);
+
+                    AnsiConsole.Write(table);
+                }
+
+                
+            }
+            else
+            {
+
+            }
+        }
+
         public static async void PrintKeys()
         {
             var accountList = BitcoinAccount.GetBitcoinAccounts();

@@ -122,14 +122,14 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Spend Bitcoin UTXO
-        public static bool SpendUTXO(string txId)
+        public static bool SpendUTXO(string txId, string address)
         {
             var bitcoin = GetBitcoinUTXO();
 
             if (bitcoin == null)
                 return false;
 
-            var utxo = bitcoin.FindOne(x => x.TxId == txId);
+            var utxo = bitcoin.FindOne(x => x.TxId == txId && x.Address == address);
 
             if (utxo == null)
                 return false;

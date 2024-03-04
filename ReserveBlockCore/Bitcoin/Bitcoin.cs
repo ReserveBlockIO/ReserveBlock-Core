@@ -84,6 +84,9 @@ namespace ReserveBlockCore.Bitcoin
                 case "/printkeys":
                     BitcoinCommand.PrintKeys();
                     break;
+                case "/printutxos":
+                    await BitcoinCommand.PrintUTXOs();
+                    break;
             }
 
             return result;
