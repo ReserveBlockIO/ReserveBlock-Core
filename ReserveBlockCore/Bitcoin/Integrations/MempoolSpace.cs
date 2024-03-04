@@ -28,8 +28,8 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                 var btcAccount = BitcoinAccount.GetBitcoin()?.FindOne(x => x.Address == returnedAddress);
                                 if (btcAccount != null)
                                 {
-                                    btcAccount.Balance = response.chain_stats.funded_txo_sum / 100_000_000M;
-                                    BitcoinAccount.GetBitcoin()?.Update(btcAccount);
+                                    btcAccount.Balance = (response.chain_stats.funded_txo_sum - response.chain_stats.spent_txo_sum) / 100_000_000M;
+                                    BitcoinAccount.GetBitcoin()?.UpdateSafe(btcAccount);
                                 }
                             }
                         }
@@ -74,9 +74,10 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                                 IsUsed = false,
                                                 TxId = item.txid,
                                                 Value = item.value,
+                                                Vout = item.vout
                                             };
 
-                                            BitcoinUTXO.SaveBitcoinUTXO(nUTXO);
+                                            BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
                                         }
                                     }
                                 }
@@ -92,15 +93,18 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                                 IsUsed = false,
                                                 TxId = item.txid,
                                                 Value = item.value,
+                                                Vout = item.vout
                                             };
 
-                                            BitcoinUTXO.SaveBitcoinUTXO(nUTXO);
+                                            BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
                                         }
                                     }
                                 }
                                 
-                                //perform audit
-
+                                //TODO:perform audit and update values as needed.
+                                //Remove them from DB saves.
+                                //Push them into memory
+                                //Perform audit after every tx send
                             }
                         }
                     }

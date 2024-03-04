@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Bitcoin.Services;
 using ReserveBlockCore.Controllers;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
@@ -120,6 +121,23 @@ namespace ReserveBlockCore.Bitcoin.Controllers
 
 
             return JsonConvert.SerializeObject(new { Success = true, Message = $"UTXOs Found For this Address.", UTXOs = utxoList });
+        }
+
+        /// <summary>
+        /// Send a transaction. Specify from, to, and amount
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <param name="feeRate"></param>
+        /// <param name="overrideInternalSend"></param>
+        /// <returns></returns>
+        [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}/{feeRate}/{overrideInternalSend?}")]
+        public async Task<string> SendTransaction(string faddr, string taddr, decimal amt, int feeRate, bool overrideInternalSend = false)
+        {
+            var result = await TransactionService.SendTransaction(faddr, taddr, amt, feeRate, overrideInternalSend);
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 }); ;
         }
     }
 }

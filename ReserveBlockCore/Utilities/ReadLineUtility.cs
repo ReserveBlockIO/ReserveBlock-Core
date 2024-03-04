@@ -14,6 +14,11 @@ namespace ReserveBlockCore.Utilities
                 throw new Exception("/menu was been entered. Returning to main menu");
             }
 
+            if(readLine == "/btc")
+            {
+
+            }
+
             return readLine;
         }
 

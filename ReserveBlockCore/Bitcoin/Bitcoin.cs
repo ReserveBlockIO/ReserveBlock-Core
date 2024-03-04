@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Bitcoin.Integrations;
 using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Services;
 using Spectre.Console;
 
@@ -23,7 +24,8 @@ namespace ReserveBlockCore.Bitcoin
 
             Explorers.PopulateExplorerDictionary();
 
-            _ = BalanceCheck();
+            _ = NodeFinder.GetNode(); // Get Node for later use now. This is to save time.
+            _ = AccountCheck();
 
             while (!exit)
             {
@@ -62,7 +64,7 @@ namespace ReserveBlockCore.Bitcoin
                     await BitcoinCommand.ShowBitcoinAccounts();
                     break;
                 case "3":
-                    
+                    await BitcoinCommand.SendBitcoinTransaction();
                     break;
                 case "4":
                     
@@ -74,14 +76,20 @@ namespace ReserveBlockCore.Bitcoin
                     
                     break;
                 case "7":
+                    await BitcoinCommand.ResetAccounts();
+                    break;
+                case "8":
                     result = CommandResult.MainMenu;
+                    break;
+                case "/printkeys":
+                    BitcoinCommand.PrintKeys();
                     break;
             }
 
             return result;
         }
 
-        public static async Task BalanceCheck()
+        public static async Task AccountCheck()
         {
             while(!exit)
             {
@@ -151,7 +159,8 @@ namespace ReserveBlockCore.Bitcoin
             Console.WriteLine("| 4. Tokenize Bitcoin                    |");
             Console.WriteLine("| 5. Import Address                      |");
             Console.WriteLine("| 6. Bitcoin ADNR Register               |");
-            Console.WriteLine("| 7. Exit Bitcoin Wallet                 |");
+            Console.WriteLine("| 7. Reset/Resync Accounts               |");
+            Console.WriteLine("| 8. Exit Bitcoin Wallet                 |");
             Console.WriteLine("|========================================|");
             Console.WriteLine("|type /btc to come back to the vote area |");
             Console.WriteLine("|type /menu to go back to RBX Wallet     |");

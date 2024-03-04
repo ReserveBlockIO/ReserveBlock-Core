@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public string Address { get; set; }
         public string TxId { get; set; }
         public long Value { get; set; }
+        public int Vout { get; set; }
         public bool IsUsed { get; set; }
 
         #endregion
@@ -34,7 +35,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Save Bitcoin Address UTXO
-        public static bool SaveBitcoinUTXO(BitcoinUTXO btcUTXO)
+        public static bool SaveBitcoinUTXO(BitcoinUTXO btcUTXO, bool unspend = false)
         {
             var bitcoin = GetBitcoinUTXO();
             if (bitcoin == null)
@@ -43,9 +44,13 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
             else
             {
-                var utxo = bitcoin.FindOne(x => x.TxId == btcUTXO.TxId);
+                var utxo = bitcoin.FindOne(x => x.TxId == btcUTXO.TxId && x.Address == btcUTXO.Address);
                 if (utxo != null)
                 {
+                    utxo.Address = btcUTXO.Address;
+                    utxo.Value = btcUTXO.Value;
+                    utxo.Vout = btcUTXO.Vout;
+                    utxo.IsUsed = unspend ? false : true;
                     return false;
                 }
                 else
@@ -56,6 +61,34 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
 
             return false;
+
+        }
+        #endregion
+
+        #region Get Bitcoin Address Unspent UTXO List
+        public static List<BitcoinUTXO> GetUnspetUTXOs(string address)
+        {
+            List<BitcoinUTXO> utxoList = new List<BitcoinUTXO>();
+            var bitcoin = GetBitcoinUTXO();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetBitcoinUTXO() returned a null value.", "BitcoinUTXO.GetUTXOs()");
+            }
+            else
+            {
+                var utxo = bitcoin.Find(x => x.Address == address && x.IsUsed == false);
+                if (utxo.Any())
+                {
+                    utxoList = utxo.ToList();
+                    return utxoList;
+                }
+                else
+                {
+                    return utxoList;
+                }
+            }
+
+            return utxoList;
 
         }
         #endregion
