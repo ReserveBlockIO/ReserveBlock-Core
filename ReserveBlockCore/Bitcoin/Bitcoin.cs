@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Bitcoin
                     
                     break;
                 case "5":
-                    
+                    await BitcoinCommand.ImportAddress();
                     break;
                 case "6":
                     
@@ -169,5 +169,13 @@ namespace ReserveBlockCore.Bitcoin
             Console.WriteLine("|type /menu to go back to RBX Wallet     |");
             Console.WriteLine("|========================================|");
         }
+
+        public enum BitcoinAddressFormat
+        {
+            SegwitP2SH = 0,
+            Segwit = 1,
+            Taproot = 2
+        }
+
     }
 }

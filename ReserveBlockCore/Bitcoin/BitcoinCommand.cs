@@ -19,30 +19,58 @@ namespace ReserveBlockCore.Bitcoin
 
         public static async Task ImportAddress()
         {
-            Console.WriteLine("Please paste in your private key");
-            var privateKey = Console.ReadLine();
+            try
+            {
+                Console.WriteLine("Please paste in your private key");
+                var privateKey = Console.ReadLine();
 
-            if(privateKey == null)
-            {
-                Console.WriteLine("Key cannot be blank.");
-                await Bitcoin.BitcoinMenu();
-                return;
-            }
-            if(privateKey?.Length < 50)
-            {
-                Console.WriteLine("Incorrect key format. Please try again.");
-                await Bitcoin.BitcoinMenu();
-            }
+                if (privateKey == null)
+                {
+                    Console.WriteLine("Key cannot be blank.");
+                    await Bitcoin.BitcoinMenu();
+                    return;
+                }
+                if (privateKey?.Length < 50)
+                {
+                    Console.WriteLine("Incorrect key format. Please try again.");
+                    await Bitcoin.BitcoinMenu();
+                }
 
-            //hex key
-            if(privateKey?.Length > 58)
-            {
-                BitcoinAccount.ImportPrivateKey(privateKey);
+                Console.WriteLine("Please choose your address format.");
+                Console.WriteLine("0 - SegwitP2SH");
+                Console.WriteLine("1 - Native Segwit");
+                Console.WriteLine("2 - Taproot");
+                Console.WriteLine("Press enter to use default.");
+                var addressFormatString = Console.ReadLine();
+
+                ScriptPubKeyType scriptPubKeyType = Globals.ScriptPubKeyType;
+
+                if (!string.IsNullOrWhiteSpace(addressFormatString))
+                {
+                    var parseAttempt = int.TryParse(addressFormatString, out int addressFormat);
+                    if (parseAttempt)
+                    {
+                        var addressFormatEnum = (Bitcoin.BitcoinAddressFormat)addressFormat;
+                        scriptPubKeyType = addressFormatEnum == Bitcoin.BitcoinAddressFormat.SegwitP2SH ? ScriptPubKeyType.SegwitP2SH :
+                            addressFormatEnum == Bitcoin.BitcoinAddressFormat.Segwit ? ScriptPubKeyType.Segwit : ScriptPubKeyType.TaprootBIP86;
+                    }
+                }
+
+                //hex key
+                if (privateKey?.Length > 58)
+                {
+                    BitcoinAccount.ImportPrivateKey(privateKey, scriptPubKeyType);
+                }
+                else
+                {
+                    BitcoinAccount.ImportPrivateKeyWIF(privateKey, scriptPubKeyType);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                BitcoinAccount.ImportPrivateKeyWIF(privateKey);
+                Console.WriteLine("The key provided could not be restore. Please check format and ensure key is not incomplete or corrupt.");
             }
+            
         }
 
         public static async Task ShowBitcoinAccounts()

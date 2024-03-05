@@ -120,13 +120,13 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Create Bitcoin Address
-        public static BitcoinAccount CreateAddress(bool useTaproot = false)
+        public static BitcoinAccount CreateAddress()
         {
             Key privateKey = new Key();
             PubKey publicKey = privateKey.PubKey;
 
             // Create a Bitcoin address from the public key
-            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(!useTaproot ? ScriptPubKeyType.SegwitP2SH : ScriptPubKeyType.TaprootBIP86, Globals.BTCNetwork);
+            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(Globals.ScriptPubKeyType, Globals.BTCNetwork);
             string privateKeyHex = privateKey.ToHex();
 
             string wif = privateKey.GetWif(Globals.BTCNetwork).ToString();
@@ -147,7 +147,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Import Private Key Hex
-        public static void ImportPrivateKey(string privateKey, bool useTaproot = false)
+        public static void ImportPrivateKey(string privateKey, ScriptPubKeyType scriptPubKeyType)
         {
             byte[] privateKeyBytes = privateKey.HexToByteArray();
             Key recreatedKey = new Key(privateKeyBytes);
@@ -155,7 +155,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             PubKey publicKey = recreatedKey.PubKey;
 
             // Create a Bitcoin address from the public key
-            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(!useTaproot ? ScriptPubKeyType.SegwitP2SH : ScriptPubKeyType.TaprootBIP86, Globals.BTCNetwork);
+            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(scriptPubKeyType, Globals.BTCNetwork);
             string privateKeyHex = recreatedKey.ToHex();
 
             string wif = recreatedKey.GetWif(Globals.BTCNetwork).ToString();
@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Import Private Key WIF
-        public static void ImportPrivateKeyWIF(string privateKey, bool useTaproot = false)
+        public static void ImportPrivateKeyWIF(string privateKey, ScriptPubKeyType scriptPubKeyType)
         {
             BitcoinSecret bitcoinSecret = new BitcoinSecret(privateKey, Globals.BTCNetwork);
             // Get the private key
@@ -185,7 +185,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             PubKey publicKey = recreatedKey.PubKey;
 
             // Create a Bitcoin address from the public key
-            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(!useTaproot ? ScriptPubKeyType.SegwitP2SH : ScriptPubKeyType.TaprootBIP86, Globals.BTCNetwork);
+            NBitcoin.BitcoinAddress bitcoinAddress = publicKey.GetAddress(scriptPubKeyType, Globals.BTCNetwork);
             string privateKeyHex = recreatedKey.ToHex();
 
             string wif = recreatedKey.GetWif(Globals.BTCNetwork).ToString();

@@ -87,6 +87,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 }
 
                 var hexTx = signedTransaction.ToHex();
+                //return (true, $"{hexTx}");
 
                 _ = BroadcastService.BroadcastTx(signedTransaction);
 

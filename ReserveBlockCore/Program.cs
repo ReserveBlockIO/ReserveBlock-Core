@@ -832,8 +832,6 @@ namespace ReserveBlockCore
 
         #endregion
 
-        
-
         #region DB Commits
         private static async void dbCommitCheckTimer_Elapsed(object sender)
         {

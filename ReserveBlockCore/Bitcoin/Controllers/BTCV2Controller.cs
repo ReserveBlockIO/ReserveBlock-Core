@@ -46,8 +46,8 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// Imports Address from Key
         /// </summary>
         /// <returns></returns>
-        [HttpGet("ImportPrivateKey/{privateKey}")]
-        public async Task<string> ImportPrivateKey(string privateKey)
+        [HttpGet("ImportPrivateKey/{privateKey}/{addressFormat?}")]
+        public async Task<string> ImportPrivateKey(string privateKey, Bitcoin.BitcoinAddressFormat? addressFormat = Bitcoin.BitcoinAddressFormat.Segwit)
         {
             if (privateKey == null)
             {
@@ -58,14 +58,17 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Incorrect key format. Please try again." }); ;
             }
 
+            ScriptPubKeyType scriptPubKeyType = addressFormat == Bitcoin.BitcoinAddressFormat.SegwitP2SH ? ScriptPubKeyType.SegwitP2SH :
+                addressFormat == Bitcoin.BitcoinAddressFormat.Segwit ? ScriptPubKeyType.Segwit : ScriptPubKeyType.TaprootBIP86;
+
             //hex key
             if (privateKey?.Length > 58)
             {
-                BitcoinAccount.ImportPrivateKey(privateKey);
+                BitcoinAccount.ImportPrivateKey(privateKey, scriptPubKeyType);
             }
             else
             {
-                BitcoinAccount.ImportPrivateKeyWIF(privateKey);
+                BitcoinAccount.ImportPrivateKeyWIF(privateKey, scriptPubKeyType);
             }
 
             LogUtility.Log("Key Import Successful.", "BTCV2Controller.GetNewAddress()");

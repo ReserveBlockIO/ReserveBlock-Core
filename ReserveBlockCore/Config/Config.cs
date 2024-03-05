@@ -46,6 +46,7 @@ namespace ReserveBlockCore.Config
         public int SelfSTUNPort { get; set; }
 		public bool LogMemory { get; set; }
 		public bool BlockSeedCalls { get; set; }
+		public Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -104,6 +105,7 @@ namespace ReserveBlockCore.Config
                 config.SelfSTUNPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
                 config.LogMemory = dict.ContainsKey("LogMemory") ? Convert.ToBoolean(dict["LogMemory"]) : false;
                 config.BlockSeedCalls = dict.ContainsKey("BlockSeedCalls") ? Convert.ToBoolean(dict["BlockSeedCalls"]) : false;
+                config.BitcoinAddressFormat = dict.ContainsKey("BitcoinAddressFormat") ? (Bitcoin.Bitcoin.BitcoinAddressFormat)Convert.ToInt32(dict["BitcoinAddressFormat"]) : 0;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -185,6 +187,12 @@ namespace ReserveBlockCore.Config
 			Globals.LogMemory = config.LogMemory;
 			Globals.BlockSeedCalls = config.BlockSeedCalls;
             Globals.BTCNetwork = NBitcoin.Network.Main;
+			Globals.SegwitP2SHStartPrefix = "3";
+			Globals.SegwitTaprootStartPrefix = "bc1";
+			Globals.BitcoinAddressFormat = config.BitcoinAddressFormat;
+
+			Globals.ScriptPubKeyType = Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.SegwitP2SH ? NBitcoin.ScriptPubKeyType.SegwitP2SH :
+				Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit ? NBitcoin.ScriptPubKeyType.Segwit : NBitcoin.ScriptPubKeyType.TaprootBIP86;
 
             if (config.STUNServers?.Count() > 0)
 			{
@@ -236,6 +244,8 @@ namespace ReserveBlockCore.Config
 				Globals.DSTClientPort = 13341;
                 Globals.SelfSTUNPort = 13340;
 				Globals.BTCNetwork = NBitcoin.Network.TestNet;
+                Globals.SegwitP2SHStartPrefix = "2";
+                Globals.SegwitTaprootStartPrefix = "tb1";
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))
@@ -292,6 +302,7 @@ namespace ReserveBlockCore.Config
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=false");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
                     File.AppendAllText(path + "config.txt", Environment.NewLine + "AutoDownloadNFTAsset=true");
+                    File.AppendAllText(path + "config.txt", Environment.NewLine + "BitcoinAddressFormat=1");
                 }
                 else
                 {
@@ -300,6 +311,7 @@ namespace ReserveBlockCore.Config
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=true");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
                     File.AppendAllText(path + "config.txt", Environment.NewLine + "AutoDownloadNFTAsset=true");
+                    File.AppendAllText(path + "config.txt", Environment.NewLine + "BitcoinAddressFormat=1");
                 }
 				
 			}

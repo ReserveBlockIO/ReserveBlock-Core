@@ -65,6 +65,10 @@ namespace ReserveBlockCore
         public static bool IsFork = false;
         public static Blockchain Blockchain { get; set; }
         public static NBitcoin.Network BTCNetwork { get; set; }
+        public static string SegwitP2SHStartPrefix { get; set; }
+        public static string SegwitTaprootStartPrefix { get; set; }
+        public static Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
+        public static NBitcoin.ScriptPubKeyType ScriptPubKeyType { get; set; }
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
