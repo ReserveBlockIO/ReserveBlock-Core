@@ -99,7 +99,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     Hash = signedTransaction.GetHash().ToString(),
                     Signature = hexTx,
                     Timestamp = TimeUtil.GetTime(),
-                    TransactionType = TransactionType.Send
+                    TransactionType = BTCTransactionType.Send
                 };
 
                 BitcoinTransaction.SaveBitcoinTX(tx);

@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string Signature { get; set; }
-        public TransactionType TransactionType { get; set; }
+        public BTCTransactionType TransactionType { get; set; }
         public long FeeRate { get; set; }
 
         #endregion
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Bitcoin.Models
     }
 
     #region Enum
-    public enum TransactionType
+    public enum BTCTransactionType
     {
         Send,
         Receive
