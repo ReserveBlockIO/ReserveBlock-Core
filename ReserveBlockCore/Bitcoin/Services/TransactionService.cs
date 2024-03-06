@@ -2,6 +2,7 @@
 using NBitcoin.Protocol;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using static ReserveBlockCore.Models.Integrations;
 
@@ -88,6 +89,20 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 var hexTx = signedTransaction.ToHex();
                 //return (true, $"{hexTx}");
+
+                var tx = new BitcoinTransaction {
+                    Fee = (fee * SatoshiMultiplier),
+                    Amount = sendAmount,
+                    FromAddress = sender,
+                    ToAddress = receiver,
+                    FeeRate = chosenFeeRate,
+                    Hash = signedTransaction.GetHash().ToString(),
+                    Signature = hexTx,
+                    Timestamp = TimeUtil.GetTime(),
+                    TransactionType = TransactionType.Send
+                };
+
+                BitcoinTransaction.SaveBitcoinTX(tx);
 
                 _ = BroadcastService.BroadcastTx(signedTransaction);
 

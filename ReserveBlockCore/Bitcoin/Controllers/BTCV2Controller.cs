@@ -180,6 +180,26 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Get address send TX List
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetAddressTXList/{address}")]
+        public async Task<string> GetAddressTXList(string address)
+        {
+            if (address == null)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"address cannot be null." });
+            }
+
+            var txList = BitcoinTransaction.GetTXs(address);
+
+            if (txList?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"No TXs Found For this Address." });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"TXs Found For this Address.", UTXOs = txList });
+        }
+
+        /// <summary>
         /// Send a transaction. Specify from, to, and amount
         /// </summary>
         /// <param name="faddr"></param>

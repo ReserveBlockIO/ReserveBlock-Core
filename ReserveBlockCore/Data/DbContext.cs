@@ -117,6 +117,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_CHAIN_SIZE = "rsrv_chain_size";
         public const string RSRV_BITCOIN = "rsrv_bitcoin";
         public const string RSRV_BITCOIN_UTXO = "rsrv_bitcoin_utxo";
+        public const string RSRV_BITCOIN_TXS = "rsrv_bitcoin_txs";
 
         internal static void Initialize()
         {
