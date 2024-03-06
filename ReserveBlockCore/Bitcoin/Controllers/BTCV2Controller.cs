@@ -29,6 +29,16 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Get Default Address Type
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDefaultAddressType")]
+        public async Task<string> GetDefaultAddressType()
+        {
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"", AddressType = Globals.ScriptPubKeyType.ToString() });
+        }
+
+        /// <summary>
         /// Produces a new address
         /// </summary>
         /// <returns></returns>
@@ -131,6 +141,15 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         [HttpGet("ResetAccount")]
         public async Task<string> ResetAccount()
         {
+            //TODO: THROTTLE THIS
+            //Add throttling. Only can do once every 5 mins
+
+            if(false)
+            {
+                //create new time param here
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Cannot reset again until: {DateTime.Now}" });
+            }
+
             var btcUtxoDb = BitcoinUTXO.GetBitcoinUTXO();
             if (btcUtxoDb != null)
                 btcUtxoDb.DeleteAllSafe();
@@ -196,7 +215,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             if (txList?.Count() == 0)
                 return JsonConvert.SerializeObject(new { Success = true, Message = $"No TXs Found For this Address." });
 
-            return JsonConvert.SerializeObject(new { Success = true, Message = $"TXs Found For this Address.", UTXOs = txList });
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"TXs Found For this Address.", TXs = txList });
         }
 
         /// <summary>
@@ -214,6 +233,29 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             var result = await TransactionService.SendTransaction(faddr, taddr, amt, feeRate, overrideInternalSend);
 
             return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 }); ;
+        }
+
+        /// <summary>
+        /// Get Transaction Fee
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <param name="feeRate"></param>
+        /// <returns></returns>
+        [HttpGet("GetTransactionFee/{faddr}/{taddr}/{amt}/{feeRate}")]
+        public async Task<string> GetTransactionFee(string faddr, string taddr, decimal amt, int feeRate)
+        {
+            var result = await TransactionService.GetTransactionFee(faddr, taddr, amt, feeRate);
+
+            if(result.Item1)
+            {
+                var parseResult = decimal.TryParse(result.Item2, out var btcFee);
+                var satParseResult = ulong.TryParse(result.Item2, out var satFee);
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2, SatoshiFee = satParseResult ? satFee : 0, BitcoinFee = parseResult ? (btcFee * TransactionService.SatoshiMultiplier) : 0 });
+            }
+               
+            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
         }
     }
 }

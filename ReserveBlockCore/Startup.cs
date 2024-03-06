@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
+using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
@@ -51,6 +52,9 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Auction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Bid>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BitcoinAccount>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BitcoinTransaction>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BitcoinUTXO>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DSTConnection>>();

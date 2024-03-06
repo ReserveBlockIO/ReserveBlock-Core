@@ -8,7 +8,6 @@ namespace ReserveBlockCore.Bitcoin.Models
     public class BitcoinTransaction
     {
         #region Variables
-
         public ObjectId Id { get; set; }
         public string Hash { get; set; }
         public string ToAddress { get; set; }
