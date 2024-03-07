@@ -141,13 +141,12 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         [HttpGet("ResetAccount")]
         public async Task<string> ResetAccount()
         {
-            //TODO: THROTTLE THIS
-            //Add throttling. Only can do once every 5 mins
-
-            if(false)
+            //Only can do once every 5 mins
+            var now = DateTime.Now;
+            var nextRun = Globals.LastRanBTCReset.AddMinutes(5);
+            if(now < nextRun)
             {
-                //create new time param here
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Cannot reset again until: {DateTime.Now}" });
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Last ran at: {Globals.LastRanBTCReset}. Cannot reset again until: {nextRun}", NextRunTimeAllowed = nextRun });
             }
 
             var btcUtxoDb = BitcoinUTXO.GetBitcoinUTXO();
@@ -170,6 +169,8 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             }
 
             _ = Bitcoin.AccountCheck();
+
+            Globals.LastRanBTCReset = DateTime.Now;
 
             return JsonConvert.SerializeObject(new { Success = true, Message = $"Bitcoin accounts reset." });
         }

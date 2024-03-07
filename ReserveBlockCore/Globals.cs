@@ -70,6 +70,7 @@ namespace ReserveBlockCore
         public static Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
         public static NBitcoin.ScriptPubKeyType ScriptPubKeyType { get; set; }
         public static DateTime BTCAccountLastCheckedDate = DateTime.Now;
+        public static DateTime LastRanBTCReset = DateTime.Now.AddMinutes(-5);
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
