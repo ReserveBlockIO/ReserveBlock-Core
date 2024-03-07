@@ -99,6 +99,8 @@ namespace ReserveBlockCore.Bitcoin
                 var delay = Task.Delay(new TimeSpan(0,4,0));
                 await BalanceCheckLock.WaitAsync();
 
+                Globals.BTCAccountLastCheckedDate = DateTime.Now;
+
                 try
                 {
                     var addressList = BitcoinAccount.GetBitcoin()?.FindAll().ToList();

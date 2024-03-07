@@ -219,6 +219,17 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Gets the last time the accounts were synced
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetLastAccounySync")]
+        public async Task<string> GetLastAccounySync()
+        {
+            var nextCheckTime = Globals.BTCAccountLastCheckedDate.AddMinutes(4);
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Sync Times", LastChecked = Globals.BTCAccountLastCheckedDate, NextCheck = nextCheckTime });
+        }
+
+        /// <summary>
         /// Send a transaction. Specify from, to, and amount
         /// </summary>
         /// <param name="faddr"></param>

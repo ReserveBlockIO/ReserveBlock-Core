@@ -69,6 +69,7 @@ namespace ReserveBlockCore
         public static string SegwitTaprootStartPrefix { get; set; }
         public static Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
         public static NBitcoin.ScriptPubKeyType ScriptPubKeyType { get; set; }
+        public static DateTime BTCAccountLastCheckedDate = DateTime.Now;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
