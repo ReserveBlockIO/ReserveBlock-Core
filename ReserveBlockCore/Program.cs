@@ -23,6 +23,7 @@ using System.Reflection;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Engines;
 using ReserveBlockCore.Config;
+using ReserveBlockCore.Bitcoin.Utilities;
 
 namespace ReserveBlockCore
 {
@@ -173,6 +174,8 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
+                        _ = NodeFinder.GetNode();
+                        _ = Bitcoin.Bitcoin.AccountCheck();
                     }
                     if(argC == "blockv2")
                     {
