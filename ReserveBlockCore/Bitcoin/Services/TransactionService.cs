@@ -25,6 +25,9 @@ namespace ReserveBlockCore.Bitcoin.Services
             if(receiverAccount != null && !overrideInternalSend)
                 return (false, $"This is an internal send. Please use the override if you wish to do this.");
 
+            if(sendAmount < Globals.BTCMinimumAmount)
+                return (false, $"This wallet does not support sends smaller than {Globals.BTCMinimumAmount} BTC.");
+
             string senderPrivateKeyHex = btcAccount.PrivateKey;
 
             BitcoinAddress senderAddress = BitcoinAddress.Create(sender, Globals.BTCNetwork);
