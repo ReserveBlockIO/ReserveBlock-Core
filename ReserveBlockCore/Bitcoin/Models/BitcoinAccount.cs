@@ -221,5 +221,23 @@ namespace ReserveBlockCore.Bitcoin.Models
         }
 
         #endregion
+
+        #region Add ADNR Record
+        public static async Task AddAdnrToAccount(string address, string name)
+        {
+            var accounts = GetBitcoin();
+            if(accounts != null)
+            {
+                var account = accounts.FindOne(x => x.Address == address);
+
+                if (account != null)
+                {
+                    account.ADNR = name.ToLower();
+                    accounts.UpdateSafe(account);
+                }
+            }
+        }
+
+        #endregion
     }
 }

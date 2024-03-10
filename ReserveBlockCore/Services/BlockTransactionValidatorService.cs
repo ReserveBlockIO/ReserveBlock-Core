@@ -8,6 +8,7 @@ using System.Security.Principal;
 using System;
 using System.Xml.Linq;
 using Spectre.Console;
+using ReserveBlockCore.Bitcoin.Models;
 
 namespace ReserveBlockCore.Services
 {
@@ -678,6 +679,7 @@ namespace ReserveBlockCore.Services
 
                     var function = (string?)scData["Function"];
                     var name = (string?)scData["Name"];
+                    var btcAddress = (string?)scData["BTCAddress"];
                     if (!string.IsNullOrWhiteSpace(function))
                     {
                         if (function == "AdnrCreate()")
@@ -687,6 +689,16 @@ namespace ReserveBlockCore.Services
                                 if (!name.Contains(".rbx"))
                                     name = name + ".rbx";
                                 await Account.AddAdnrToAccount(tx.FromAddress, name);
+                            }
+                        }
+                        if (function == "BTCAdnrCreate()")
+                        {
+                            if (!string.IsNullOrWhiteSpace(name))
+                            {
+                                if (!name.Contains(".btc"))
+                                    name = name.ToLower() + ".btc";
+                                if(btcAddress != null)
+                                    await BitcoinAccount.AddAdnrToAccount(btcAddress, name);
                             }
                         }
                         if (function == "AdnrDelete()")
