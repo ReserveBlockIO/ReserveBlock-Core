@@ -38,6 +38,7 @@ namespace ReserveBlockCore.Nodes
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
+            //_ = BlockCheck();
 
             return Task.CompletedTask;
         }
@@ -438,7 +439,7 @@ namespace ReserveBlockCore.Nodes
                     continue;
                 }
 
-                if(Globals.ValidatorNodes.Any())
+                if (!Globals.ValidatorNodes.Any())
                 {
                     await delay;
                     continue;
@@ -457,6 +458,9 @@ namespace ReserveBlockCore.Nodes
 
                     var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
 
+                    if (valNodeList.Count() == 0)
+                        continue;
+
                     if (Globals.LastProofBlockheight == 0)
                     {
                         var firstProof = Globals.LastBlock.Height == 0 ? false : true;
@@ -465,9 +469,6 @@ namespace ReserveBlockCore.Nodes
                         //send proofs
                         var proofsJson = JsonConvert.SerializeObject(proofs);
                         await _hubContext.Clients.All.SendAsync("4", proofsJson);
-
-                        if (Globals.ValidatorNodes.Count == 0)
-                            continue;
 
                         foreach (var val in valNodeList)
                         {
