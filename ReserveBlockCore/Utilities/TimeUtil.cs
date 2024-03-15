@@ -9,9 +9,9 @@ namespace ReserveBlockCore.Utilities
 {
     internal class TimeUtil
     {
-        public static long GetTime(int addSeconds = 0, int addMinutes = 0, int addHours = 0)
+        public static long GetTime(int addSeconds = 0, int addMinutes = 0, int addHours = 0, int addDays = 0)
         {
-            return DateTimeOffset.UtcNow.AddSeconds(addSeconds).AddMinutes(addMinutes).AddHours(addHours).ToUnixTimeSeconds();
+            return DateTimeOffset.UtcNow.AddSeconds(addSeconds).AddMinutes(addMinutes).AddHours(addHours).AddDays(addDays).ToUnixTimeSeconds();
         }
 
         public static long GetMillisecondTime()

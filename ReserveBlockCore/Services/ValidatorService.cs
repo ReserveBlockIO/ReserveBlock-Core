@@ -168,6 +168,12 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
+            if(Globals.ValidatingV2 == Globals.LastBlock.Height + 1)
+            {
+                await GenesisValidatorStart(account, uName);
+                return "Account found and activated as a validator! Thank you for service to the network!";
+            }
+
             var valCount = Globals.Nodes.Values.Where(x => x.IsValidator).Count();
             valCount = valCount == 0 ? Globals.ValidatorNodes.Count : valCount;
             if(valCount == 0)
@@ -747,6 +753,100 @@ namespace ReserveBlockCore.Services
                 else
                     Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
             }
+        }
+
+        private static async Task<string> GenesisValidatorStart(Account account, string uName = "")
+        {
+            string output = "";
+            Validators validator = new Validators();
+
+            if (account == null)
+            {
+                return "Account not found locally. Please ensure the account specified is stored locally.";
+            }
+            else
+            {
+                var sTreiAcct = StateData.GetSpecificAccountStateTrei(account.Address);
+
+                if (sTreiAcct == null)
+                {
+                    return "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
+                }
+                if (sTreiAcct != null && sTreiAcct.Balance < ValidatorRequiredAmount())
+                {
+                    return $"Account Found, but does not meet the minimum of {ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
+                }
+                if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
+                {
+                    return "Unique name has already been taken. Please choose another.";
+                }
+                if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorRequiredAmount())
+                {
+                    //validate account with signature check
+                    var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
+
+                    var verifySig = SignatureService.VerifySignature(account.Address, account.Address, signature);
+
+                    if (verifySig == false)
+                    {
+                        return "Signature check has failed. Please provide correct private key for public address: " + account.Address;
+                    }
+
+                    //need to request validator list from someone. 
+
+                    var accounts = AccountData.GetAccounts();
+                    var IsThereValidator = accounts.FindOne(x => x.IsValidating == true);
+                    if (IsThereValidator != null)
+                    {
+                        return "This wallet already has a validator active on it. You can only have 1 validator active per wallet: " + IsThereValidator.Address;
+                    }
+
+                    var validatorTable = Validators.Validator.GetAll();
+
+                    var validatorCount = validatorTable.Query().Where(x => x.NodeIP != "SELF").Count();
+                    if (validatorCount > 0)
+                    {
+                        return "Account is already a validator";
+                    }
+                    else
+                    {
+
+                        //add total num of validators to block
+                        validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
+                        validator.Amount = account.Balance;
+                        validator.Address = account.Address;
+                        validator.EligibleBlockStart = -1;
+                        validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
+                        validator.IsActive = true;
+                        validator.Signature = signature;
+                        validator.FailCount = 0;
+                        validator.Position = validatorTable.FindAll().Count() + 1;
+                        validator.NodeReferenceId = BlockchainData.ChainRef;
+                        validator.WalletVersion = Globals.CLIVersion;
+                        validator.LastChecked = DateTime.UtcNow;
+
+                        validatorTable.InsertSafe(validator);
+
+                        account.IsValidating = true;
+                        var accountTable = AccountData.GetAccounts();
+                        var saveResult = accountTable.UpdateSafe(account);
+
+                        Globals.ValidatorAddress = validator.Address;
+
+                        output = "Account found and activated as a validator! Thank you for service to the network!";
+
+                        _ = StartValidatorServer();
+                        _ = StartupValidators();
+
+                    }
+                }
+                else
+                {
+                    return "Insufficient balance to validate.";
+                }
+            }
+
+            return output;
         }
 
     }

@@ -53,8 +53,17 @@ namespace ReserveBlockCore.Bitcoin.Integrations
         {
             ExplorerDictionary = new ConcurrentDictionary<ExplorersEnum, int>();
 
-            ExplorerDictionary.TryAdd(ExplorersEnum.Blockstream, 0);
-            ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpace, 0);
+            if(!Globals.IsTestNet)
+            {
+                ExplorerDictionary.TryAdd(ExplorersEnum.Blockstream, 0);
+                ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpace, 0);
+            }
+            else
+            {
+                ExplorerDictionary.TryAdd(ExplorersEnum.Blockstream, 0);
+                ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpace, 0);
+            }
+            
         }
     }
 }

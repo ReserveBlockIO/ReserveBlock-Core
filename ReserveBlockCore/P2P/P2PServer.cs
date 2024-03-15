@@ -593,6 +593,7 @@ namespace ReserveBlockCore.P2P
 
         #region Get Validator Status
         public async Task<bool> GetValidatorStatus()
+        
         {
             return await SignalRQueue(Context, bool.FalseString.Length, async () => !string.IsNullOrEmpty(Globals.ValidatorAddress));
         }

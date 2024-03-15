@@ -1113,62 +1113,6 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if (function == "BTCAdnrCreate()")
-                            {
-                                if (txRequest.FromAddress.StartsWith("xRBX"))
-                                    return (txResult, "A reserve account may not create an ADNR.");
-
-                                var name = (string?)jobj["Name"];
-                                var btcAddress = (string?)jobj["BTCAddress"];
-                                var message = (string?)jobj["Message"];
-                                var signature = (string?)jobj["Signature"];
-
-                                if(name == null || btcAddress == null || message == null || signature == null)
-                                    return (txResult, "TX data not properly formatted. Something was null.");
-
-                                var adnrList = BitcoinAdnr.GetBitcoinAdnr();
-
-                                if (adnrList != null)
-                                {
-                                    if (!string.IsNullOrEmpty(name))
-                                    {
-                                        var nameRBX = name.ToLower() + ".btc";
-                                        var nameCheck = adnrList.FindOne(x => x.Name == name || x.Name == nameRBX);
-                                        if (nameCheck != null)
-                                        {
-                                            return (txResult, "Name has already been taken.");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return (txResult, "Name may not be blank or empty.");
-                                    }
-
-                                    var addressCheck = adnrList.FindOne(x => x.BTCAddress == btcAddress);
-                                    if (addressCheck != null)
-                                    {
-                                        return (txResult, "Address is already associated with an active DNR");
-                                    }
-
-                                    if (txRequest.ToAddress != "Adnr_Base")
-                                    {
-                                        return (txResult, "To Address was not the Adnr_Base.");
-                                    }
-
-                                    var signatureValid = Bitcoin.Services.SignatureService.VerifySignature(message, signature);
-                                    if(!signatureValid)
-                                        return (txResult, "Invalid BTC Signature");
-                                    var messageParse = long.TryParse(message, out var messageTimestamp);
-
-                                    if(!messageParse)
-                                        return (txResult, "Improper Message Format. Message must be a timestamp.");
-
-                                    if(messageTimestamp < TimeUtil.GetTime(0, -30, 0))
-                                        return (txResult, "Signature message is too old. Please resubmit a new tx.");
-
-                                }
-                            }
-
                             if (function == "AdnrDelete()")
                             {
                                 if (txRequest.FromAddress.StartsWith("xRBX"))
@@ -1212,7 +1156,68 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if(Globals.LastBlock.Height >= Globals.V1ValHeight)
+                            if (function == "BTCAdnrCreate()")
+                            {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not create an ADNR.");
+
+                                var name = (string?)jobj["Name"];
+                                var btcAddress = (string?)jobj["BTCAddress"];
+                                var message = (string?)jobj["Message"];
+                                var signature = (string?)jobj["Signature"];
+
+                                if (name == null || btcAddress == null || message == null || signature == null)
+                                    return (txResult, "TX data not properly formatted. Something was null.");
+
+                                var adnrList = BitcoinAdnr.GetBitcoinAdnr();
+
+                                if (adnrList != null)
+                                {
+                                    if (!string.IsNullOrEmpty(name))
+                                    {
+                                        var nameRBX = name.ToLower() + ".btc";
+                                        var nameCheck = adnrList.FindOne(x => x.Name == name || x.Name == nameRBX);
+                                        if (nameCheck != null)
+                                        {
+                                            return (txResult, "Name has already been taken.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (txResult, "Name may not be blank or empty.");
+                                    }
+
+                                    var addressCheck = adnrList.FindOne(x => x.BTCAddress == btcAddress);
+                                    if (addressCheck != null)
+                                    {
+                                        return (txResult, "Address is already associated with an active DNR");
+                                    }
+
+                                    if (txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return (txResult, "To Address was not the Adnr_Base.");
+                                    }
+
+                                    //This part is very important
+                                    //Ensure that someone else is not attempting to assign an ADNR to another BTC address they don't own
+                                    //Rules:
+                                    //1. Must be a valid signature from the BTC address
+                                    //2. Message must be a timestamp no older than 30 minutes. 
+                                    var signatureValid = Bitcoin.Services.SignatureService.VerifySignature(message, signature);
+                                    if (!signatureValid)
+                                        return (txResult, "Invalid BTC Signature");
+                                    var messageParse = long.TryParse(message, out var messageTimestamp);
+
+                                    if (!messageParse)
+                                        return (txResult, "Improper Message Format. Message must be a timestamp.");
+
+                                    if (messageTimestamp < TimeUtil.GetTime(0, -30))
+                                        return (txResult, "Signature message is too old. Please resubmit a new tx.");
+
+                                }
+                            }
+
+                            if (Globals.LastBlock.Height >= Globals.V1ValHeight)
                             {
                                 if (txRequest.Amount < Globals.ADNRRequiredRBX)
                                     return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");

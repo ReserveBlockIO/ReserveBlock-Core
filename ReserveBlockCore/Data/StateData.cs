@@ -10,6 +10,8 @@ using System.Xml.Linq;
 using LiteDB;
 using System.Net;
 using System.Security.Principal;
+using ReserveBlockCore.Bitcoin.Models;
+using NBitcoin.JsonConverters;
 
 namespace ReserveBlockCore.Data
 {
@@ -310,6 +312,9 @@ namespace ReserveBlockCore.Data
                                             break;
                                         case "AdnrDelete()":
                                             DeleteAdnr(tx);
+                                            break;
+                                        case "BTCAdnrCreate()":
+                                            AddNewBTCAdnr(tx);
                                             break;
                                         default:
                                             break;
@@ -956,7 +961,33 @@ namespace ReserveBlockCore.Data
             }
             catch { }
         }
+        private static void AddNewBTCAdnr(Transaction tx)
+        {
+            try
+            {
+                var jobj = JObject.Parse(tx.Data);
+                var name = (string?)jobj["Name"];
+                var btcAddress = (string?)jobj["BTCAddress"];
 
+                if(btcAddress != null)
+                {
+                    BitcoinAdnr adnr = new BitcoinAdnr
+                    {
+                        BTCAddress = btcAddress,
+                        RBXAddress = tx.FromAddress,
+                        Name = name,
+                        Timestamp = tx.Timestamp,
+                        TxHash = tx.Hash
+                    };
+
+                    BitcoinAdnr.SaveAdnr(adnr);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError("Failed to deserialized TX Data for BTC ADNR", "StateData.AddNewBTCAdnr()");
+            }
+        }
         private static void AddNewAdnr(Transaction tx)
         {
             try
@@ -975,7 +1006,7 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {                
-                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "StateData.AddNewAdnr()");
             }
         }
         private static void TransferAdnr(Transaction tx)

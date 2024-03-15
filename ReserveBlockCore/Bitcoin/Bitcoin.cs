@@ -57,28 +57,28 @@ namespace ReserveBlockCore.Bitcoin
                 case "/menu":
                     result = CommandResult.MainMenu;
                     break;
-                case "1":
+                case "1": //create address
                     BitcoinCommand.CreateAddress();
                     break;
-                case "2":
+                case "2": //show address(es)
                     await BitcoinCommand.ShowBitcoinAccounts();
                     break;
-                case "3":
+                case "3": //send transactions
                     await BitcoinCommand.SendBitcoinTransaction();
                     break;
-                case "4":
-                    
+                case "4": //Tokenize
+                    await BitcoinCommand.TokenizeBitcoin();
                     break;
-                case "5":
+                case "5": //Import address
                     await BitcoinCommand.ImportAddress();
                     break;
-                case "6":
+                case "6": //Bitcoin ADNR
                     
                     break;
-                case "7":
+                case "7": //Reset Accounts
                     await BitcoinCommand.ResetAccounts();
                     break;
-                case "8":
+                case "8": //Exit
                     result = CommandResult.MainMenu;
                     break;
                 case "/printkeys":
@@ -136,25 +136,25 @@ namespace ReserveBlockCore.Bitcoin
             if (Globals.IsTestNet != true)
             {
                 AnsiConsole.Write(
-                new FigletText("Bitcoin")
+                new FigletText("Bitcoin + VerifiedX")
                 .LeftJustified()
                 .Color(new Color(247, 147, 26)));
             }
             else
             {
                 AnsiConsole.Write(
-                new FigletText("Bitcoin - TestNet")
+                new FigletText("Bitcoin + VerifiedX - TestNet")
                 .LeftJustified()
                 .Color(new Color(50, 146, 57)));
             }
 
             if (Globals.IsTestNet != true)
             {
-                Console.WriteLine("Bitcoin Network - Mainnet");
+                Console.WriteLine("Bitcoin + VerifiedX Network - Mainnet");
             }
             else
             {
-                Console.WriteLine("Bitcoin Network - **TestNet**");
+                Console.WriteLine("Bitcoin + VerifiedX Network - **TestNet**");
             }
 
             Console.WriteLine("|========================================|");

@@ -136,16 +136,24 @@ namespace ReserveBlockCore.Bitcoin
                     int count = 1;
                     Console.WriteLine("Please select a Bitcoin account to send from");
                     Console.WriteLine("********************************************************************");
+
+                    var table = new Table();
+
+                    table.Title("[yellow]BTC Wallet Accounts[/]").Centered();
+                    table.AddColumn(new TableColumn(new Panel("#")));
+                    table.AddColumn(new TableColumn(new Panel("Address")));
+                    table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
                     accountList.ToList().ForEach(x => {
                         accountNumberList.Add(count.ToString(), x);
-
-                        Console.WriteLine("********************************************************************");
-                        Console.WriteLine("\n #" + count.ToString());
-                        Console.WriteLine("\nAddress :\n{0}", x.Address);
-                        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                        Console.WriteLine("********************************************************************");
+                        table.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
                         count++;
                     });
+
+
+                    table.Border(TableBorder.Rounded);
+
+                    AnsiConsole.Write(table);
 
                     string? walletChoice = "";
                     walletChoice = await ReadLineUtility.ReadLine();
@@ -349,6 +357,90 @@ namespace ReserveBlockCore.Bitcoin
             else
             {
 
+            }
+        }
+
+        public static async Task TokenizeBitcoin()
+        {
+            Console.Clear();
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            try
+            {
+                var accountList = BitcoinAccount.GetBitcoinAccounts();
+                var accountNumberList = new Dictionary<string, BitcoinAccount>();
+
+                if (accountList?.Count() > 0)
+                {
+                    int count = 1;
+                    var table = new Table();
+
+                    table.Title("[green]Please select a Bitcoin account to tokenize.[/]").Centered();
+                    table.AddColumn(new TableColumn(new Panel("#")));
+                    table.AddColumn(new TableColumn(new Panel("Address")));
+                    table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
+                    accountList.ToList().ForEach(x => {
+                        accountNumberList.Add(count.ToString(), x);
+                        table.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
+                        count++;
+                    });
+
+                    table.Border(TableBorder.Rounded);
+
+                    AnsiConsole.Write(table);
+
+                    string? walletChoice = "";
+                    walletChoice = await ReadLineUtility.ReadLine();
+                    while (string.IsNullOrEmpty(walletChoice))
+                    {
+                        Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
+                        walletChoice = await ReadLineUtility.ReadLine();
+                    }
+                    var wallet = accountNumberList[walletChoice];
+                    Console.WriteLine("********************************************************************");
+                    string fromAddress = wallet.Address;
+                    AnsiConsole.MarkupLine($"Tokenizing: [green]{fromAddress}[/]");
+                    
+                    Console.WriteLine("\nPlease enter ADNR Name.");
+                    string? adnrName = await ReadLineUtility.ReadLine();
+
+                    if (string.IsNullOrEmpty(fromAddress) ||
+                    string.IsNullOrEmpty(adnrName))
+                    {
+
+                        Console.WriteLine("\n\nError! Please input all fields: tokenize address and the name.\n");
+                        return;
+                    }
+
+                    // FIND network MCP
+                    if(adnrName != "")
+                        ErrorLogUtility.LogError($"Network MCP Could not be located on testnet.", "BitcoinCommand.TokenizeBitcoin()");
+                    Console.WriteLine("Error Tokenizing BTC. Please Review Logs and Try again.");
+                    Console.WriteLine("Returning you to BTC Menu");
+                    Console.WriteLine("......3");
+                    Thread.Sleep(1000);
+                    Console.WriteLine("......2");
+                    Thread.Sleep(1000);
+                    Console.WriteLine("......1");
+                    Thread.Sleep(1000);
+                    await Bitcoin.BitcoinMenu();
+                }
+                else
+                {
+                    Console.WriteLine("No Accounts Found. Returning you to BTC Menu");
+                    Console.WriteLine("......3");
+                    Thread.Sleep(1000);
+                    Console.WriteLine("......2");
+                    Thread.Sleep(1000);
+                    Console.WriteLine("......1");
+                    Thread.Sleep(1000);
+                    await Bitcoin.BitcoinMenu();
+                }
+            }
+            catch(Exception ex) 
+            {
+                ErrorLogUtility.LogError($"Error Tokenizing BTC. Error: {ex.ToString}", "BitcoinCommand.TokenizeBitcoin()");
             }
         }
     }

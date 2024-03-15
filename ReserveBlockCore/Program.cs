@@ -64,7 +64,7 @@ namespace ReserveBlockCore
 
             //Forced Testnet
             Globals.IsTestNet = true;
-            Globals.ValidatingV2 = Globals.IsTestNet ? 0 : 9999999;//change for mainnet.
+            Globals.ValidatingV2 = Globals.IsTestNet ? 1 : 9999999;//change for mainnet.
             Globals.GenesisValidator = Globals.IsTestNet ? "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC" : "SomeMainnetAddress";
 
 
@@ -308,7 +308,7 @@ namespace ReserveBlockCore
             Globals.BlockLock = Globals.IsTestNet ? 0 : Globals.BlockLock;
 
             //uncomment to create genesis block
-            await BlockchainData.InitializeChain();
+            //await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles

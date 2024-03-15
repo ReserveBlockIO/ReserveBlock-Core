@@ -981,7 +981,7 @@ namespace ReserveBlockCore.Services
                     var lastBlock = Globals.LastBlock;
                     var currentTimestamp = TimeUtil.GetTime(-90);
 
-                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null)
+                    if(lastBlock.Timestamp >= currentTimestamp || Globals.IsTestNet)
                     {
                         DateTime endTime = DateTime.UtcNow;
                         ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
@@ -1401,6 +1401,7 @@ namespace ReserveBlockCore.Services
                 Console.WriteLine("|======================================|");
                 Console.WriteLine("|type /help for menu options           |");
                 Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|type /btc to access the bitcoin menu  |");
                 Console.WriteLine("|======================================|");
 
                 if (Globals.DuplicateAdjAddr)
