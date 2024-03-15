@@ -42,6 +42,11 @@ namespace ReserveBlockCore.Services
                     });
 
                     _ = builder.RunConsoleAsync();
+
+                    //var app = builder.Build();
+                    //_ = app.RunAsync();
+
+                    //await Task.Delay(-1);
                 }
             }
             catch (Exception ex)

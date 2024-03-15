@@ -517,8 +517,6 @@ namespace ReserveBlockCore
             _ = Task.Run(BlockHeightCheckLoop);
             _ = StartupService.DownloadBlocksOnStart();
 
-
-
             //TODO need new validator running method
             //_ = Task.Run(ClientCallService.DoWorkV3);
             

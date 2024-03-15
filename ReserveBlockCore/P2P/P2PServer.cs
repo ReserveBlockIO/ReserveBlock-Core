@@ -30,7 +30,6 @@ namespace ReserveBlockCore.P2P
                 return;
             }
 
-
             Globals.P2PPeerDict[peerIP] = Context;
 
             var portOpen = PortUtility.IsPortOpen(peerIP, Globals.Port);

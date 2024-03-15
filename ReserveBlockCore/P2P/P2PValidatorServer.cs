@@ -185,7 +185,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Receive Block - Receives Block and then Broadcast out.
-        public async Task<bool> ReceiveBlock(Block nextBlock)
+        public async Task<bool> ReceiveBlockVal(Block nextBlock)
         {
             try
             {
@@ -228,7 +228,7 @@ namespace ReserveBlockCore.P2P
 
         #region Send Block - returns specific block
         //Send Block to client from p2p server
-        public async Task<Block?> SendBlock(long currentBlock)
+        public async Task<Block?> SendBlockVal(long currentBlock)
         {
             try
             {
@@ -256,7 +256,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send to Mempool
-        public async Task<string> SendTxToMempool(Transaction txReceived)
+        public async Task<string> SendTxToMempoolVals(Transaction txReceived)
         {
             //This needs to have new modified network reach
             //No longer uses ADJs
@@ -266,7 +266,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Validator Status
-        public async Task<bool> GetValidatorStatus()
+        public async Task<bool> GetValidatorStatusVal()
         {
             return await SignalRQueue(Context, bool.FalseString.Length, async () => !string.IsNullOrEmpty(Globals.ValidatorAddress));
         }
@@ -274,7 +274,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Wallet Version
-        public async Task<string> GetWalletVersion()
+        public async Task<string> GetWalletVersionVal()
         {
             return await SignalRQueue(Context, Globals.CLIVersion.Length, async () => Globals.CLIVersion);
         }

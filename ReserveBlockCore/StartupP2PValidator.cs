@@ -50,7 +50,7 @@ namespace ReserveBlockCore
             {
                 endpoints.MapControllers();
 
-                if (Globals.AdjudicateAccount != null)
+                if (Globals.ValidatorAddress != null)
                 {
                     endpoints.MapHub<P2PValidatorServer>("/validator", options =>
                     {
