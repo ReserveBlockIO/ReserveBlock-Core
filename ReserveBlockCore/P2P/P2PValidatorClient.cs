@@ -254,12 +254,17 @@ namespace ReserveBlockCore.P2P
             await NodeConnector.StartNodeConnecting(); //TODO: update this for validator peers!
             var peerDB = Peers.GetAll();
 
-            await DropDisconnectedPeers();            
+            await DropDisconnectedPeers();
 
             var SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
                 .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
+
+            if(Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+            {
+                SkipIPs.Add("162.248.14.123");
+            }
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsValidator).ToArray()

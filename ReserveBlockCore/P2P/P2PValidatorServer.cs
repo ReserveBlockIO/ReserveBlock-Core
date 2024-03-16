@@ -33,7 +33,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 var portCheck = PortUtility.IsPortOpen(peerIP, Globals.ValPort);
-                if(!portCheck) 
+                if(!portCheck && !Globals.IsTestNet) 
                 {
                     _ = EndOnConnect(peerIP, $"Port: {Globals.ValPort} was not detected as open.", $"Port: {Globals.ValPort} was not detected as open for IP: {peerIP}.");
                     return;
@@ -52,7 +52,7 @@ namespace ReserveBlockCore.P2P
                     var vNode = Globals.ValidatorNodes[peerIP];
                     if(vNode.IsConnected)
                     {
-                        _ = EndOnConnect(peerIP, address + " attempted to connect as adjudicator", address + " attempted to connect as adjudicator");
+                        _ = EndOnConnect(peerIP, address + " attempted to connect as validator", address + " attempted to connect as validator");
                         return;
                     }
                 }
@@ -115,16 +115,19 @@ namespace ReserveBlockCore.P2P
 
                 Globals.NetworkValidators.TryAdd(address, netVal);
 
+                //Have to null context out as json cannot serialize.
+                netVal.Context = null;
+                var netValSerialize = JsonConvert.SerializeObject(netVal);
 
                 _ = Peers.UpdatePeerAsVal(peerIP);
                 _ = Clients.Caller.SendAsync("GetValMessage", "1", peerIP, new CancellationTokenSource(2000).Token);
-                _ = Clients.All.SendAsync("GetValMessage", "2", JsonConvert.SerializeObject(netVal), new CancellationTokenSource(6000).Token);
+                _ = Clients.All.SendAsync("GetValMessage", "2", netValSerialize, new CancellationTokenSource(6000).Token);
 
             }
             catch (Exception ex)
             {
                 Context?.Abort();
-                ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.OnConnectedAsync()");
+                ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PValidatorServer.OnConnectedAsync()");
             }
 
         }

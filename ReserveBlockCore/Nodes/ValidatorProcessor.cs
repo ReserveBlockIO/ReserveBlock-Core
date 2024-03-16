@@ -9,6 +9,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Reflection.Metadata.Ecma335;
+using System.Transactions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -20,6 +21,7 @@ namespace ReserveBlockCore.Nodes
         private readonly IHubContext<P2PValidatorServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
         static SemaphoreSlim BroadcastNetworkValidatorLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim CheckNetworkValidatorsLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim GenerateProofLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim ProduceBlockLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim BlockCheckLock = new SemaphoreSlim(1, 1);
@@ -35,6 +37,7 @@ namespace ReserveBlockCore.Nodes
         public Task StartAsync(CancellationToken stoppingToken)
         {
             //TODO: Create NetworkValidator Broadcast loop.
+            _ = CheckNetworkValidators();
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
@@ -174,7 +177,7 @@ namespace ReserveBlockCore.Nodes
 
         private static async Task TxMessage(string data)
         {
-            var transaction = JsonConvert.DeserializeObject<Transaction>(data);
+            var transaction = JsonConvert.DeserializeObject<Models.Transaction>(data);
             if (transaction != null)
             {
                 var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
@@ -500,6 +503,42 @@ namespace ReserveBlockCore.Nodes
                     await delay;
                 }
                 
+            }
+        }
+
+        private async Task CheckNetworkValidators()
+        {
+            while(true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+
+                await CheckNetworkValidatorsLock.WaitAsync();
+
+                try
+                {
+                    if (Globals.NetworkValidators.Count == 0)
+                        continue;
+
+                    foreach(var validator in Globals.NetworkValidators)
+                    {
+                        var portOpen = PortUtility.IsPortOpen(validator.Value.IPAddress, Globals.ValPort);
+                        if(!portOpen)
+                        {
+                            //if port is not open remove them from pool
+                            Globals.NetworkValidators.Remove(validator.Key, out _);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally { GenerateProofLock.Release(); await delay; }
             }
         }
 
