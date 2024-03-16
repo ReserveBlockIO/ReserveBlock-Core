@@ -538,7 +538,7 @@ namespace ReserveBlockCore.Nodes
                 {
 
                 }
-                finally { GenerateProofLock.Release(); await delay; }
+                finally { CheckNetworkValidatorsLock.Release(); await delay; }
             }
         }
 

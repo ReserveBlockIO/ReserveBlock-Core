@@ -263,7 +263,7 @@ namespace ReserveBlockCore.Services
 
                         if (!argsPassed)
                         {
-                            await StartValidatorServer();
+                            _ = StartValidatorServer();
                             _ = StartupValidators();
                         }
 

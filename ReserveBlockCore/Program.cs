@@ -509,7 +509,7 @@ namespace ReserveBlockCore
 
             if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                await ValidatorService.StartValidatorServer();
+                _ = ValidatorService.StartValidatorServer();
                 _ = ValidatorService.StartupValidators();
             }
             

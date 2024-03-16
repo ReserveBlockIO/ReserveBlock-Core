@@ -10,12 +10,13 @@ namespace ReserveBlockCore.Utilities
         public static async Task<List<Proof>> GenerateProofs(string address, string publicKey, long blockHeight, bool firstProof)
         {
             List<Proof> proofs = new List<Proof>();
+            var blockHeightStart = blockHeight + 1;
             if(firstProof)
             {
-                blockHeight = blockHeight + 144;//if first proof of the day then push it out.
+                blockHeightStart = blockHeight + 144;//if first proof of the day then push it out.
             }
-            var finalHeight = blockHeight + 144;
-            for(long h = blockHeight; h <= finalHeight; h++)
+            var finalHeight = blockHeightStart + 144;
+            for(long h = blockHeightStart; h <= finalHeight; h++)
             {
                 var proof = await CreateProof(address, publicKey, h);
                 if(proof.Item1 != 0 && !string.IsNullOrEmpty(proof.Item2))
