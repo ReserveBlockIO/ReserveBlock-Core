@@ -163,8 +163,13 @@ namespace ReserveBlockCore.Utilities
                                 Globals.BackupProofs.TryGetValue(proof.BlockHeight, out var backupProofs);
                                 if (backupProofs != null)
                                 {
-                                    backupProofs.Add(currentWinningProof.Value);
-                                    Globals.BackupProofs[proof.BlockHeight] = backupProofs.OrderBy(x => x.VRFNumber).ToList();
+                                    var hasProof = backupProofs.Exists(x => x.Address == currentWinningProof.Value.Address && x.BlockHeight == currentWinningProof.Value.BlockHeight);
+                                    if(!hasProof)
+                                    {
+                                        backupProofs.Add(currentWinningProof.Value);
+                                        Globals.BackupProofs[proof.BlockHeight] = backupProofs.OrderBy(x => x.VRFNumber).ToList();
+                                    }
+                                    
                                 }
                                 else
                                 {

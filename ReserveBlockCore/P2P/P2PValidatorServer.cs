@@ -276,6 +276,23 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Proof List (Receive it)
+
+        public async Task<bool> SendProofList(string proofJson)
+        {
+            var proofList = JsonConvert.DeserializeObject<List<Proof>>(proofJson);
+
+            if (proofList?.Count() == 0) return false;
+
+            if (proofList == null) return false;
+
+            await ProofUtility.SortProofs(proofList);
+
+            return true;
+        }
+
+        #endregion
+
         #region Get Wallet Version
         public async Task<string> GetWalletVersionVal()
         {

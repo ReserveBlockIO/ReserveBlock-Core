@@ -42,6 +42,7 @@ namespace ReserveBlockCore.Nodes
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
             _ = LockWinner();
+            _ = SendWinningVote();
             //_ = BlockCheck();
 
             return Task.CompletedTask;
@@ -387,7 +388,9 @@ namespace ReserveBlockCore.Nodes
                             {
                                 if(Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
                                 {
-                                    voteList.Add(proof);
+                                    var hasVote = voteList.Where(x => x.Address == proof.Address && x.BlockHeight == proof.BlockHeight).Any();
+                                    if(!hasVote)
+                                        voteList.Add(proof);
                                     //SEND PROOF! to Peers
                                 }
                                 else
