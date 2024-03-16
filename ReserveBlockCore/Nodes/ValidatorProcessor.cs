@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Nodes
 
             var proofList = JsonConvert.DeserializeObject<List<Proof>>(data);
 
-            if(proofList?.Count() > 0) return;
+            if(proofList?.Count() == 0) return;
 
             await ProofUtility.SortProofs(proofList);
 
@@ -248,7 +248,7 @@ namespace ReserveBlockCore.Nodes
 
         private static async Task Broadcast(string messageType, string data, string method = "")
         {
-            await HubContext.Clients.All.SendAsync(messageType, data);
+            await HubContext.Clients.All.SendAsync("GetValMessage", messageType, data);
 
             if (method == "") return;
 
@@ -259,7 +259,7 @@ namespace ReserveBlockCore.Nodes
             foreach (var val in valNodeList)
             {
                 var source = new CancellationTokenSource(2000);
-                await val.Connection.InvokeCoreAsync("SendProofList", args: new object?[] { data }, source.Token);
+                await val.Connection.InvokeCoreAsync(method, args: new object?[] { data }, source.Token);
             }
         }
 
@@ -471,7 +471,7 @@ namespace ReserveBlockCore.Nodes
                         await ProofUtility.SortProofs(proofs);
                         //send proofs
                         var proofsJson = JsonConvert.SerializeObject(proofs);
-                        await _hubContext.Clients.All.SendAsync("4", proofsJson);
+                        await _hubContext.Clients.All.SendAsync("GetValMessage", "4", proofsJson);
 
                         foreach (var val in valNodeList)
                         {
@@ -487,7 +487,7 @@ namespace ReserveBlockCore.Nodes
                             await ProofUtility.SortProofs(proofs);
                             //send proofs
                             var proofsJson = JsonConvert.SerializeObject(proofs);
-                            await _hubContext.Clients.All.SendAsync("4", proofsJson);
+                            await _hubContext.Clients.All.SendAsync("GetValMessage", "4", proofsJson);
 
                             foreach (var val in valNodeList)
                             {
@@ -495,6 +495,13 @@ namespace ReserveBlockCore.Nodes
                                 await val.Connection.InvokeCoreAsync("SendProofList", args: new object?[] { proofsJson }, source.Token);
                             }
                         }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    if(true)
+                    {
+                        //log
                     }
                 }
                 finally
@@ -560,7 +567,7 @@ namespace ReserveBlockCore.Nodes
 
                     var networkValsJson = JsonConvert.SerializeObject(Globals.NetworkValidators.Values.ToList());
 
-                    await _hubContext.Clients.All.SendAsync("3", networkValsJson);
+                    await _hubContext.Clients.All.SendAsync("GetValMessage", "3", networkValsJson);
 
                     if (Globals.ValidatorNodes.Count == 0)
                         continue;
