@@ -41,6 +41,7 @@ namespace ReserveBlockCore.Nodes
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
+            _ = LockWinner();
             //_ = BlockCheck();
 
             return Task.CompletedTask;
@@ -63,6 +64,9 @@ namespace ReserveBlockCore.Nodes
                     break;
                 case "4":
                     _ = ProofsMessage(data);
+                    break;
+                case "5":
+                    //_ = WinningProofVote(data);
                     break;
                 case "9999":
                     break;
@@ -303,6 +307,10 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+
+                }
                 finally
                 {
                     ProduceBlockLock.Release();
@@ -345,6 +353,10 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+
+                }
                 finally
                 {
                     LockWinnerLock.Release();
@@ -386,6 +398,10 @@ namespace ReserveBlockCore.Nodes
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+
                 }
                 finally
                 {
@@ -579,6 +595,10 @@ namespace ReserveBlockCore.Nodes
                         var source = new CancellationTokenSource(2000);
                         await val.Connection.InvokeCoreAsync("SendNetworkValidatorList", args: new object?[] { networkValsJson }, source.Token);
                     }
+                }
+                catch (Exception ex)
+                {
+
                 }
                 finally
                 {

@@ -160,5 +160,33 @@ namespace ReserveBlockCore.Controllers
 
             return JsonConvert.SerializeObject(new { Success = true, Message = $"No Proofs found" });
         }
+
+        /// <summary>
+        /// Get Validator Winning Proofs
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetFinalizedProofs")]
+        public async Task<string> GetFinalizedProofs()
+        {
+            if (Globals.FinalizedWinner.Any())
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Finalized Proofs Found", FinalizedProofs = Globals.FinalizedWinner }, Formatting.Indented);
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"No Finalized Proofs found" });
+        }
+
+        /// <summary>
+        /// Get Validator Winning Proofs
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetWinningVotes")]
+        public async Task<string> GetWinningVotes()
+        {
+            if (Globals.WinningBlockVotes.Any())
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Winning Votes Found", WinningBlockVotes = Globals.WinningBlockVotes }, Formatting.Indented);
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"No Winning Votes found" });
+        }
     }
 }
