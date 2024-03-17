@@ -400,26 +400,28 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
+                var delay = Task.Delay(new TimeSpan(0, 2, 0));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await Task.Delay(new TimeSpan(0, 0, 20));
+                    continue;
+                }
+                var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                if (valNodeList.Count() == 0)
+                {
+                    await Task.Delay(new TimeSpan(0, 0, 20));
+                    continue;
+                }
+
+                await RequestCurrentWinnersLock.WaitAsync();
+
                 try
                 {
-                    var delay = Task.Delay(new TimeSpan(0, 2, 0));
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
-                    {
-                        await Task.Delay(new TimeSpan(0,0,20));
-                        continue;
-                    }
-                    var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
-
-                    if (valNodeList.Count() == 0)
-                    {
-                        await Task.Delay(new TimeSpan(0, 0, 20));
-                        continue;
-                    }
-
                     foreach (var val in valNodeList)
                     {
                         var source = new CancellationTokenSource(2000);
-                        var winnerProofList = await val.Connection.InvokeCoreAsync<string>("GetWinningProofList", args: null, source.Token);
+                        var winnerProofList = await val.Connection.InvokeAsync<string>("GetWinningProofList", source.Token);
                         if(winnerProofList != null)
                         {
                             if(winnerProofList != "0")
@@ -433,7 +435,7 @@ namespace ReserveBlockCore.Nodes
 
                 }
                 catch { }
-                finally { }
+                finally { RequestCurrentWinnersLock.Release(); await delay; }
             }
         }
 
@@ -455,6 +457,8 @@ namespace ReserveBlockCore.Nodes
                     await delay;
                     continue;
                 }
+
+
                    
                 await SendWinningVoteLock.WaitAsync();
                 try

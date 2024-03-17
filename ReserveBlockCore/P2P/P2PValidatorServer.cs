@@ -310,7 +310,9 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        public async Task<string> GetWinningProofList(object? data)
+        #region Get Winning Proof List (Send it)
+
+        public async Task<string> GetWinningProofList()
         {
             string result = "0";
             if(Globals.WinningProofs.Count() != 0)
@@ -322,6 +324,8 @@ namespace ReserveBlockCore.P2P
 
             return result;
         }
+
+        #endregion
 
         #region Get Wallet Version
         public async Task<string> GetWalletVersionVal()
