@@ -166,7 +166,6 @@ namespace ReserveBlockCore.P2P
                            options.Headers.Add("signature", signature);
                            options.Headers.Add("walver", Globals.CLIVersion);
                            options.Headers.Add("publicKey", account.PublicKey);
-                           options.Headers.Add("blockStart", Globals.LastBlock.Height < 144 ? "0" : (Globals.LastBlock.Height + 144).ToString());
                        })                       
                        .Build();
 

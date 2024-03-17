@@ -43,7 +43,6 @@ namespace ReserveBlockCore.P2P
                 var time = httpContext.Request.Headers["time"].ToString();
                 var uName = httpContext.Request.Headers["uName"].ToString();
                 var publicKey = httpContext.Request.Headers["publicKey"].ToString();
-                var blockStart = httpContext.Request.Headers["blockStart"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
@@ -68,7 +67,9 @@ namespace ReserveBlockCore.P2P
 
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
-                if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(signature))
+                if (string.IsNullOrWhiteSpace(address) || 
+                    string.IsNullOrWhiteSpace(publicKey) || 
+                    string.IsNullOrWhiteSpace(signature))
                 {
                     _ = EndOnConnect(peerIP,
                         "Connection Attempted, but missing field(s). Address, and Public Key required. You are being disconnected.",
@@ -103,7 +104,6 @@ namespace ReserveBlockCore.P2P
 
                 var netVal = new NetworkValidator { 
                     Address = address,
-                    BlockStart = Globals.LastBlock.Height + 144,
                     IPAddress = peerIP,
                     LastBlockProof = 0,
                     PublicKey = publicKey,
@@ -292,6 +292,36 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        #region Send Winning Proof List (Receive it)
+
+        public async Task<bool> SendWinningProofList(string proofJson)
+        {
+            var proofList = JsonConvert.DeserializeObject<List<Proof>>(proofJson);
+
+            if (proofList?.Count() == 0) return false;
+
+            if (proofList == null) return false;
+
+            await ProofUtility.SortProofs(proofList);
+
+            return true;
+        }
+
+        #endregion
+
+        public async Task<string> GetWinningProofList(object? data)
+        {
+            string result = "0";
+            if(Globals.WinningProofs.Count() != 0)
+            {
+                var list = Globals.WinningProofs.Select(x => x.Value).ToList();
+                if(list != null)
+                    result = JsonConvert.SerializeObject(list);
+            }
+
+            return result;
+        }
 
         #region Get Wallet Version
         public async Task<string> GetWalletVersionVal()

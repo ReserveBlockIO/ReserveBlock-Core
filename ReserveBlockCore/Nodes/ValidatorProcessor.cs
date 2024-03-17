@@ -27,6 +27,8 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim BlockCheckLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim SendWinningVoteLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim LockWinnerLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim RequestCurrentWinnersLock = new SemaphoreSlim(1, 1);
+        public static bool IsRunning { get; private set; }
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -37,13 +39,14 @@ namespace ReserveBlockCore.Nodes
         public Task StartAsync(CancellationToken stoppingToken)
         {
             //TODO: Create NetworkValidator Broadcast loop.
+            _ = BlockStart();
             _ = CheckNetworkValidators();
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
+            _ = SendCurrentWinners();
+            _ = RequestCurrentWinners();
             _ = LockWinner();
-            _ = SendWinningVote();
-            //_ = BlockCheck();
 
             return Task.CompletedTask;
         }
@@ -67,7 +70,7 @@ namespace ReserveBlockCore.Nodes
                     _ = ProofsMessage(data);
                     break;
                 case "5":
-                    //_ = WinningProofVote(data);
+                    _ = WinningProofsMessage(data);
                     break;
                 case "9999":
                     break;
@@ -76,7 +79,37 @@ namespace ReserveBlockCore.Nodes
                                 
         }
 
+        #region Start Blocks
+        public static async Task BlockStart()
+        {
+            while(true)
+            {
+                if (Globals.ValidatingV2 == (Globals.LastBlock.Height + 1))
+                {
+                    //Will need to wait to gather some proofs
+
+                    break;
+                }
+            }
+            
+        }
+        #endregion
+
         #region Messages
+        //5
+        public static async Task WinningProofsMessage(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return;
+
+            var proofList = JsonConvert.DeserializeObject<List<Proof>>(data);
+
+            if (proofList?.Count() == 0) return;
+
+            if (proofList ==  null) return;
+
+            await ProofUtility.SortProofs(proofList);
+        }
+
         //4
         public static async Task ProofsMessage(string data)
         {
@@ -107,8 +140,6 @@ namespace ReserveBlockCore.Nodes
                     await Broadcast("4", data, "SendProofList");
                 }
             }
-
-            
         }
 
         //3
@@ -337,9 +368,8 @@ namespace ReserveBlockCore.Nodes
                     var nextBlock = Globals.LastBlock.Height + 30;
                     if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
                     {
-                        if(Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
+                        if(Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
                         {
-                            var winningProof = voteList.OrderBy(x => x.VRFNumber).FirstOrDefault();
                             if(winningProof != null)
                             {
                                 if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
@@ -366,7 +396,48 @@ namespace ReserveBlockCore.Nodes
             }
         }
 
-        private async Task SendWinningVote()
+        private async Task RequestCurrentWinners()
+        {
+            while(true)
+            {
+                try
+                {
+                    var delay = Task.Delay(new TimeSpan(0, 2, 0));
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    {
+                        await Task.Delay(new TimeSpan(0,0,20));
+                        continue;
+                    }
+                    var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                    if (valNodeList.Count() == 0)
+                    {
+                        await Task.Delay(new TimeSpan(0, 0, 20));
+                        continue;
+                    }
+
+                    foreach (var val in valNodeList)
+                    {
+                        var source = new CancellationTokenSource(2000);
+                        var winnerProofList = await val.Connection.InvokeCoreAsync<string>("GetWinningProofList", args: null, source.Token);
+                        if(winnerProofList != null)
+                        {
+                            if(winnerProofList != "0")
+                            {
+                                var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
+                                if(proofList != null)
+                                    await ProofUtility.SortProofs(proofList);
+                            }
+                        }
+                    }
+
+                }
+                catch { }
+                finally { }
+            }
+        }
+
+        private async Task SendCurrentWinners()
         {
             while (true)
             {
@@ -376,30 +447,39 @@ namespace ReserveBlockCore.Nodes
                     await delay;
                     continue;
                 }
+
+                var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                if (valNodeList.Count() == 0)
+                {
+                    await delay;
+                    continue;
+                }
+                   
                 await SendWinningVoteLock.WaitAsync();
                 try
                 {
-                    for (int i = 1; i < 40; i++)    
+                    List<Proof> winningProofs = new List<Proof>();
+                    for (int i = 1; i < 30; i++)    
                     {
                         var nextBlock = Globals.LastBlock.Height + i;
-                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out _))
                         {
                             if(Globals.WinningProofs.TryGetValue(nextBlock, out var proof))
                             {
-                                if(Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
-                                {
-                                    var hasVote = voteList.Where(x => x.Address == proof.Address && x.BlockHeight == proof.BlockHeight).Any();
-                                    if(!hasVote)
-                                        voteList.Add(proof);
-                                    //SEND PROOF! to Peers
-                                }
-                                else
-                                {
-                                    Globals.WinningBlockVotes.TryAdd(nextBlock, new List<Proof> { proof });
-                                    //SEND PROOF! to Peers
-                                }
+                                winningProofs.Add(proof);
                             }
                         }
+                    }
+
+                    var proofsJson = JsonConvert.SerializeObject(winningProofs);
+                    //TODO: ADD THIS MESSAGE TYPE!
+                    await _hubContext.Clients.All.SendAsync("GetValMessage", "5", proofsJson);
+
+                    foreach (var val in valNodeList)
+                    {
+                        var source = new CancellationTokenSource(2000);
+                        await val.Connection.InvokeCoreAsync("SendWinningProofList", args: new object?[] { proofsJson }, source.Token);
                     }
                 }
                 catch (Exception ex)
