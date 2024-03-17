@@ -241,7 +241,6 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, Peers> ValidatorPool = new ConcurrentDictionary<string, Peers>();
         public static ConcurrentDictionary<string, NodeInfo> ValidatorNodes = new ConcurrentDictionary<string, NodeInfo>(); //key = ipaddress
         public static ConcurrentDictionary<long, Proof> WinningProofs = new ConcurrentDictionary<long, Proof>();
-        public static ConcurrentDictionary<long, List<Proof>> WinningBlockVotes = new ConcurrentDictionary<long, List<Proof>>();
         public static ConcurrentDictionary<long, string> FinalizedWinner = new ConcurrentDictionary<long, string>();
         public static ConcurrentDictionary<long, Block> NetworkBlockQueue = new ConcurrentDictionary<long, Block>();
         public static ConcurrentDictionary<long, List<Proof>> BackupProofs = new ConcurrentDictionary<long, List<Proof>>();

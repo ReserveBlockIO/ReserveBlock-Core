@@ -99,22 +99,6 @@ namespace ReserveBlockCore.Utilities
             
         }
 
-        public static async Task PruneProofList()
-        {
-            foreach(var wbv in Globals.WinningBlockVotes)
-            {
-                if(wbv.Value.Count > 0)
-                {
-                    //Get closest to zero proof.
-                    var winningProof = wbv.Value.OrderBy(x => x.VRFNumber).FirstOrDefault();
-
-                    //Reset vote list to winning proof. 
-                    if(winningProof != null)
-                        Globals.WinningBlockVotes[wbv.Key] = new List<Proof> { winningProof };
-                }
-            }
-        }
-
         public static bool VerifyProofSync(string publicKey, long blockHeight, string proofHash)
         {
             try
@@ -147,32 +131,6 @@ namespace ReserveBlockCore.Utilities
             }
             catch { return false; }
 
-        }
-
-        public static async Task SortWinningProofVotes()
-        {
-            for (int i = 1; i < 40; i++)
-            {
-                var nextBlock = Globals.LastBlock.Height + i;
-                if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out _))
-                {
-                    if (Globals.WinningProofs.TryGetValue(nextBlock, out var proof))
-                    {
-                        if (Globals.WinningBlockVotes.TryGetValue(nextBlock, out var voteList))
-                        {
-                            var hasVote = voteList.Where(x => x.Address == proof.Address && x.BlockHeight == proof.BlockHeight).Any();
-                            if (!hasVote)
-                                voteList.Add(proof);
-
-                            await PruneProofList();
-                        }
-                        else
-                        {
-                            Globals.WinningBlockVotes.TryAdd(nextBlock, new List<Proof> { proof });
-                        }
-                    }
-                }
-            }
         }
 
         public static async Task SortProofs(List<Proof> proofs)

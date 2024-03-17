@@ -39,7 +39,6 @@ namespace ReserveBlockCore.Nodes
         public Task StartAsync(CancellationToken stoppingToken)
         {
             //TODO: Create NetworkValidator Broadcast loop.
-            _ = BlockStart();
             _ = CheckNetworkValidators();
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
@@ -47,6 +46,7 @@ namespace ReserveBlockCore.Nodes
             _ = SendCurrentWinners();
             _ = RequestCurrentWinners();
             _ = LockWinner();
+            _ = BlockStart();
 
             return Task.CompletedTask;
         }
@@ -86,7 +86,35 @@ namespace ReserveBlockCore.Nodes
             {
                 if (Globals.ValidatingV2 == (Globals.LastBlock.Height + 1))
                 {
+                    var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                    if (valNodeList.Count() == 0)
+                    {
+                        await Task.Delay(new TimeSpan(0,0,10));
+                        continue;
+                    }
+
                     //Will need to wait to gather some proofs
+                    //Produce Proofs
+                    //Send And Receive 3 times to ensure proofs are good.
+                    //Sort winner list
+                    //Send winner list 3 times to ensure it is good.
+
+                    //Wait 30 seconds to get proofs generated.
+                    await Task.Delay(30000);
+
+                    await P2PValidatorClient.SendCurrentWinners();
+                    await Task.Delay(5000);
+                    await P2PValidatorClient.RequestCurrentWinners();
+                    await Task.Delay(5000);
+                    await P2PValidatorClient.SendCurrentWinners();
+                    await Task.Delay(5000);
+                    await P2PValidatorClient.RequestCurrentWinners();
+                    await Task.Delay(5000);
+                    await P2PValidatorClient.SendCurrentWinners();
+                    await Task.Delay(5000);
+                    await P2PValidatorClient.RequestCurrentWinners();
+                    await Task.Delay(5000);
 
                     break;
                 }
@@ -406,33 +434,13 @@ namespace ReserveBlockCore.Nodes
                     await Task.Delay(new TimeSpan(0, 0, 20));
                     continue;
                 }
-                var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
-
-                if (valNodeList.Count() == 0)
-                {
-                    await Task.Delay(new TimeSpan(0, 0, 20));
-                    continue;
-                }
+                
 
                 await RequestCurrentWinnersLock.WaitAsync();
 
                 try
                 {
-                    foreach (var val in valNodeList)
-                    {
-                        var source = new CancellationTokenSource(2000);
-                        var winnerProofList = await val.Connection.InvokeAsync<string>("GetWinningProofList", source.Token);
-                        if(winnerProofList != null)
-                        {
-                            if(winnerProofList != "0")
-                            {
-                                var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
-                                if(proofList != null)
-                                    await ProofUtility.SortProofs(proofList);
-                            }
-                        }
-                    }
-
+                    await P2PValidatorClient.RequestCurrentWinners();
                 }
                 catch { }
                 finally { RequestCurrentWinnersLock.Release(); await delay; }
@@ -449,42 +457,13 @@ namespace ReserveBlockCore.Nodes
                     await delay;
                     continue;
                 }
-
-                var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
-
-                if (valNodeList.Count() == 0)
-                {
-                    await delay;
-                    continue;
-                }
-
-
                    
                 await SendWinningVoteLock.WaitAsync();
                 try
                 {
-                    List<Proof> winningProofs = new List<Proof>();
-                    for (int i = 1; i < 30; i++)    
-                    {
-                        var nextBlock = Globals.LastBlock.Height + i;
-                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out _))
-                        {
-                            if(Globals.WinningProofs.TryGetValue(nextBlock, out var proof))
-                            {
-                                winningProofs.Add(proof);
-                            }
-                        }
-                    }
-
-                    var proofsJson = JsonConvert.SerializeObject(winningProofs);
-                    //TODO: ADD THIS MESSAGE TYPE!
-                    await _hubContext.Clients.All.SendAsync("GetValMessage", "5", proofsJson);
-
-                    foreach (var val in valNodeList)
-                    {
-                        var source = new CancellationTokenSource(2000);
-                        await val.Connection.InvokeCoreAsync("SendWinningProofList", args: new object?[] { proofsJson }, source.Token);
-                    }
+                    var proofsJson = await P2PValidatorClient.SendCurrentWinners();
+                    if(proofsJson != "0")
+                        await _hubContext.Clients.All.SendAsync("GetValMessage", "5", proofsJson);
                 }
                 catch (Exception ex)
                 {

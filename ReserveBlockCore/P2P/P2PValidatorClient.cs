@@ -599,5 +599,70 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        public static async Task RequestCurrentWinners()
+        {
+            var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+            if (valNodeList.Count() == 0)
+            {
+                return;
+            }
+
+            foreach (var val in valNodeList)
+            {
+                var source = new CancellationTokenSource(2000);
+                var winnerProofList = await val.Connection.InvokeAsync<string>("GetWinningProofList", source.Token);
+                if (winnerProofList != null)
+                {
+                    if (winnerProofList != "0")
+                    {
+                        var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
+                        if (proofList != null)
+                            await ProofUtility.SortProofs(proofList);
+                    }
+                }
+            }
+        }
+
+        public static async Task<string> SendCurrentWinners()
+        {
+            try
+            {
+                var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                if (valNodeList.Count() == 0)
+                {
+                    return "0";
+                }
+
+                List<Proof> winningProofs = new List<Proof>();
+                for (int i = 1; i < 30; i++)
+                {
+                    var nextBlock = Globals.LastBlock.Height + i;
+                    if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out _))
+                    {
+                        if (Globals.WinningProofs.TryGetValue(nextBlock, out var proof))
+                        {
+                            winningProofs.Add(proof);
+                        }
+                    }
+                }
+
+                var proofsJson = JsonConvert.SerializeObject(winningProofs);
+
+                foreach (var val in valNodeList)
+                {
+                    var source = new CancellationTokenSource(2000);
+                    await val.Connection.InvokeCoreAsync("SendWinningProofList", args: new object?[] { proofsJson }, source.Token);
+                }
+
+                return proofsJson;
+            }
+            catch
+            { }
+
+            return "0";
+        }
     }
 }
