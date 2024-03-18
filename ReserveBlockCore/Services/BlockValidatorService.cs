@@ -139,6 +139,12 @@ namespace ReserveBlockCore.Services
                         return result; //null block submitted. reject 
                     }
 
+                    if(block.PrevHash == "0")
+                    {
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-1");
+                        return result;
+                    }
+
                     if (block.Height == 0)
                     {
                         if (block.ChainRefId != BlockchainData.ChainRef)

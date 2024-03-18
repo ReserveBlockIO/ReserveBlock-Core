@@ -272,6 +272,14 @@ namespace ReserveBlockCore.Data
                     };
                     block.Build();
 
+                    if(block.PrevHash == "0")
+                    {
+                        if(Globals.OptionalLogging)
+                            ErrorLogUtility.LogError("Block Previous Hash not available.", "BlockchainData.CraftBlock_V4()");
+
+                        return null;
+                    }    
+
                     //Add validator signature
                     block.ValidatorSignature = SignatureService.ValidatorSignature(block.Hash);
 

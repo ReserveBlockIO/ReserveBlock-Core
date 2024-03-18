@@ -352,7 +352,7 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                var delay = Task.Delay(new TimeSpan(0, 0, 2));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     await delay;
@@ -369,19 +369,42 @@ namespace ReserveBlockCore.Nodes
                         {
                             if(winner == Globals.ValidatorAddress)
                             {
-                                Globals.WinningProofs.TryGetValue(nextblock, out var proof);
-                                if(proof != null)
+                                if(Globals.LastBlock.Height + 1 == nextblock)
                                 {
-                                    var block = await BlockchainData.CraftBlock_V4(
-                                        Globals.ValidatorAddress, 
-                                        Globals.NetworkValidators.Count(),
-                                        proof.ProofHash);
-
-                                    if(block != null)
+                                    Globals.WinningProofs.TryGetValue(nextblock, out var proof);
+                                    if (proof != null)
                                     {
-                                        Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                        var block = await BlockchainData.CraftBlock_V4(
+                                            Globals.ValidatorAddress,
+                                            Globals.NetworkValidators.Count(),
+                                            proof.ProofHash);
+
+                                        if (block != null)
+                                        {
+                                            Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                        }
                                     }
                                 }
+                                else
+                                {
+                                    if(Globals.NetworkBlockQueue.TryGetValue(nextblock, out var networkBlock))
+                                    {
+                                        Globals.WinningProofs.TryGetValue(nextblock, out var proof);
+                                        if (proof != null)
+                                        {
+                                            var block = await BlockchainData.CraftBlock_V4(
+                                                Globals.ValidatorAddress,
+                                                Globals.NetworkValidators.Count(),
+                                                proof.ProofHash);
+
+                                            if (block != null)
+                                            {
+                                                Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                            }
+                                        }
+                                    }
+                                }
+                                
                             }
                             else
                             {

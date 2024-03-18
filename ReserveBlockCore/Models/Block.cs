@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Models
 			TotalAmount = GetTotalAmount();
 			TotalReward = Globals.LastBlock.Height != -1 ? GetTotalFees() : 0M;
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = Globals.LastBlock.Height != -1 ? Globals.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
+			PrevHash = GetPreviousHash(); //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
@@ -50,6 +50,22 @@ namespace ReserveBlockCore.Models
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
+
+		public string GetPreviousHash()
+		{
+			if (Globals.LastBlock.Height == -1)
+				return "Genesis Block";
+
+			if(Globals.LastBlock.Height + 1 == Height)
+				return Globals.LastBlock.Hash;
+
+			if(Globals.NetworkBlockQueue.TryGetValue(Height - 1, out var block))
+			{
+				return block.Hash;
+			}
+
+			return "0";
+        }
 		public int NumberOfTransactions
 		{
 			get { return Transactions.Count(); }
