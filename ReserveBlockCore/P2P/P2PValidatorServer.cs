@@ -229,6 +229,8 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Receives a Queued block from client
+
         public async Task<bool> ReceiveQueueBlockVal(Block nextBlock)
         {
             try
@@ -260,6 +262,27 @@ namespace ReserveBlockCore.P2P
 
             return false;
         }
+
+        #endregion
+
+        #region Send Queued Block - returns specific block
+        //Send Block to client from p2p server
+        public async Task<Block?> SendQueuedBlock(long currentBlock)
+        {
+            try
+            {
+                if(Globals.NetworkBlockQueue.TryGetValue(currentBlock, out var block))
+                {
+                    return block;
+                }
+            }
+            catch { }
+
+            return null;
+
+        }
+
+        #endregion
 
         #region Send Block - returns specific block
         //Send Block to client from p2p server

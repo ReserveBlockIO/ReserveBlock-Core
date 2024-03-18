@@ -307,44 +307,6 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Get Block
-        public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
-        {
-            //if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
-            //    return null;
-
-            var startTime = DateTime.Now;
-            long blockSize = 0;
-            Block Block = null;
-            try
-            {
-                var source = new CancellationTokenSource(10000);
-                Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
-                if (Block != null)
-                {
-                    blockSize = Block.Size;
-                    if (Block.Height == height)
-                        return Block;
-                }
-            }
-            catch { }
-            finally
-            {
-                Interlocked.Exchange(ref node.IsSendingBlock, 0);
-                if (node != null)
-                {
-                    node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
-                }
-            }
-
-            await P2PClient.RemoveNode(node);
-
-            return null;
-        }
-
-        #endregion
-
         #region Get Height of Nodes for Timed Events
 
         public static async Task<(long, DateTime, int)> GetNodeHeight(HubConnection conn)
@@ -573,6 +535,39 @@ namespace ReserveBlockCore.P2P
                         Console.WriteLine("Error Sending Transaction. Please try again!");
                     }
                 }
+            }
+        }
+        #endregion
+
+        #region Request a Queued Block
+        public static async Task RequestQueuedBlock(long height)
+        {
+            var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+            if (valNodeList.Count() == 0)
+            {
+                return;
+            }
+
+            foreach (var val in valNodeList)
+            {
+                try
+                {
+                    var source = new CancellationTokenSource(2000);
+                    var qBlock = await val.Connection.InvokeAsync<Block>("SendQueuedBlock", source.Token);
+                    if (qBlock != null)
+                    {
+                        var result = await BlockValidatorService.ValidateBlock(qBlock, false, false, true);
+                        {
+                            if(Globals.NetworkBlockQueue.TryAdd(qBlock.Height, qBlock))
+                            {
+                                _ = BroadcastBlock(qBlock, true);
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch { }
             }
         }
         #endregion
