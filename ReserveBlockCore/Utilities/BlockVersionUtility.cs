@@ -11,14 +11,17 @@ namespace ReserveBlockCore.Utilities
             //testnet
             if(Globals.IsTestNet)
             {
+                if (height >= Globals.V4Height)
+                    return 4;
                 if (height > Globals.V3Height)
                     return 3;
                 if (height < 15)
                     return 2;
             }
-           
 
 
+            if (height >= Globals.V4Height)
+                return 4;
             if (height > Globals.V3Height)
                 return 3;
             else if (height > 294000)
@@ -40,7 +43,6 @@ namespace ReserveBlockCore.Utilities
 
             return result;            
         }
-
         public static async Task<(bool, string)> Version3Rules(Block block)
         {
             if (!string.IsNullOrWhiteSpace(block.AdjudicatorSignature))
@@ -82,6 +84,26 @@ namespace ReserveBlockCore.Utilities
             }
 
             return (false, "Unknown Error.");
+        }
+
+        public static async Task<(bool, string)> Version4Rules(Block block)
+        {
+            try
+            {
+                var blockHeight = block.Height;
+                var validatorAddress = block.Validator;
+                var validatorProof = block.ValidatorAnswer;
+                var validatorPubKey = block.ValidatorSignature.Split(".")[1];
+
+                var isProofValid = await ProofUtility.VerifyProofAsync(validatorPubKey, blockHeight, validatorProof);
+                var result = isProofValid ? "" : "Proof Invalid.";
+
+                return (isProofValid, result);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Unknown Error: {ex.ToString()}");
+            }
         }
     }
 }

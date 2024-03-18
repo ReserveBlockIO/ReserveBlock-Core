@@ -286,6 +286,7 @@ ReserveBlockCore/DatabasesTestNet/
 ReserveBlockCore/TrilliumTestNet/Submissions/
 ReserveBlockCore/AssetsTestNet/
 ReserveBlockCore/DBs/
+ReserveBlockCore/DBs - Copy/
 ReserveBlockCore/Properties/
 ReserveBlockCore/Properties/launchSettings.json
 .github/workflows/dotnet.yml

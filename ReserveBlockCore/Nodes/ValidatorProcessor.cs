@@ -3,14 +3,9 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
-using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
-using System;
-using System.Reflection.Metadata.Ecma335;
-using System.Transactions;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.Nodes
@@ -47,6 +42,7 @@ namespace ReserveBlockCore.Nodes
             _ = RequestCurrentWinners();
             _ = LockWinner();
             _ = BlockStart();
+            _ = ProduceBlock();
 
             return Task.CompletedTask;
         }
@@ -84,39 +80,60 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
-                if (Globals.ValidatingV2 == (Globals.LastBlock.Height + 1))
+                try
                 {
-                    var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
-
-                    if (valNodeList.Count() == 0)
+                    if (Globals.V4Height == (Globals.LastBlock.Height + 1))
                     {
-                        await Task.Delay(new TimeSpan(0,0,10));
-                        continue;
+                        var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                        if (valNodeList.Count() == 0)
+                        {
+                            await Task.Delay(new TimeSpan(0, 0, 10));
+                            continue;
+                        }
+
+                        await Task.Delay(30000);
+
+                        await P2PValidatorClient.SendCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.SendCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.SendCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+
+                         var finalBlock = Globals.LastBlock.Height + 30;
+
+                        for(var i = 1; i <= finalBlock; i++)
+
+                        if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
+                        {
+                            if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
+                            {
+                                if (winningProof != null)
+                                {
+                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                    {
+                                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                //if missing must request winner from connected nodes
+                            }
+                        }
+                        break;
                     }
+                }
+                catch
+                {
 
-                    //Will need to wait to gather some proofs
-                    //Produce Proofs
-                    //Send And Receive 3 times to ensure proofs are good.
-                    //Sort winner list
-                    //Send winner list 3 times to ensure it is good.
-
-                    //Wait 30 seconds to get proofs generated.
-                    await Task.Delay(30000);
-
-                    await P2PValidatorClient.SendCurrentWinners();
-                    await Task.Delay(5000);
-                    await P2PValidatorClient.RequestCurrentWinners();
-                    await Task.Delay(5000);
-                    await P2PValidatorClient.SendCurrentWinners();
-                    await Task.Delay(5000);
-                    await P2PValidatorClient.RequestCurrentWinners();
-                    await Task.Delay(5000);
-                    await P2PValidatorClient.SendCurrentWinners();
-                    await Task.Delay(5000);
-                    await P2PValidatorClient.RequestCurrentWinners();
-                    await Task.Delay(5000);
-
-                    break;
                 }
             }
             
@@ -135,7 +152,7 @@ namespace ReserveBlockCore.Nodes
 
             if (proofList ==  null) return;
 
-            await ProofUtility.SortProofs(proofList);
+            await ProofUtility.SortProofs(proofList, true);
         }
 
         //4
@@ -344,14 +361,27 @@ namespace ReserveBlockCore.Nodes
                 await ProduceBlockLock.WaitAsync();
                 try
                 {
-                    for(int i = 1; i < 10; i++)
+                    //TODO- CANT DO THIS. Must have previous block, so items must be queued fast.
+                    for(int i = 1; i < 5; i++)
                     {
                         var nextblock = Globals.LastBlock.Height + i;
                         if(Globals.FinalizedWinner.TryGetValue(nextblock, out var winner)) 
                         {
                             if(winner == Globals.ValidatorAddress)
                             {
-                                //CraftNewBlock_V2
+                                Globals.WinningProofs.TryGetValue(nextblock, out var proof);
+                                if(proof != null)
+                                {
+                                    var block = await BlockchainData.CraftBlock_V4(
+                                        Globals.ValidatorAddress, 
+                                        Globals.NetworkValidators.Count(),
+                                        proof.ProofHash);
+
+                                    if(block != null)
+                                    {
+                                        Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                    }
+                                }
                             }
                             else
                             {
@@ -393,6 +423,14 @@ namespace ReserveBlockCore.Nodes
 
                 try
                 {
+                    var valCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
+
+                    if(valCount == 1)
+                    {
+                        await delay;
+                        continue;
+                    }
+
                     var nextBlock = Globals.LastBlock.Height + 30;
                     if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
                     {

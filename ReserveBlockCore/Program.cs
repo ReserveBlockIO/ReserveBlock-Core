@@ -64,7 +64,7 @@ namespace ReserveBlockCore
 
             //Forced Testnet
             Globals.IsTestNet = true;
-            Globals.ValidatingV2 = Globals.IsTestNet ? 1 : 9999999;//change for mainnet.
+            Globals.V4Height = Globals.IsTestNet ? 1 : 9999999;//change for mainnet.
             Globals.GenesisValidator = Globals.IsTestNet ? "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC" : "SomeMainnetAddress";
 
 

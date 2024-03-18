@@ -173,7 +173,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if(Globals.ValidatingV2 == Globals.LastBlock.Height + 1)
+            if(Globals.V4Height == Globals.LastBlock.Height + 1)
             {
                 await GenesisValidatorStart(account, uName);
                 return "Account found and activated as a validator! Thank you for service to the network!";

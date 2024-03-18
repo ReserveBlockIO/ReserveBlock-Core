@@ -133,14 +133,14 @@ namespace ReserveBlockCore.Utilities
 
         }
 
-        public static async Task SortProofs(List<Proof> proofs)
+        public static async Task SortProofs(List<Proof> proofs, bool isWinnerList = false)
         {
             try
             {
                 var checkListForOneVal = proofs.GroupBy(p => p.Address).Count();
 
                 //More than one val found in proof list. This should not happen unless cheating occurs. 
-                if (checkListForOneVal > 1)
+                if (checkListForOneVal > 1 && !isWinnerList)
                     return;
 
                 var badProofFound = proofs.Where(x => !x.VerifyProof()).Count() > 0 ? true : false;

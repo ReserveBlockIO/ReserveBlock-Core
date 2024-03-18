@@ -90,8 +90,8 @@ namespace ReserveBlockCore
 
         public const int ADNRLimit = 65;
         public static int BlockLock = 1079488;
-        public static long ValidatingV2 = 0;
         public static long V3Height = 579015;
+        public static long V4Height = 0;
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
         public static long TXHeightRule2 = 847847; //around April 7, 2023 at 18:30 UTC

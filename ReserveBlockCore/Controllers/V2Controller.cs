@@ -175,5 +175,19 @@ namespace ReserveBlockCore.Controllers
             return JsonConvert.SerializeObject(new { Success = true, Message = $"No Finalized Proofs found" });
         }
 
+        /// <summary>
+        /// Get Network Block Queue
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetNetworkBlockQueue")]
+        public async Task<string> GetNetworkBlockQueue()
+        {
+            if (Globals.NetworkBlockQueue.Any())
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Blocks Found", FinalizedProofs = Globals.NetworkBlockQueue }, Formatting.Indented);
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"No Blocks found" });
+        }
+
     }
 }

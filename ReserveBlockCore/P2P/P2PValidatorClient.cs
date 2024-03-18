@@ -619,7 +619,7 @@ namespace ReserveBlockCore.P2P
                     {
                         var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
                         if (proofList != null)
-                            await ProofUtility.SortProofs(proofList);
+                            await ProofUtility.SortProofs(proofList, true);
                     }
                 }
             }

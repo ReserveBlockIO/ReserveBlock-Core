@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Services
                 try { ValidateBlocksSemaphore.Release(); } catch { }
             }
         }
-        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false, bool validateOnly = false)
         {
             try
             {
@@ -128,7 +128,9 @@ namespace ReserveBlockCore.Services
                         await DbContext.CheckPoint();
                     }
 
-                    DbContext.BeginTrans();
+                    if(!validateOnly)
+                        DbContext.BeginTrans();
+
                     bool result = false;
 
                     if (block == null)
@@ -193,12 +195,21 @@ namespace ReserveBlockCore.Services
                         return result;
                     }
 
-                    if (block.Version > 2 && !ignoreAdjSignatures)
+                    if(block.Version > 3)
+                    {
+                        var version4Result = await BlockVersionUtility.Version4Rules(block);
+                        if(!version4Result.Item1)
+                        {
+                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-4. {version4Result.Item2}");
+                            return result;
+                        }
+                    }
+                    else if (block.Version > 2 && !ignoreAdjSignatures)
                     {
                         var version3Result = await BlockVersionUtility.Version3Rules(block);
                         if (!version3Result.Item1)
                         {
-                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7. {version3Result.Item2}");
+                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-3. {version3Result.Item2}");
                             return result;
                         }
                             
@@ -213,6 +224,7 @@ namespace ReserveBlockCore.Services
                             return result;
                         }
                     }
+
                     //ensures the timestamps being produced are correct
                     if (block.Height != 0)
                     {
@@ -486,6 +498,10 @@ namespace ReserveBlockCore.Services
                             }
 
                             result = true;
+
+                            if (validateOnly)
+                                return result;
+
                             BlockchainData.AddBlock(block);//add block to chain.
                             UpdateMemBlocks(block);//update mem blocks
                             
@@ -614,17 +630,6 @@ namespace ReserveBlockCore.Services
                         await TransactionData.UpdateWalletTXTask();
 
                         DbContext.Commit();
-
-
-
-                        if (P2PClient.MaxHeight() <= block.Height)
-                        {
-                            ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
-                        }
-
-                        Signer.UpdateSigningAddresses();
-                        if (Globals.AdjudicateAccount != null)
-                            await ClientCallService.FinalizeWork(block);
 
                         return result;//block accepted
                     }
