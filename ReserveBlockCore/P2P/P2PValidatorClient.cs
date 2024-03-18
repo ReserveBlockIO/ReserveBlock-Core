@@ -542,7 +542,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Broadcast Blocks to Peers
-        public static async Task BroadcastBlock(Block block)
+        public static async Task BroadcastBlock(Block block, bool isQueueBlock = false)
         {
             var peersConnected = await ArePeersConnected();
 
@@ -556,8 +556,16 @@ namespace ReserveBlockCore.P2P
                 foreach (var node in Globals.ValidatorNodes.Values)
                 {
                     try
-                    {                        
-                        _ = node.InvokeAsync<bool>("ReceiveBlock", new object?[] { block }, () => new CancellationTokenSource(5000).Token, "ReceiveBlock");
+                    {
+                        var source = new CancellationTokenSource(5000);
+                        if (isQueueBlock)
+                        {
+                            _ = node.Connection.InvokeCoreAsync<bool>("ReceiveQueueBlockVal", new object?[] { block }, source.Token);
+                        }
+                        else
+                        {
+                            _ = node.Connection.InvokeCoreAsync<bool>("ReceiveBlockVal", new object?[] { block }, source.Token);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -600,6 +608,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Request Current Winner List
         public static async Task RequestCurrentWinners()
         {
             var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
@@ -611,19 +620,27 @@ namespace ReserveBlockCore.P2P
 
             foreach (var val in valNodeList)
             {
-                var source = new CancellationTokenSource(2000);
-                var winnerProofList = await val.Connection.InvokeAsync<string>("GetWinningProofList", source.Token);
-                if (winnerProofList != null)
+                try
                 {
-                    if (winnerProofList != "0")
+                    var source = new CancellationTokenSource(2000);
+                    var winnerProofList = await val.Connection.InvokeAsync<string>("GetWinningProofList", source.Token);
+                    if (winnerProofList != null)
                     {
-                        var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
-                        if (proofList != null)
-                            await ProofUtility.SortProofs(proofList, true);
+                        if (winnerProofList != "0")
+                        {
+                            var proofList = JsonConvert.DeserializeObject<List<Proof>>(winnerProofList);
+                            if (proofList != null)
+                                await ProofUtility.SortProofs(proofList, true);
+                        }
                     }
                 }
+                catch { }
             }
         }
+
+        #endregion
+
+        #region Send Current Winner List
 
         public static async Task<string> SendCurrentWinners()
         {
@@ -653,8 +670,12 @@ namespace ReserveBlockCore.P2P
 
                 foreach (var val in valNodeList)
                 {
-                    var source = new CancellationTokenSource(2000);
-                    await val.Connection.InvokeCoreAsync("SendWinningProofList", args: new object?[] { proofsJson }, source.Token);
+                    try
+                    {
+                        var source = new CancellationTokenSource(2000);
+                        _ = val.Connection.InvokeCoreAsync("SendWinningProofList", args: new object?[] { proofsJson }, source.Token);
+                    }
+                    catch (Exception ex) { }
                 }
 
                 return proofsJson;
@@ -664,5 +685,7 @@ namespace ReserveBlockCore.P2P
 
             return "0";
         }
+
+        #endregion
     }
 }

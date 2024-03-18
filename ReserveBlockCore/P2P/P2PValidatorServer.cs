@@ -229,6 +229,38 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        public async Task<bool> ReceiveQueueBlockVal(Block nextBlock)
+        {
+            try
+            {
+                var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
+                if(result)
+                {
+                    Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
+
+                    var blockJson = JsonConvert.SerializeObject(nextBlock);
+
+                    if(!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                    {
+                        Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
+                        _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                    }
+                    else
+                    {
+                        if(DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                        {
+                            Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
+                            _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                        }
+                    }
+                    
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
         #region Send Block - returns specific block
         //Send Block to client from p2p server
         public async Task<Block?> SendBlockVal(long currentBlock)

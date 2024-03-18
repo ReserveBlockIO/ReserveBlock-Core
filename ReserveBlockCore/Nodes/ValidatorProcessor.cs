@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.Nodes
@@ -67,6 +68,9 @@ namespace ReserveBlockCore.Nodes
                     break;
                 case "5":
                     _ = WinningProofsMessage(data);
+                    break;
+                case "6":
+                    _ = ReceiveQueueBlock(data);
                     break;
                 case "9999":
                     break;
@@ -141,6 +145,41 @@ namespace ReserveBlockCore.Nodes
         #endregion
 
         #region Messages
+        //6
+        public static async Task ReceiveQueueBlock(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return;
+
+            var nextBlock = JsonConvert.DeserializeObject<Block>(data);
+
+            if(nextBlock == null ) return;
+
+            var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
+            if (result)
+            {
+                Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
+
+                var blockJson = JsonConvert.SerializeObject(nextBlock);
+
+                if (!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                {
+                    Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
+
+                    _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                }
+                else
+                {
+                    if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                    {
+                        Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
+                        _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                    }
+                }
+
+            }
+        }
+
+
         //5
         public static async Task WinningProofsMessage(string data)
         {
@@ -382,6 +421,12 @@ namespace ReserveBlockCore.Nodes
                                         if (block != null)
                                         {
                                             Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                            var blockJson = JsonConvert.SerializeObject(block);
+
+                                            await P2PValidatorClient.BroadcastBlock(block, true);
+
+                                            await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
+
                                         }
                                     }
                                 }
