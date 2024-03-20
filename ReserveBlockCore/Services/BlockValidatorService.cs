@@ -201,7 +201,7 @@ namespace ReserveBlockCore.Services
                         return result;
                     }
 
-                    if(block.Version > 3)
+                    if(block.Version == 4)
                     {
                         var version4Result = await BlockVersionUtility.Version4Rules(block);
                         if(!version4Result.Item1)
@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Services
                             return result;
                         }
                     }
-                    else if (block.Version > 2 && !ignoreAdjSignatures)
+                    else if (block.Version == 3 && !ignoreAdjSignatures)
                     {
                         var version3Result = await BlockVersionUtility.Version3Rules(block);
                         if (!version3Result.Item1)
@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Services
                         }
                             
                     }
-                    else if (block.Version > 1)
+                    else if (block.Version == 2)
                     {
                         //Run block version 2 rules
                         var version2Result = await BlockVersionUtility.Version2Rules(block);
@@ -229,6 +229,10 @@ namespace ReserveBlockCore.Services
                             DbContext.Rollback("BlockValidatorService.ValidateBlock()-8");
                             return result;
                         }
+                    }
+                    else
+                    {
+                        //no rules
                     }
 
                     //ensures the timestamps being produced are correct

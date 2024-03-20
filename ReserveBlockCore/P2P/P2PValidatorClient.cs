@@ -554,7 +554,7 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     var source = new CancellationTokenSource(2000);
-                    var qBlock = await val.Connection.InvokeAsync<Block>("SendQueuedBlock", source.Token);
+                    var qBlock = await val.Connection.InvokeCoreAsync<Block>("SendQueuedBlock", args: new object?[] { height }, source.Token);
                     if (qBlock != null)
                     {
                         var result = await BlockValidatorService.ValidateBlock(qBlock, false, false, true);

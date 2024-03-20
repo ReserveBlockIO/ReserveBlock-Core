@@ -452,7 +452,7 @@ namespace ReserveBlockCore.Nodes
                                 
                             }
                             else
-                            {
+                           {
                                 if(!Globals.NetworkBlockQueue.TryGetValue(nextblock, out _))
                                     await P2PValidatorClient.RequestQueuedBlock(nextblock);
                             }
