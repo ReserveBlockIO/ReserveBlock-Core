@@ -432,20 +432,29 @@ namespace ReserveBlockCore.Nodes
                                 }
                                 else
                                 {
-                                    if(Globals.NetworkBlockQueue.TryGetValue(nextblock, out var networkBlock))
+                                    if(!Globals.NetworkBlockQueue.TryGetValue(nextblock, out var networkBlock))
                                     {
                                         Globals.WinningProofs.TryGetValue(nextblock, out var proof);
                                         if (proof != null)
                                         {
-                                            var block = await BlockchainData.CraftBlock_V4(
+                                            if (proof.Address == Globals.ValidatorAddress)
+                                            {
+                                                var block = await BlockchainData.CraftBlock_V4(
                                                 Globals.ValidatorAddress,
                                                 Globals.NetworkValidators.Count(),
                                                 proof.ProofHash);
 
-                                            if (block != null)
-                                            {
-                                                Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                                if (block != null)
+                                                {
+                                                    Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                                    var blockJson = JsonConvert.SerializeObject(block);
+
+                                                    await P2PValidatorClient.BroadcastBlock(block, true);
+
+                                                    await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                                                }
                                             }
+                                            
                                         }
                                     }
                                 }
@@ -478,7 +487,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task LockWinner()
         {
-            while(true)
+            while (true)
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 5));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -492,7 +501,7 @@ namespace ReserveBlockCore.Nodes
                 {
                     var valCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
 
-                    if(valCount == 1)
+                    if (valCount == 1 || valCount == 0)
                     {
                         await delay;
                         continue;
