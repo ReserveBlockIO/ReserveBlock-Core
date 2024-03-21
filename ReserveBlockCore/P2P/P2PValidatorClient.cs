@@ -558,8 +558,10 @@ namespace ReserveBlockCore.P2P
                     if (qBlock != null)
                     {
                         var result = await BlockValidatorService.ValidateBlock(qBlock, false, false, true);
+                        
+                        if(result)
                         {
-                            if(Globals.NetworkBlockQueue.TryAdd(qBlock.Height, qBlock))
+                            if (Globals.NetworkBlockQueue.TryAdd(qBlock.Height, qBlock))
                             {
                                 _ = BroadcastBlock(qBlock, true);
                                 break;

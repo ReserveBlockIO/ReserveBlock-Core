@@ -406,64 +406,70 @@ namespace ReserveBlockCore.Nodes
                         var nextblock = Globals.LastBlock.Height + i;
                         if(Globals.FinalizedWinner.TryGetValue(nextblock, out var winner)) 
                         {
-                            if(winner == Globals.ValidatorAddress)
+                            if(!Globals.NetworkBlockQueue.TryGetValue(nextblock, out _))
                             {
-                                if(Globals.LastBlock.Height + 1 == nextblock)
+                                if (winner == Globals.ValidatorAddress)
                                 {
-                                    Globals.WinningProofs.TryGetValue(nextblock, out var proof);
-                                    if (proof != null)
-                                    {
-                                        var block = await BlockchainData.CraftBlock_V4(
-                                            Globals.ValidatorAddress,
-                                            Globals.NetworkValidators.Count(),
-                                            proof.ProofHash);
-
-                                        if (block != null)
-                                        {
-                                            Globals.NetworkBlockQueue.TryAdd(nextblock, block);
-                                            var blockJson = JsonConvert.SerializeObject(block);
-
-                                            await P2PValidatorClient.BroadcastBlock(block, true);
-
-                                            await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
-
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    if(!Globals.NetworkBlockQueue.TryGetValue(nextblock, out var networkBlock))
+                                    if (Globals.LastBlock.Height + 1 == nextblock)
                                     {
                                         Globals.WinningProofs.TryGetValue(nextblock, out var proof);
                                         if (proof != null)
                                         {
-                                            if (proof.Address == Globals.ValidatorAddress)
-                                            {
-                                                var block = await BlockchainData.CraftBlock_V4(
+                                            var block = await BlockchainData.CraftBlock_V4(
                                                 Globals.ValidatorAddress,
                                                 Globals.NetworkValidators.Count(),
                                                 proof.ProofHash);
 
-                                                if (block != null)
-                                                {
-                                                    Globals.NetworkBlockQueue.TryAdd(nextblock, block);
-                                                    var blockJson = JsonConvert.SerializeObject(block);
+                                            if (block != null)
+                                            {
+                                                Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                                var blockJson = JsonConvert.SerializeObject(block);
 
-                                                    await P2PValidatorClient.BroadcastBlock(block, true);
+                                                await P2PValidatorClient.BroadcastBlock(block, true);
 
-                                                    await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
-                                                }
+                                                await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
+
                                             }
-                                            
                                         }
                                     }
+                                    else
+                                    {
+                                        if (!Globals.NetworkBlockQueue.TryGetValue(nextblock, out var networkBlock))
+                                        {
+                                            if (Globals.NetworkBlockQueue.TryGetValue((nextblock - 1), out _))
+                                            {
+                                                Globals.WinningProofs.TryGetValue(nextblock, out var proof);
+                                                if (proof != null)
+                                                {
+                                                    if (proof.Address == Globals.ValidatorAddress)
+                                                    {
+                                                        var block = await BlockchainData.CraftBlock_V4(
+                                                        Globals.ValidatorAddress,
+                                                        Globals.NetworkValidators.Count(),
+                                                        proof.ProofHash);
+
+                                                        if (block != null)
+                                                        {
+                                                            Globals.NetworkBlockQueue.TryAdd(nextblock, block);
+                                                            var blockJson = JsonConvert.SerializeObject(block);
+
+                                                            await P2PValidatorClient.BroadcastBlock(block, true);
+
+                                                            await _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                                                        }
+                                                    }
+
+                                                }
+                                            }
+                                        }
+                                    }
+
                                 }
-                                
-                            }
-                            else
-                           {
-                                if(!Globals.NetworkBlockQueue.TryGetValue(nextblock, out _))
-                                    await P2PValidatorClient.RequestQueuedBlock(nextblock);
+                                else
+                                {
+                                    if (!Globals.NetworkBlockQueue.TryGetValue(nextblock, out _))
+                                        await P2PValidatorClient.RequestQueuedBlock(nextblock);
+                                }
                             }
                         }
                         else
