@@ -114,300 +114,297 @@ namespace ReserveBlockCore.Services
         }
         public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false, bool validateOnly = false)
         {
+            await ValidateBlockSemaphore.WaitAsync();
+
             try
             {
-                await ValidateBlockSemaphore.WaitAsync();
                 if (block?.Height <= Globals.LastBlock.Height)
                     return block.Hash == Globals.LastBlock.Hash;
 
-                try
+                if (block?.Height % 1000 == 0)
                 {
+                    await DbContext.CheckPoint();
+                }
 
-                    if (block?.Height % 1000 == 0)
-                    {
-                        await DbContext.CheckPoint();
-                    }
+                if(!validateOnly)
+                    DbContext.BeginTrans();
 
-                    if(!validateOnly)
-                        DbContext.BeginTrans();
+                bool result = false;
 
-                    bool result = false;
+                if (block == null)
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()");
+                    return result; //null block submitted. reject 
+                }
 
-                    if (block == null)
-                    {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()");
-                        return result; //null block submitted. reject 
-                    }
+                if(block.PrevHash == "0")
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-1");
+                    return result;
+                }
 
-                    if(block.PrevHash == "0")
-                    {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-1");
-                        return result;
-                    }
-
-                    if (block.Height == 0)
-                    {
-                        if (block.ChainRefId != BlockchainData.ChainRef)
-                        {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-2");
-                            return result; //block rejected due to chainref difference
-                        }
-                        //Genesis Block
-                        result = true;
-                        BlockchainData.AddBlock(block);
-                        await StateData.UpdateTreis(block);
-                        foreach (Transaction transaction in block.Transactions)
-                        {
-                            //Adds receiving TX to wallet
-                            var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
-                            if (account != null)
-                            {
-                                AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
-                                var txdata = TransactionData.GetAll();
-                                txdata.InsertSafe(transaction);
-                            }
-
-                        }
-
-                        UpdateMemBlocks(block);//update mem blocks
-                        DbContext.Commit();
-                        return result;
-                    }
-                    if (block.Height != 0)
-                    {
-                        var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
-
-                        //validates the signature of the validator that crafted the block
-                        if (verifyBlockSig != true)
-                        {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-3");
-                            return result;//block rejected due to failed validator signature
-                        }
-                    }
-
-
-                    //Validates that the block has same chain ref
+                if (block.Height == 0)
+                {
                     if (block.ChainRefId != BlockchainData.ChainRef)
                     {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-5");
-                        return result;//block rejected due to chainref difference
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-2");
+                        return result; //block rejected due to chainref difference
+                    }
+                    //Genesis Block
+                    result = true;
+                    BlockchainData.AddBlock(block);
+                    await StateData.UpdateTreis(block);
+                    foreach (Transaction transaction in block.Transactions)
+                    {
+                        //Adds receiving TX to wallet
+                        var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
+                        if (account != null)
+                        {
+                            AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                            var txdata = TransactionData.GetAll();
+                            txdata.InsertSafe(transaction);
+                        }
+
                     }
 
-                    var blockVersion = BlockVersionUtility.GetBlockVersion(block.Height);
+                    UpdateMemBlocks(block);//update mem blocks
+                    DbContext.Commit();
+                    return result;
+                }
+                if (block.Height != 0)
+                {
+                    var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
 
-                    if (block.Version != blockVersion)
+                    //validates the signature of the validator that crafted the block
+                    if (verifyBlockSig != true)
                     {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-6");
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-3");
+                        return result;//block rejected due to failed validator signature
+                    }
+                }
+
+
+                //Validates that the block has same chain ref
+                if (block.ChainRefId != BlockchainData.ChainRef)
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-5");
+                    return result;//block rejected due to chainref difference
+                }
+
+                var blockVersion = BlockVersionUtility.GetBlockVersion(block.Height);
+
+                if (block.Version != blockVersion)
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-6");
+                    return result;
+                }
+
+                if(block.Version == 4)
+                {
+                    var version4Result = await BlockVersionUtility.Version4Rules(block);
+                    if(!version4Result.Item1)
+                    {
+                        DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-4. {version4Result.Item2}");
                         return result;
                     }
-
-                    if(block.Version == 4)
+                }
+                else if (block.Version == 3 && !ignoreAdjSignatures)
+                {
+                    var version3Result = await BlockVersionUtility.Version3Rules(block);
+                    if (!version3Result.Item1)
                     {
-                        var version4Result = await BlockVersionUtility.Version4Rules(block);
-                        if(!version4Result.Item1)
-                        {
-                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-4. {version4Result.Item2}");
-                            return result;
-                        }
+                        DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-3. {version3Result.Item2}");
+                        return result;
                     }
-                    else if (block.Version == 3 && !ignoreAdjSignatures)
-                    {
-                        var version3Result = await BlockVersionUtility.Version3Rules(block);
-                        if (!version3Result.Item1)
-                        {
-                            DbContext.Rollback($"BlockValidatorService.ValidateBlock()-7-3. {version3Result.Item2}");
-                            return result;
-                        }
                             
+                }
+                else if (block.Version == 2)
+                {
+                    //Run block version 2 rules
+                    var version2Result = await BlockVersionUtility.Version2Rules(block);
+                    if (!version2Result)
+                    {
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-8");
+                        return result;
                     }
-                    else if (block.Version == 2)
+                }
+                else
+                {
+                    //no rules
+                }
+
+                //ensures the timestamps being produced are correct
+                if (block.Height != 0)
+                {
+                    var prevTimestamp = Globals.LastBlock.Timestamp;
+                    var currentTimestamp = TimeUtil.GetTime(60);
+                    if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                     {
-                        //Run block version 2 rules
-                        var version2Result = await BlockVersionUtility.Version2Rules(block);
-                        if (!version2Result)
-                        {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-8");
-                            return result;
-                        }
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-9");
+                        return result;
                     }
-                    else
-                    {
-                        //no rules
-                    }
+                }
 
-                    //ensures the timestamps being produced are correct
-                    if (block.Height != 0)
-                    {
-                        var prevTimestamp = Globals.LastBlock.Timestamp;
-                        var currentTimestamp = TimeUtil.GetTime(60);
-                        if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
-                        {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-9");
-                            return result;
-                        }
-                    }
+                var newBlock = new Block
+                {
+                    Height = block.Height,
+                    Timestamp = block.Timestamp,
+                    Transactions = block.Transactions,
+                    Validator = block.Validator,
+                    ChainRefId = block.ChainRefId,
+                    TotalValidators = block.TotalValidators,
+                    ValidatorAnswer = block.ValidatorAnswer
+                };
 
-                    var newBlock = new Block
-                    {
-                        Height = block.Height,
-                        Timestamp = block.Timestamp,
-                        Transactions = block.Transactions,
-                        Validator = block.Validator,
-                        ChainRefId = block.ChainRefId,
-                        TotalValidators = block.TotalValidators,
-                        ValidatorAnswer = block.ValidatorAnswer
-                    };
+                newBlock.Build();
 
-                    newBlock.Build();
+                //This will also check that the prev hash matches too
+                if (!newBlock.Hash.Equals(block.Hash))
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-10");
+                    return result;//block rejected
+                }
 
-                    //This will also check that the prev hash matches too
-                    if (!newBlock.Hash.Equals(block.Hash))
+                if (!newBlock.MerkleRoot.Equals(block.MerkleRoot))
+                {
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-11");
+                    return result;//block rejected
+                }
+
+                if (block.Height != 0)
+                {
+                    var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
+
+                    //Need to check here the prev hash if it is correct!
+
+                    if (blockCoinBaseResult == false)
                     {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-10");
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-12");
                         return result;//block rejected
                     }
 
-                    if (!newBlock.MerkleRoot.Equals(block.MerkleRoot))
+                    if (block.Transactions.Count() > 0)
                     {
-                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-11");
-                        return result;//block rejected
-                    }
-
-                    if (block.Height != 0)
-                    {
-                        var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
-
-                        //Need to check here the prev hash if it is correct!
-
-                        if (blockCoinBaseResult == false)
+                        //validate transactions.
+                        bool rejectBlock = false;
+                        foreach (Transaction blkTransaction in block.Transactions)
                         {
-                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-12");
-                            return result;//block rejected
-                        }
-
-                        if (block.Transactions.Count() > 0)
-                        {
-                            //validate transactions.
-                            bool rejectBlock = false;
-                            foreach (Transaction blkTransaction in block.Transactions)
+                            if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                             {
-                                if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
+                                var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads, true);
+                                if(txResult.Item1 == false)
                                 {
-                                    var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads, true);
-                                    if(txResult.Item1 == false)
+                                    //testing
+                                }
+                                if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
+                                {
+                                    //if (!txResult.Item1)
+                                    //    await TransactionValidatorService.BadTXDetected(blkTransaction);
+                                }
+                                rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
+                                //check for duplicate tx
+                                if (blkTransaction.TransactionType != TransactionType.TX &&
+                                    blkTransaction.TransactionType != TransactionType.ADNR &&
+                                    blkTransaction.TransactionType != TransactionType.VOTE &&
+                                    blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
+                                    blkTransaction.TransactionType != TransactionType.DSTR &&
+                                    blkTransaction.TransactionType != TransactionType.RESERVE && 
+                                    blkTransaction.TransactionType != TransactionType.NFT_SALE)
+                                {
+                                    if (blkTransaction.Data != null)
                                     {
-                                        //testing
-                                    }
-                                    if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
-                                    {
-                                        //if (!txResult.Item1)
-                                        //    await TransactionValidatorService.BadTXDetected(blkTransaction);
-                                    }
-                                    rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
-                                    //check for duplicate tx
-                                    if (blkTransaction.TransactionType != TransactionType.TX &&
-                                        blkTransaction.TransactionType != TransactionType.ADNR &&
-                                        blkTransaction.TransactionType != TransactionType.VOTE &&
-                                        blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
-                                        blkTransaction.TransactionType != TransactionType.DSTR &&
-                                        blkTransaction.TransactionType != TransactionType.RESERVE && 
-                                        blkTransaction.TransactionType != TransactionType.NFT_SALE)
-                                    {
-                                        if (blkTransaction.Data != null)
+                                        try
                                         {
-                                            try
+                                            AccountStateTrei? stateTreiAcct = null;
+                                            stateTreiAcct = StateData.GetSpecificAccountStateTrei(blkTransaction.FromAddress);
+                                            var scInfo = TransactionUtility.GetSCTXFunctionAndUID(blkTransaction);
+                                            if (!scInfo.Item1)
+                                                return false;
+
+                                            string scUID = scInfo.Item3;
+                                            string function = scInfo.Item4;
+                                            JArray? scDataArray = scInfo.Item5;
+                                            bool skip = scInfo.Item2;
+
+                                            if (scDataArray != null && skip)
                                             {
-                                                AccountStateTrei? stateTreiAcct = null;
-                                                stateTreiAcct = StateData.GetSpecificAccountStateTrei(blkTransaction.FromAddress);
-                                                var scInfo = TransactionUtility.GetSCTXFunctionAndUID(blkTransaction);
-                                                if (!scInfo.Item1)
-                                                    return false;
+                                                var scData = scDataArray[0];
 
-                                                string scUID = scInfo.Item3;
-                                                string function = scInfo.Item4;
-                                                JArray? scDataArray = scInfo.Item5;
-                                                bool skip = scInfo.Item2;
+                                                function = (string?)scData["Function"];
 
-                                                if (scDataArray != null && skip)
+                                                if (!string.IsNullOrWhiteSpace(function))
                                                 {
-                                                    var scData = scDataArray[0];
-
-                                                    function = (string?)scData["Function"];
-
-                                                    if (!string.IsNullOrWhiteSpace(function))
+                                                    switch(function)
                                                     {
-                                                        switch(function)
-                                                        {
-                                                            case "Transfer()":
+                                                        case "Transfer()":
+                                                            {
+                                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                if (otherTxs.Count() > 0)
                                                                 {
-                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
-                                                                    if (otherTxs.Count() > 0)
+                                                                    foreach (var otx in otherTxs)
                                                                     {
-                                                                        foreach (var otx in otherTxs)
+                                                                        if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                                                            otx.TransactionType == TransactionType.NFT_MINT)
                                                                         {
-                                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
-                                                                                otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                                otx.TransactionType == TransactionType.NFT_MINT)
+                                                                            scUID = (string?)scData["ContractUID"];
+                                                                            if (otx.Data != null)
                                                                             {
-                                                                                scUID = (string?)scData["ContractUID"];
-                                                                                if (otx.Data != null)
+                                                                                var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                if (memscInfo.Item2)
                                                                                 {
-                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
-                                                                                    if (memscInfo.Item2)
+                                                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                                    if (ottxDataArray != null)
                                                                                     {
-                                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                                                        if (ottxDataArray != null)
-                                                                                        {
-                                                                                            var ottxData = ottxDataArray[0];
+                                                                                        var ottxData = ottxDataArray[0];
 
-                                                                                            var ottxFunction = (string?)ottxData["Function"];
-                                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
-                                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                        var ottxFunction = (string?)ottxData["Function"];
+                                                                                        var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                                        if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                        {
+                                                                                            if (ottxscUID == scUID)
                                                                                             {
-                                                                                                if (ottxscUID == scUID)
-                                                                                                {
-                                                                                                    rejectBlock = true;
-                                                                                                }
+                                                                                                rejectBlock = true;
                                                                                             }
                                                                                         }
                                                                                     }
+                                                                                }
                                                                                     
-                                                                                }
                                                                             }
                                                                         }
                                                                     }
                                                                 }
-                                                                break;
-                                                            case "Burn()":
+                                                            }
+                                                            break;
+                                                        case "Burn()":
+                                                            {
+                                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                if (otherTxs.Count() > 0)
                                                                 {
-                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
-                                                                    if (otherTxs.Count() > 0)
+                                                                    foreach (var otx in otherTxs)
                                                                     {
-                                                                        foreach (var otx in otherTxs)
+                                                                        if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                                                            otx.TransactionType == TransactionType.NFT_MINT)
                                                                         {
-                                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
-                                                                                otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                                otx.TransactionType == TransactionType.NFT_MINT)
+                                                                            scUID = (string?)scData["ContractUID"];
+                                                                            if (otx.Data != null)
                                                                             {
-                                                                                scUID = (string?)scData["ContractUID"];
-                                                                                if (otx.Data != null)
+                                                                                var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                if (memscInfo.Item2)
                                                                                 {
-                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
-                                                                                    if (memscInfo.Item2)
+                                                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                                    if (ottxDataArray != null)
                                                                                     {
-                                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                                                        if (ottxDataArray != null)
-                                                                                        {
-                                                                                            var ottxData = ottxDataArray[0];
+                                                                                        var ottxData = ottxDataArray[0];
 
-                                                                                            var ottxFunction = (string?)ottxData["Function"];
-                                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
-                                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                        var ottxFunction = (string?)ottxData["Function"];
+                                                                                        var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                                        if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                                        {
+                                                                                            if (ottxscUID == scUID)
                                                                                             {
-                                                                                                if (ottxscUID == scUID)
-                                                                                                {
-                                                                                                    rejectBlock = true;
-                                                                                                }
+                                                                                                rejectBlock = true;
                                                                                             }
                                                                                         }
                                                                                     }
@@ -416,56 +413,56 @@ namespace ReserveBlockCore.Services
                                                                         }
                                                                     }
                                                                 }
-                                                                break;
-                                                            case string i when i == "TokenTransfer()" || i == "TokenBurn()":
+                                                            }
+                                                            break;
+                                                        case string i when i == "TokenTransfer()" || i == "TokenBurn()":
+                                                            {
+                                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                                if (otherTxs.Count() > 0)
                                                                 {
-                                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
-                                                                    if (otherTxs.Count() > 0)
+                                                                    decimal xferBurnAmount = 0.0M;
+                                                                    var originaljobj = JObject.Parse(blkTransaction.Data);
+                                                                    var tokenTicker = originaljobj["TokenTicker"]?.ToObject<string?>();
+                                                                    var amount = originaljobj["Amount"]?.ToObject<decimal?>();
+
+                                                                    if (amount == null)
+                                                                        rejectBlock = true;
+
+                                                                    var tokenAccount = stateTreiAcct.TokenAccounts?.Where(x => x.TokenTicker == tokenTicker).FirstOrDefault();
+
+                                                                    if (tokenAccount == null)
+                                                                        rejectBlock = true;
+
+                                                                    xferBurnAmount += amount.Value;
+
+                                                                    foreach (var otx in otherTxs)
                                                                     {
-                                                                        decimal xferBurnAmount = 0.0M;
-                                                                        var originaljobj = JObject.Parse(blkTransaction.Data);
-                                                                        var tokenTicker = originaljobj["TokenTicker"]?.ToObject<string?>();
-                                                                        var amount = originaljobj["Amount"]?.ToObject<decimal?>();
-
-                                                                        if (amount == null)
-                                                                            rejectBlock = true;
-
-                                                                        var tokenAccount = stateTreiAcct.TokenAccounts?.Where(x => x.TokenTicker == tokenTicker).FirstOrDefault();
-
-                                                                        if (tokenAccount == null)
-                                                                            rejectBlock = true;
-
-                                                                        xferBurnAmount += amount.Value;
-
-                                                                        foreach (var otx in otherTxs)
+                                                                        if (otx.TransactionType == TransactionType.NFT_TX)
                                                                         {
-                                                                            if (otx.TransactionType == TransactionType.NFT_TX)
+                                                                            if (otx.Data != null)
                                                                             {
-                                                                                if (otx.Data != null)
+                                                                                var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
+                                                                                if (!memscInfo.Item2 && memscInfo.Item1)
                                                                                 {
-                                                                                    var memscInfo = TransactionUtility.GetSCTXFunctionAndUID(otx);
-                                                                                    if (!memscInfo.Item2 && memscInfo.Item1)
-                                                                                    {
-                                                                                        var jobj = JObject.Parse(otx.Data);
-                                                                                        var otscUID = jobj["ContractUID"]?.ToObject<string?>();
-                                                                                        var otFunction = jobj["Function"]?.ToObject<string?>();
+                                                                                    var jobj = JObject.Parse(otx.Data);
+                                                                                    var otscUID = jobj["ContractUID"]?.ToObject<string?>();
+                                                                                    var otFunction = jobj["Function"]?.ToObject<string?>();
 
-                                                                                        if (otscUID == scUID)
+                                                                                    if (otscUID == scUID)
+                                                                                    {
+                                                                                        var otTokenTicker = jobj["TokenTicker"]?.ToObject<string?>();
+                                                                                        var otAmount = jobj["Amount"]?.ToObject<decimal?>();
+                                                                                        if (otFunction != null)
                                                                                         {
-                                                                                            var otTokenTicker = jobj["TokenTicker"]?.ToObject<string?>();
-                                                                                            var otAmount = jobj["Amount"]?.ToObject<decimal?>();
-                                                                                            if (otFunction != null)
+                                                                                            if (otFunction == "TokenTransfer()" || otFunction == "TokenBurn()")
                                                                                             {
-                                                                                                if (otFunction == "TokenTransfer()" || otFunction == "TokenBurn()")
+                                                                                                if (otAmount != null)
                                                                                                 {
-                                                                                                    if (otAmount != null)
+                                                                                                    if (otTokenTicker == tokenTicker)
                                                                                                     {
-                                                                                                        if (otTokenTicker == tokenTicker)
-                                                                                                        {
-                                                                                                            xferBurnAmount += otAmount.Value;
-                                                                                                        }
-
+                                                                                                        xferBurnAmount += otAmount.Value;
                                                                                                     }
+
                                                                                                 }
                                                                                             }
                                                                                         }
@@ -473,193 +470,193 @@ namespace ReserveBlockCore.Services
                                                                                 }
                                                                             }
                                                                         }
-
-                                                                        if (xferBurnAmount > tokenAccount.Balance) 
-                                                                            rejectBlock = true; //failed due to overspend/overburn
                                                                     }
+
+                                                                    if (xferBurnAmount > tokenAccount.Balance) 
+                                                                        rejectBlock = true; //failed due to overspend/overburn
                                                                 }
-                                                                break;
-                                                            default: { } break;
-                                                        }
-                                                        
+                                                            }
+                                                            break;
+                                                        default: { } break;
                                                     }
+                                                        
                                                 }
                                             }
-                                            catch
-                                            {
-                                                rejectBlock = true;
-                                            }
+                                        }
+                                        catch
+                                        {
+                                            rejectBlock = true;
                                         }
                                     }
                                 }
-                                else
-                                {
-                                    //do nothing as its the coinbase fee
-                                }
-
-                                if (rejectBlock)
-                                    break;
+                            }
+                            else
+                            {
+                                //do nothing as its the coinbase fee
                             }
 
                             if (rejectBlock)
+                                break;
+                        }
+
+                        if (rejectBlock)
+                        {
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-13");
+                            return result;//block rejected due to bad transaction(s)
+                        }
+
+                        result = true;
+
+                        if (validateOnly)
+                            return result;
+
+                        BlockchainData.AddBlock(block);//add block to chain.
+                        UpdateMemBlocks(block);//update mem blocks
+                            
+                        await StateData.UpdateTreis(block); //update treis
+                        await ReserveService.Run(); //updates treis for reserve pending txs
+
+                        var mempool = TransactionData.GetPool();
+
+                        if (block.Transactions.Count() > 0)
+                        {
+                            foreach (var localFromTransaction in block.Transactions)
                             {
-                                DbContext.Rollback("BlockValidatorService.ValidateBlock()-13");
-                                return result;//block rejected due to bad transaction(s)
+                                Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+                                Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+
+                                if (mempool != null)
+                                {
+                                    var mempoolTx = mempool.FindAll().Where(x => x.Hash == localFromTransaction.Hash);
+                                    if (mempoolTx.Count() > 0)
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == localFromTransaction.Hash);
+                                    }
+                                }
+                                try
+                                {
+                                    //Process transactions sent ->From<- wallet
+                                    var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localFromTransaction.FromAddress);
+                                    if (fromAccount != null)
+                                    {
+                                        await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
+                                    }
+                                    var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localFromTransaction.FromAddress).FirstOrDefault();
+                                    if (reserveAccount != null)
+                                    {
+                                        //change account types
+                                        await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, reserveAccount, block.Height);
+                                    }
+                                }
+                                catch { }
+                                    
                             }
 
-                            result = true;
-
-                            if (validateOnly)
-                                return result;
-
-                            BlockchainData.AddBlock(block);//add block to chain.
-                            UpdateMemBlocks(block);//update mem blocks
-                            
-                            await StateData.UpdateTreis(block); //update treis
-                            await ReserveService.Run(); //updates treis for reserve pending txs
-
-                            var mempool = TransactionData.GetPool();
-
-                            if (block.Transactions.Count() > 0)
+                            foreach (var localToTransaction in block.Transactions)
                             {
-                                foreach (var localFromTransaction in block.Transactions)
+                                string? nftSellerAddress = null;
+                                Transaction? nftSellerTX = null;
+                                string? nftRoyaltyAddress = null;
+                                Transaction? nftRoyaltyTX = null;
+                                try
                                 {
-                                    Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
-                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
-
-                                    if (mempool != null)
+                                    if (localToTransaction.TransactionType == TransactionType.NFT_SALE)
                                     {
-                                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == localFromTransaction.Hash);
-                                        if (mempoolTx.Count() > 0)
+                                        var txData = localToTransaction.Data;
+                                        var jobj = JObject.Parse(txData);
+                                        var function = (string?)jobj["Function"];
+                                        if (function != null)
                                         {
-                                            mempool.DeleteManySafe(x => x.Hash == localFromTransaction.Hash);
-                                        }
-                                    }
-                                    try
-                                    {
-                                        //Process transactions sent ->From<- wallet
-                                        var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localFromTransaction.FromAddress);
-                                        if (fromAccount != null)
-                                        {
-                                            await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
-                                        }
-                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localFromTransaction.FromAddress).FirstOrDefault();
-                                        if (reserveAccount != null)
-                                        {
-                                            //change account types
-                                            await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, reserveAccount, block.Height);
-                                        }
-                                    }
-                                    catch { }
-                                    
-                                }
-
-                                foreach (var localToTransaction in block.Transactions)
-                                {
-                                    string? nftSellerAddress = null;
-                                    Transaction? nftSellerTX = null;
-                                    string? nftRoyaltyAddress = null;
-                                    Transaction? nftRoyaltyTX = null;
-                                    try
-                                    {
-                                        if (localToTransaction.TransactionType == TransactionType.NFT_SALE)
-                                        {
-                                            var txData = localToTransaction.Data;
-                                            var jobj = JObject.Parse(txData);
-                                            var function = (string?)jobj["Function"];
-                                            if (function != null)
+                                            if (function == "Sale_Complete()")
                                             {
-                                                if (function == "Sale_Complete()")
+                                                var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+                                                if (transactions != null)
                                                 {
-                                                    var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
-                                                    if (transactions != null)
+                                                    if (transactions.Count() > 1)
                                                     {
-                                                        if (transactions.Count() > 1)
-                                                        {
-                                                            var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
-                                                            var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+                                                        var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+                                                        var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
 
-                                                            nftSellerAddress = txToSeller.ToAddress;
-                                                            nftSellerTX = txToSeller;
+                                                        nftSellerAddress = txToSeller.ToAddress;
+                                                        nftSellerTX = txToSeller;
 
-                                                            nftRoyaltyAddress = txToRoyaltyPayee.ToAddress;
-                                                            nftRoyaltyTX = txToRoyaltyPayee;
-                                                        }
-                                                        else
-                                                        {
-                                                            var txToSeller = transactions.FirstOrDefault();
-                                                            nftSellerAddress = txToSeller.ToAddress;
-                                                            nftSellerTX = txToSeller;
-                                                        }
+                                                        nftRoyaltyAddress = txToRoyaltyPayee.ToAddress;
+                                                        nftRoyaltyTX = txToRoyaltyPayee;
+                                                    }
+                                                    else
+                                                    {
+                                                        var txToSeller = transactions.FirstOrDefault();
+                                                        nftSellerAddress = txToSeller.ToAddress;
+                                                        nftSellerTX = txToSeller;
                                                     }
                                                 }
                                             }
-
-                                        }
-                                    }
-                                    catch { }
-                                    try
-                                    {
-                                        //Process transactions sent ->To<- wallet
-                                        var account = AccountData.GetAccounts().FindOne(x => x.Address == localToTransaction.ToAddress);
-                                        if (account != null)
-                                        {
-                                            await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
                                         }
 
-                                        //these are for NFT sales 1. seller 2. royalty
-                                        if(nftSellerAddress != null)
-                                        {
-                                            var nftSellerAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftSellerAddress);
-                                            if (nftSellerTX != null && nftSellerAccount != null)
-                                            {
-                                                await BlockTransactionValidatorService.ProcessIncomingTransactions(nftSellerTX, nftSellerAccount, block.Height);
-                                            }
-                                        }
-                                        if (nftRoyaltyAddress != null)
-                                        {
-                                            var nftRoyaltyAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftRoyaltyAddress);
-                                            if (nftRoyaltyTX != null && nftRoyaltyAccount != null)
-                                            {
-                                                await BlockTransactionValidatorService.ProcessIncomingTransactions(nftRoyaltyTX, nftRoyaltyAccount, block.Height);
-                                            }
-                                        }
-                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localToTransaction.ToAddress).FirstOrDefault();
-                                        if(reserveAccount != null)
-                                        {
-                                            //change accounts types
-                                            await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, reserveAccount, block.Height);
-                                        }
                                     }
-                                    catch { }
                                 }
-                            }
+                                catch { }
+                                try
+                                {
+                                    //Process transactions sent ->To<- wallet
+                                    var account = AccountData.GetAccounts().FindOne(x => x.Address == localToTransaction.ToAddress);
+                                    if (account != null)
+                                    {
+                                        await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
+                                    }
 
+                                    //these are for NFT sales 1. seller 2. royalty
+                                    if(nftSellerAddress != null)
+                                    {
+                                        var nftSellerAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftSellerAddress);
+                                        if (nftSellerTX != null && nftSellerAccount != null)
+                                        {
+                                            await BlockTransactionValidatorService.ProcessIncomingTransactions(nftSellerTX, nftSellerAccount, block.Height);
+                                        }
+                                    }
+                                    if (nftRoyaltyAddress != null)
+                                    {
+                                        var nftRoyaltyAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftRoyaltyAddress);
+                                        if (nftRoyaltyTX != null && nftRoyaltyAccount != null)
+                                        {
+                                            await BlockTransactionValidatorService.ProcessIncomingTransactions(nftRoyaltyTX, nftRoyaltyAccount, block.Height);
+                                        }
+                                    }
+                                    var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localToTransaction.ToAddress).FirstOrDefault();
+                                    if(reserveAccount != null)
+                                    {
+                                        //change accounts types
+                                        await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, reserveAccount, block.Height);
+                                    }
+                                }
+                                catch { }
+                            }
                         }
 
-                        await TransactionData.UpdateWalletTXTask();
-
-                        DbContext.Commit();
-
-                        return result;//block accepted
                     }
-                    else
-                    {
-                        //Genesis Block
-                        result = true;
-                        BlockchainData.AddBlock(block);
-                        await StateData.UpdateTreis(block);
-                        DbContext.Commit();
-                        return result;
-                    }
+
+                    await TransactionData.UpdateWalletTXTask();
+
+                    DbContext.Commit();
+
+                    return result;//block accepted
                 }
-                catch (Exception ex)
+                else
                 {
-                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-14");
-                    Console.WriteLine($"Error: {ex.ToString()}");
+                    //Genesis Block
+                    result = true;
+                    BlockchainData.AddBlock(block);
+                    await StateData.UpdateTreis(block);
+                    DbContext.Commit();
+                    return result;
                 }
+                
+
             }
-            catch { }
+            catch (Exception ex) {
+                DbContext.Rollback("BlockValidatorService.ValidateBlock()-14");
+                Console.WriteLine($"Error: {ex.ToString()}");
+            }
             finally
             {
                 try { ValidateBlockSemaphore.Release(); } catch { }

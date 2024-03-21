@@ -580,7 +580,7 @@ namespace ReserveBlockCore.P2P
                         }
                     }
                 }
-                catch { }
+                catch(Exception ex) { }
             }
         }
         #endregion

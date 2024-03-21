@@ -111,44 +111,6 @@ namespace ReserveBlockCore.Nodes
                         await P2PValidatorClient.RequestCurrentWinners();
                         await Task.Delay(5000);
 
-                         var finalBlock = Globals.LastBlock.Height + 30;
-                        bool exit = false;
-                        while(exit!)
-                        {
-                            //waiting for other proofs
-                            var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
-
-                            if (proofCount == 1 || proofCount == 0)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                exit = true;
-                            }
-                        }
-
-                        for(var i = 1; i <= finalBlock; i++)
-                        {
-                            
-                            if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
-                            {
-                                if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
-                                {
-                                    if (winningProof != null)
-                                    {
-                                        if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
-                                        {
-                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    //if missing must request winner from connected nodes
-                                }
-                            }
-                        }
                         break;
                     }
                 }
@@ -518,17 +480,19 @@ namespace ReserveBlockCore.Nodes
                     await delay;
                     continue;
                 }
+                var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
+
+                if (proofCount == 1 || proofCount == 0)
+                {
+                    await delay;
+                    continue;
+                }
+
                 await LockWinnerLock.WaitAsync();
 
                 try
                 {
-                    var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
-
-                    if (proofCount == 1 || proofCount == 0)
-                    {
-                        await delay;
-                        continue;
-                    }
+                    
 
                     var nextBlock = Globals.LastBlock.Height + 30;
                     if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
