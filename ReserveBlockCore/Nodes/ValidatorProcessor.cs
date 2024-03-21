@@ -492,26 +492,50 @@ namespace ReserveBlockCore.Nodes
 
                 try
                 {
-                    
-
                     var nextBlock = Globals.LastBlock.Height + 30;
-                    if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+
+                    if (Globals.LastBlock.Height == 0)
                     {
-                        if(Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
+                        nextBlock = 1;
+                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
                         {
-                            if(winningProof != null)
+                            if (Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
                             {
-                                if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                if (winningProof != null)
                                 {
-                                    Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                    {
+                                        Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            //if missing must request winner from connected nodes
+                            else
+                            {
+                                //if missing must request winner from connected nodes
+                            }
                         }
                     }
+                    else
+                    {
+                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+                        {
+                            if (Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
+                            {
+                                if (winningProof != null)
+                                {
+                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                    {
+                                        Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                //if missing must request winner from connected nodes
+                            }
+                        }
+                    }
+                    
                 }
                 catch (Exception ex)
                 {
