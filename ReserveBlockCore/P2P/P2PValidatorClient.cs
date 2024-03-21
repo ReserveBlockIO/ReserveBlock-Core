@@ -272,6 +272,17 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next())
                 .ToArray();
 
+            if(!newPeers.Any())
+            {
+                //clear out skipped peers to try again
+                Globals.SkipPeers.Clear();
+                newPeers = peerDB.Find(x => x.IsValidator).ToArray()
+                .Where(x => !SkipIPs.Contains(x.PeerIP))
+                .ToArray()
+                .OrderBy(x => rnd.Next())
+                .ToArray();
+            }
+
             var Diff = Globals.MaxValPeers - Globals.ValidatorNodes.Count;
             newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
             {

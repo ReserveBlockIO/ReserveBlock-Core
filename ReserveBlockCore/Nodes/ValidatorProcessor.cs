@@ -112,24 +112,41 @@ namespace ReserveBlockCore.Nodes
                         await Task.Delay(5000);
 
                          var finalBlock = Globals.LastBlock.Height + 30;
-
-                        for(var i = 1; i <= finalBlock; i++)
-
-                        if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
+                        bool exit = false;
+                        while(exit!)
                         {
-                            if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
+                            //waiting for other proofs
+                            var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
+
+                            if (proofCount == 1 || proofCount == 0)
                             {
-                                if (winningProof != null)
-                                {
-                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
-                                    {
-                                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                    }
-                                }
+                                continue;
                             }
                             else
                             {
-                                //if missing must request winner from connected nodes
+                                exit = true;
+                            }
+                        }
+
+                        for(var i = 1; i <= finalBlock; i++)
+                        {
+                            
+                            if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
+                            {
+                                if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
+                                {
+                                    if (winningProof != null)
+                                    {
+                                        if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                        {
+                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    //if missing must request winner from connected nodes
+                                }
                             }
                         }
                         break;
@@ -505,9 +522,9 @@ namespace ReserveBlockCore.Nodes
 
                 try
                 {
-                    var valCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
+                    var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
 
-                    if (valCount == 1 || valCount == 0)
+                    if (proofCount == 1 || proofCount == 0)
                     {
                         await delay;
                         continue;
