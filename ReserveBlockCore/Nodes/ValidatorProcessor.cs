@@ -494,26 +494,30 @@ namespace ReserveBlockCore.Nodes
                 {
                     var nextBlock = Globals.LastBlock.Height + 30;
 
-                    if (Globals.LastBlock.Height == 0)
+                    if (Globals.LastBlock.Height == (Globals.V4Height - 1))
                     {
-                        nextBlock = 1;
-                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
+                        nextBlock = Globals.V4Height;
+                        for(var i = nextBlock; i <= Globals.V4Height + 29; i++)
                         {
-                            if (Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
+                            if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
                             {
-                                if (winningProof != null)
+                                if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
                                 {
-                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                    if (winningProof != null)
                                     {
-                                        Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                        if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                        {
+                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                        }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                //if missing must request winner from connected nodes
+                                else
+                                {
+                                    //if missing must request winner from connected nodes
+                                }
                             }
                         }
+                        
                     }
                     else
                     {
