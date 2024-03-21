@@ -126,8 +126,7 @@ namespace ReserveBlockCore.Services
                     await DbContext.CheckPoint();
                 }
 
-                if(!validateOnly)
-                    DbContext.BeginTrans();
+                DbContext.BeginTrans();
 
                 bool result = false;
 

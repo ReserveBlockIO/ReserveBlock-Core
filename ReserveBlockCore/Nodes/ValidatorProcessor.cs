@@ -397,7 +397,7 @@ namespace ReserveBlockCore.Nodes
                                             var block = await BlockchainData.CraftBlock_V4(
                                                 Globals.ValidatorAddress,
                                                 Globals.NetworkValidators.Count(),
-                                                proof.ProofHash);
+                                                proof.ProofHash, nextblock);
 
                                             if (block != null)
                                             {
@@ -425,7 +425,7 @@ namespace ReserveBlockCore.Nodes
                                                         var block = await BlockchainData.CraftBlock_V4(
                                                         Globals.ValidatorAddress,
                                                         Globals.NetworkValidators.Count(),
-                                                        proof.ProofHash);
+                                                        proof.ProofHash, nextblock);
 
                                                         if (block != null)
                                                         {

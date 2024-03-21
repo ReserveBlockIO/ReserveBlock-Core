@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
         #endregion
 
         #region Craft Block V4
-        public static async Task<Block?> CraftBlock_V4(string validator, int totalVals, string valAnswer)
+        public static async Task<Block?> CraftBlock_V4(string validator, int totalVals, string valAnswer, long height)
         {
             try
             {
@@ -209,9 +209,6 @@ namespace ReserveBlockCore.Data
                     //Get tx's from Mempool                
                     var processedTxPool = await TransactionData.ProcessTxPool();
                     var txPool = TransactionData.GetPool();
-
-                    var lastBlock = Globals.LastBlock;
-                    var height = lastBlock.Height + 1;
 
                     //Need to get master node validator.
                     var timestamp = TimeUtil.GetTime();
