@@ -235,27 +235,33 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
-                if(result)
+                var lastBlock = Globals.LastBlock;
+                if(lastBlock.Height < nextBlock.Height)
                 {
-                    Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
-
-                    var blockJson = JsonConvert.SerializeObject(nextBlock);
-
-                    if(!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                    var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
+                    if (result)
                     {
-                        Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
-                        _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
-                    }
-                    else
-                    {
-                        if(DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                        var blockAdded = Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
+
+                        if(blockAdded)
                         {
-                            Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
-                            _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                            var blockJson = JsonConvert.SerializeObject(nextBlock);
+
+                            if (!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                            {
+                                Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
+                                _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                            }
+                            else
+                            {
+                                if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                                {
+                                    Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
+                                    _ = Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                                }
+                            }
                         }
                     }
-                    
                 }
             }
             catch { }

@@ -426,7 +426,7 @@ namespace ReserveBlockCore.Data
             
             return result;
         }
-        public static async void AddBlock(Block block)
+        public static async Task AddBlock(Block block)
         {
             while(Globals.TreisUpdating)
             {
@@ -449,7 +449,7 @@ namespace ReserveBlockCore.Data
                 Blockchain.AddBlock(block);
                 _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                 _ = ValidatorService.UpdateActiveValidators(block);
-
+                _ = ValidatorService.UpdateBlockMemory(block.Height);
                 //insert block to db
                 blocks.InsertSafe(block);
             }

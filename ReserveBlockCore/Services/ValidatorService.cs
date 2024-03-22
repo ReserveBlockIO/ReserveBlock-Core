@@ -57,6 +57,8 @@ namespace ReserveBlockCore.Services
 
         internal static async Task StartupValidators()
         {
+            //wait 15 seconds
+            await Task.Delay(15000);
             while (true)
             {
                 if (string.IsNullOrEmpty(Globals.ValidatorAddress))
@@ -332,6 +334,18 @@ namespace ReserveBlockCore.Services
             return null;
         }
 
+        public static async Task UpdateBlockMemory(long height)
+        {
+            try
+            {
+                Globals.BlockQueueBroadcasted.TryRemove(height, out _);
+                Globals.NetworkBlockQueue.TryRemove(height, out _);
+                Globals.BackupProofs.TryRemove(height, out _);
+                Globals.WinningProofs.TryRemove(height, out _);
+                Globals.FinalizedWinner.TryRemove(height, out _);
+            }
+            catch { }
+        }
 
         public static async Task PerformErrorCountCheck()
         {

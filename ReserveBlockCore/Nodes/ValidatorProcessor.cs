@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim CheckNetworkValidatorsLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim GenerateProofLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim ProduceBlockLock = new SemaphoreSlim(1, 1);
-        static SemaphoreSlim BlockCheckLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ConfirmBlockLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim SendWinningVoteLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim LockWinnerLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim RequestCurrentWinnersLock = new SemaphoreSlim(1, 1);
@@ -44,6 +44,7 @@ namespace ReserveBlockCore.Nodes
             _ = LockWinner();
             _ = BlockStart();
             _ = ProduceBlock();
+            _ = ConfirmBlock();
 
             return Task.CompletedTask;
         }
@@ -133,28 +134,34 @@ namespace ReserveBlockCore.Nodes
 
             if(nextBlock == null ) return;
 
-            var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
-            if (result)
+            var lastBlock = Globals.LastBlock;
+            if (lastBlock.Height < nextBlock.Height)
             {
-                Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
-
-                var blockJson = JsonConvert.SerializeObject(nextBlock);
-
-                if (!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                var result = await BlockValidatorService.ValidateBlock(nextBlock, false, false, true);
+                if (result)
                 {
-                    Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
+                    var blockAdded = Globals.NetworkBlockQueue.TryAdd(nextBlock.Height, nextBlock);
 
-                    _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
-                }
-                else
-                {
-                    if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                    if(blockAdded)
                     {
-                        Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
-                        _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                        var blockJson = JsonConvert.SerializeObject(nextBlock);
+
+                        if (!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
+                        {
+                            Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
+
+                            _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                        }
+                        else
+                        {
+                            if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
+                            {
+                                Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
+                                _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                            }
+                        }
                     }
                 }
-
             }
         }
 
@@ -380,7 +387,7 @@ namespace ReserveBlockCore.Nodes
                 try
                 {
                     //TODO- CANT DO THIS. Must have previous block, so items must be queued fast.
-                    for(int i = 1; i < 5; i++)
+                    for(int i = 1; i <= 5; i++)
                     {
                         var nextblock = Globals.LastBlock.Height + i;
                         if(Globals.FinalizedWinner.TryGetValue(nextblock, out var winner)) 
@@ -606,37 +613,46 @@ namespace ReserveBlockCore.Nodes
             }
         }
 
-        private async Task BlockCheck()
+        private async Task ConfirmBlock()
         {
             while (true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                var delay = Task.Delay(new TimeSpan(0, 0, 5));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     await delay;
                     continue;
                 }
 
-                await BlockCheckLock.WaitAsync();
+                await ConfirmBlockLock.WaitAsync();
                 try
                 {
-                    if(Globals.LastBlock.Timestamp + 20 <= TimeUtil.GetTime())
+                    var nextBlock = Globals.LastBlock.Height + 1;
+                    var currentTime = TimeUtil.GetTime();
+                    var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp);
+                    if (currentDiff >= 20)
                     {
-                        var nextBlock = Globals.LastBlock.Height + 1;
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {
                             //add block and broadcast
                             //do removals from proofs and other in memory variables
+                            await BlockchainData.AddBlock(block);
+                            var blockJson = JsonConvert.SerializeObject(block);
+
+                            _ = P2PValidatorClient.BroadcastBlock(block, true);
+
+                            _ = _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
                         }
                         else
                         {
                             //request block
+                            await P2PValidatorClient.RequestQueuedBlock(nextBlock);
                         }
                     }
                 }
                 finally
                 {
-                    BlockCheckLock.Release();
+                    ConfirmBlockLock.Release();
                     await delay;
                 }
             }
