@@ -624,6 +624,12 @@ namespace ReserveBlockCore.Nodes
                     continue;
                 }
 
+                if(!Globals.NetworkBlockQueue.Any())
+                {
+                    await delay;
+                    continue;
+                }
+
                 await ConfirmBlockLock.WaitAsync();
                 try
                 {
@@ -635,7 +641,6 @@ namespace ReserveBlockCore.Nodes
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {
                             //add block and broadcast
-                            //do removals from proofs and other in memory variables
                             await BlockchainData.AddBlock(block);
                             var blockJson = JsonConvert.SerializeObject(block);
 
@@ -650,6 +655,7 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                 }
+                catch { }
                 finally
                 {
                     ConfirmBlockLock.Release();

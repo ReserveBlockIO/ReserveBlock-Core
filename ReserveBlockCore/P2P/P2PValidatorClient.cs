@@ -153,6 +153,12 @@ namespace ReserveBlockCore.P2P
                 if (validator == null)
                     return;
 
+                if(peer.PeerIP.StartsWith("144.126"))
+                {
+                    //
+                    Console.WriteLine("why?");
+                }
+
                 var time = TimeUtil.GetTime().ToString();
                 var signature = SignatureService.ValidatorSignature(validator.Address + ":" + time + ":" + account.PublicKey);
 
@@ -218,7 +224,7 @@ namespace ReserveBlockCore.P2P
                         currentNode.NodeLatency = node.NodeLatency;
                     }
 
-                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.ValidatorNodes.Count}/{Globals.MaxValPeers}");
+                    ConsoleWriterService.OutputSameLine($"Connected to Validators {Globals.ValidatorNodes.Count}/{Globals.MaxValPeers}");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     Peers.GetAll()?.UpdateSafe(peer);
@@ -260,6 +266,11 @@ namespace ReserveBlockCore.P2P
                 .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
+            foreach(var validator in Globals.ValidatorNodes) 
+            {
+                SkipIPs.Add(validator.Value.NodeIP);
+            }
+
             if(Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
             {
                 SkipIPs.Add("162.248.14.123");
@@ -276,6 +287,13 @@ namespace ReserveBlockCore.P2P
             {
                 //clear out skipped peers to try again
                 Globals.SkipPeers.Clear();
+                Globals.ReportedIPs.Clear();
+
+                foreach (var validator in Globals.ValidatorNodes)
+                {
+                    SkipIPs.Add(validator.Value.NodeIP);
+                }
+
                 newPeers = peerDB.Find(x => x.IsValidator).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()

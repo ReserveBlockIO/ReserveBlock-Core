@@ -51,7 +51,7 @@ namespace ReserveBlockCore.P2P
                     var vNode = Globals.ValidatorNodes[peerIP];
                     if(vNode.IsConnected)
                     {
-                        _ = EndOnConnect(peerIP, address + " attempted to connect as validator", address + " attempted to connect as validator");
+                        _ = EndOnConnect(peerIP, address + " attempted to connect as validator", address + " attempted to connect as validator (duplicate)");
                         return;
                     }
                 }
