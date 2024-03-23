@@ -711,6 +711,8 @@ namespace ReserveBlockCore.Nodes
                     }
                     else
                     {
+                        var firstProof = Globals.IsTestNet ? false : true;
+
                         if (Globals.LastBlock.Height + 72 >= Globals.LastProofBlockheight)
                         {
                             var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, false);
