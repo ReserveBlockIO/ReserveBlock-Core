@@ -433,36 +433,33 @@ namespace ReserveBlockCore.Data
                 await Task.Delay(200);
                 //prevents new block from being added while treis are updating
             }
-            var blocks = GetBlocks();            
-            //only input block if null
-            var blockCheck = blocks.Find(Query.All(Query.Descending)).Take(100).Where(x => x.Height == block.Height).FirstOrDefault();
-            if (blockCheck == null)
+            try
             {
-                //Update in memory fields.
-                
-                Globals.LastBlock = block;
-                if (Globals.ValidatorAddress == block.Validator)
-                    Globals.LastWonBlock = block;
-                var currentTime = TimeUtil.GetTime();
-                Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
-                Globals.LastBlockAddedTimestamp = currentTime;
-                Blockchain.AddBlock(block);
-                _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
-                _ = ValidatorService.UpdateActiveValidators(block);
-                _ = ValidatorService.UpdateBlockMemory(block.Height);
-                //insert block to db
-                blocks.InsertSafe(block);
+                var blocks = GetBlocks();
+                //only input block if null
+                var blockCheck = blocks.Find(Query.All(Query.Descending)).Take(100).Where(x => x.Height == block.Height).FirstOrDefault();
+                if (blockCheck == null)
+                {
+                    //insert block to db
+                    blocks.InsertSafe(block);
+
+                    //Update in memory block.
+                    Globals.LastBlock = block;
+                    Blockchain.AddBlock(block);
+                    if (Globals.ValidatorAddress == block.Validator)
+                        Globals.LastWonBlock = block;
+                    var currentTime = TimeUtil.GetTime();
+                    Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
+                    Globals.LastBlockAddedTimestamp = currentTime;
+
+                    _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
+                    _ = ValidatorService.UpdateActiveValidators(block);
+                    _ = ValidatorService.UpdateBlockMemory(block.Height);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                //var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
-                //var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
-                //if (eBlock == null)
-                //{
-                //    //database corrupt
-                //    Globals.DatabaseCorruptionDetected = true;
-                //    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
-                //}
+                ErrorLogUtility.LogError($"Error Adding Block to chain. Error: {ex}", "BlockchainData.AddBlock()");
             }
         }
         private static decimal GetTotalFees(List<Transaction> txs)

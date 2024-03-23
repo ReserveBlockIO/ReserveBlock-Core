@@ -171,14 +171,14 @@ namespace ReserveBlockCore.Nodes
                         {
                             Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
 
-                            _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                            _ = P2PValidatorClient.BroadcastBlock(nextBlock, false);
                         }
                         else
                         {
                             if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
                             {
                                 Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
-                                _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
+                                _ = P2PValidatorClient.BroadcastBlock(nextBlock, false);
                             }
                         }
                     }
@@ -641,7 +641,7 @@ namespace ReserveBlockCore.Nodes
                             await BlockchainData.AddBlock(block);
                             var blockJson = JsonConvert.SerializeObject(block);
 
-                            _ = P2PValidatorClient.BroadcastBlock(block, true);
+                            _ = P2PValidatorClient.BroadcastBlock(block, false);
 
                             _ = _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
                         }
