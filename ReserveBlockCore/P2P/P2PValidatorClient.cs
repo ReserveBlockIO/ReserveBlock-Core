@@ -162,7 +162,6 @@ namespace ReserveBlockCore.P2P
                 var time = TimeUtil.GetTime().ToString();
                 var signature = SignatureService.ValidatorSignature(validator.Address + ":" + time + ":" + account.PublicKey);
 
-
                 var hubConnection = new HubConnectionBuilder()
                        .WithUrl(url, options =>
                        {
@@ -266,12 +265,14 @@ namespace ReserveBlockCore.P2P
                 .Union(Globals.SkipPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
-            foreach(var validator in Globals.ValidatorNodes) 
+            var connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
+
+            foreach (var validator in connectedNodes)
             {
-                SkipIPs.Add(validator.Value.NodeIP);
+                SkipIPs.Add(validator.NodeIP);
             }
 
-            if(Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+            if (Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
             {
                 SkipIPs.Add("162.248.14.123");
             }
@@ -289,9 +290,11 @@ namespace ReserveBlockCore.P2P
                 Globals.SkipPeers.Clear();
                 Globals.ReportedIPs.Clear();
 
-                foreach (var validator in Globals.ValidatorNodes)
+                connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
+
+                foreach (var validator in connectedNodes)
                 {
-                    SkipIPs.Add(validator.Value.NodeIP);
+                    SkipIPs.Add(validator.NodeIP);
                 }
 
                 newPeers = peerDB.Find(x => x.IsValidator).ToArray()

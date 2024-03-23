@@ -489,7 +489,9 @@ namespace ReserveBlockCore.Nodes
                 }
                 var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
 
-                if (proofCount == 1 || proofCount == 0)
+                var minProofCount = Globals.IsTestNet ? 1 : 5;
+
+                if (proofCount <= minProofCount)
                 {
                     await delay;
                     continue;
@@ -499,44 +501,19 @@ namespace ReserveBlockCore.Nodes
 
                 try
                 {
-                    var nextBlock = Globals.LastBlock.Height + 30;
+                    var nextBlock = Globals.LastBlock.Height + 1;
 
-                    if (Globals.LastBlock.Height == (Globals.V4Height - 1))
+                    for(var i = nextBlock; i <= nextBlock + 29; i++)
                     {
-                        nextBlock = Globals.V4Height;
-                        for(var i = nextBlock; i <= Globals.V4Height + 29; i++)
+                        if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
                         {
-                            if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
-                            {
-                                if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
-                                {
-                                    if (winningProof != null)
-                                    {
-                                        if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
-                                        {
-                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    //if missing must request winner from connected nodes
-                                }
-                            }
-                        }
-                        
-                    }
-                    else
-                    {
-                        if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out var winner))
-                        {
-                            if (Globals.WinningProofs.TryGetValue(nextBlock, out var winningProof))
+                            if (Globals.WinningProofs.TryGetValue(i, out var winningProof))
                             {
                                 if (winningProof != null)
                                 {
                                     if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
                                     {
-                                        Globals.FinalizedWinner.TryAdd(nextBlock, winningProof.Address);
+                                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
                                     }
                                 }
                             }
@@ -545,8 +522,7 @@ namespace ReserveBlockCore.Nodes
                                 //if missing must request winner from connected nodes
                             }
                         }
-                    }
-                    
+                    }                
                 }
                 catch (Exception ex)
                 {
