@@ -543,12 +543,10 @@ namespace ReserveBlockCore.P2P
             var peersConnected = await AreValidatorsConnected();
 
             if (!peersConnected)
-            {
-                //Need peers
-                Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
-            }
+                return;
+
             else
-            {                
+            {
                 foreach (var node in Globals.ValidatorNodes.Values)
                 {
                     try

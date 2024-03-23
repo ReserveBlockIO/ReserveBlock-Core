@@ -426,7 +426,7 @@ namespace ReserveBlockCore.Data
             
             return result;
         }
-        public static async Task AddBlock(Block block)
+        public static async Task AddBlock(Block block, bool notifyCLI = false)
         {
             while(Globals.TreisUpdating)
             {
@@ -455,6 +455,18 @@ namespace ReserveBlockCore.Data
                     _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                     _ = ValidatorService.UpdateActiveValidators(block);
                     _ = ValidatorService.UpdateBlockMemory(block.Height);
+
+                    if(notifyCLI)
+                    {
+                        if (!Globals.BasicCLI)
+                        {
+                            ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] added from: [purple]{block.Validator}[/] | Delay: [aqua]{Globals.BlockTimeDiff}[/]/s"));
+                        }
+                        else
+                        {
+                            ConsoleWriterService.OutputSameLineMarked($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/]");
+                        }
+                    }
                 }
             }
             catch (Exception ex)

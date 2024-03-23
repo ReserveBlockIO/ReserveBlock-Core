@@ -640,7 +640,7 @@ namespace ReserveBlockCore.Nodes
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {
                             //add block and broadcast
-                            await BlockchainData.AddBlock(block);
+                            await BlockchainData.AddBlock(block, true);
                             var blockJson = JsonConvert.SerializeObject(block);
 
                             _ = P2PValidatorClient.BroadcastBlock(block, false);
