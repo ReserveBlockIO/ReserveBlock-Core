@@ -422,6 +422,7 @@ namespace ReserveBlockCore.Nodes
                                         Globals.WinningProofs.TryGetValue(nextblock, out var proof);
                                         if (proof != null)
                                         {
+                                            await Task.Delay(2000); //await is here to ensure timestamps are greater.
                                             var block = await BlockchainData.CraftBlock_V4(
                                                 Globals.ValidatorAddress,
                                                 Globals.NetworkValidators.Count(),
@@ -450,6 +451,7 @@ namespace ReserveBlockCore.Nodes
                                                 {
                                                     if (proof.Address == Globals.ValidatorAddress)
                                                     {
+                                                        await Task.Delay(2000); //await is here to ensure timestamps are greater.
                                                         var block = await BlockchainData.CraftBlock_V4(
                                                         Globals.ValidatorAddress,
                                                         Globals.NetworkValidators.Count(),
