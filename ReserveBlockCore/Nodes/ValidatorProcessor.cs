@@ -697,6 +697,8 @@ namespace ReserveBlockCore.Nodes
                     if (Globals.LastProofBlockheight == 0)
                     {
                         var firstProof = Globals.LastBlock.Height == 0 ? false : true;
+                        firstProof = Globals.IsTestNet ? false : true;
+
                         var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastBlock.Height, firstProof);
                         await ProofUtility.SortProofs(proofs);
                         //send proofs
@@ -715,7 +717,7 @@ namespace ReserveBlockCore.Nodes
 
                         if (Globals.LastBlock.Height + 72 >= Globals.LastProofBlockheight)
                         {
-                            var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, false);
+                            var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, firstProof);
                             await ProofUtility.SortProofs(proofs);
                             //send proofs
                             var proofsJson = JsonConvert.SerializeObject(proofs);
