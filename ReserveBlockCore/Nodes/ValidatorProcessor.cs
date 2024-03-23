@@ -114,6 +114,27 @@ namespace ReserveBlockCore.Nodes
 
                         break;
                     }
+                    else
+                    {
+                        var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+                        if (valNodeList.Count() == 0)
+                        {
+                            await Task.Delay(new TimeSpan(0, 0, 10));
+                            continue;
+                        }
+
+                        //Get Current winners so we can start validating.
+                        //Compare against our own proofs
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+                        await P2PValidatorClient.RequestCurrentWinners();
+                        await Task.Delay(5000);
+
+                        break;
+                    }
                 }
                 catch
                 {
