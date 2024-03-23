@@ -41,19 +41,21 @@ namespace ReserveBlockCore.P2P
 
         #region Check which HubConnections are actively connected
 
-        public static async Task<bool> ArePeersConnected()
+        public static async Task<bool> AreValidatorsConnected()
         {
-            await DropDisconnectedPeers();
-            return Globals.Nodes.Any();
+            await DropDisconnectedValidator();
+            return Globals.ValidatorNodes.Any();
         }
-        public static async Task DropDisconnectedPeers()
+
+        public static async Task DropDisconnectedValidator()
         {
             foreach (var node in Globals.ValidatorNodes.Values)
             {
-                if(!node.IsConnected)                
+                if (!node.IsConnected)
                     await RemoveNode(node);
             }
         }
+
         public static string MostLikelyIP()
         {
             return Globals.ReportedIPs.Count != 0 ?
@@ -454,7 +456,7 @@ namespace ReserveBlockCore.P2P
             bool newHeightFound = false;
             long height = -1;
 
-            while (!await ArePeersConnected())
+            while (!await AreValidatorsConnected())
                 await Task.Delay(20);
 
             var myHeight = Globals.LastBlock.Height;
@@ -481,7 +483,7 @@ namespace ReserveBlockCore.P2P
         #region Send Transactions to mempool 
         public static async Task SendTXMempool(Transaction txSend)
         {
-            var peersConnected = await ArePeersConnected();
+            var peersConnected = await AreValidatorsConnected();
 
             if (!peersConnected)
             {
@@ -538,7 +540,7 @@ namespace ReserveBlockCore.P2P
         #region Broadcast Blocks to Peers
         public static async Task BroadcastBlock(Block block, bool isQueueBlock = false)
         {
-            var peersConnected = await ArePeersConnected();
+            var peersConnected = await AreValidatorsConnected();
 
             if (!peersConnected)
             {

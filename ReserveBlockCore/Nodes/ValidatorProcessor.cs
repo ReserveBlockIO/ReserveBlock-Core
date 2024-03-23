@@ -696,7 +696,7 @@ namespace ReserveBlockCore.Nodes
 
                     if (Globals.LastProofBlockheight == 0)
                     {
-                        var firstProof = Globals.LastBlock.Height == 0 ? false : true;
+                        var firstProof = Globals.LastBlock.Height == (Globals.V4Height - 1) ? false : true;
                         firstProof = Globals.IsTestNet ? false : true;
 
                         var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastBlock.Height, firstProof);
