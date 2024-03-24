@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Extensions
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");                
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()-1");                
             }
 
             try { slim.Release(); } catch { }            
@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Extensions
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()-2");
             }
 
             try { slim.Release(); } catch { }            
