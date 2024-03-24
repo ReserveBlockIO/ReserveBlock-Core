@@ -158,6 +158,8 @@ namespace ReserveBlockCore.Nodes
 
             if (nextBlock == null) return;
 
+            await Task.Delay(2000);//wait as we might already be processing the block.
+
             var lastBlock = Globals.LastBlock;
             if (lastBlock.Height < nextBlock.Height)
             {
@@ -641,7 +643,7 @@ namespace ReserveBlockCore.Nodes
         {
             while (true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 5));
+                var delay = Task.Delay(new TimeSpan(0, 0, 2));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     await delay;
@@ -660,7 +662,7 @@ namespace ReserveBlockCore.Nodes
                     var nextBlock = Globals.LastBlock.Height + 1;
                     var currentTime = TimeUtil.GetTime();
                     var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp);
-                    if (currentDiff >= 20)
+                    if (currentDiff >= 23)
                     {
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {

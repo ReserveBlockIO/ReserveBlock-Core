@@ -151,7 +151,7 @@ namespace ReserveBlockCore.Services
                     }
                     //Genesis Block
                     result = true;
-                    BlockchainData.AddBlock(block);
+                    await BlockchainData.AddBlock(block);
                     await StateData.UpdateTreis(block);
                     foreach (Transaction transaction in block.Transactions)
                     {
@@ -509,7 +509,7 @@ namespace ReserveBlockCore.Services
                         if (validateOnly)
                             return result;
 
-                        BlockchainData.AddBlock(block);//add block to chain.
+                        await BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                             
                         await StateData.UpdateTreis(block); //update treis
@@ -644,7 +644,7 @@ namespace ReserveBlockCore.Services
                 {
                     //Genesis Block
                     result = true;
-                    BlockchainData.AddBlock(block);
+                    await BlockchainData.AddBlock(block);
                     await StateData.UpdateTreis(block);
                     DbContext.Commit();
                     return result;

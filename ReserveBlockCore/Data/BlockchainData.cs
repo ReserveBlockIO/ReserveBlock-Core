@@ -24,6 +24,7 @@ namespace ReserveBlockCore.Data
         public static string ChainRef { get; set; }
 
         public static int BlockVersion { get; set; }
+        static SemaphoreSlim BlockAddLock = new SemaphoreSlim(1, 1);
 
         #region Initialize Chain
         internal static async Task InitializeChain()
@@ -433,6 +434,9 @@ namespace ReserveBlockCore.Data
                 await Task.Delay(200);
                 //prevents new block from being added while treis are updating
             }
+
+            await BlockAddLock.WaitAsync();
+
             try
             {
                 var blocks = GetBlocks();
@@ -472,6 +476,10 @@ namespace ReserveBlockCore.Data
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Adding Block to chain. Error: {ex}", "BlockchainData.AddBlock()");
+            }
+            finally
+            {
+                BlockAddLock.Release();
             }
         }
         private static decimal GetTotalFees(List<Transaction> txs)
