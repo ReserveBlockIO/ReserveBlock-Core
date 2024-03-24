@@ -252,6 +252,7 @@ namespace ReserveBlockCore
         #region P2P Server Variables
 
         public static ConcurrentDictionary<string, HubCallerContext> P2PPeerDict = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, HubCallerContext> P2PValDict = new ConcurrentDictionary<string, HubCallerContext>();
         public static ConcurrentDictionary<string, HubCallerContext> BeaconPeerDict = new ConcurrentDictionary<string, HubCallerContext>();        
         public static ConcurrentDictionary<string, MessageLock> MessageLocks = new ConcurrentDictionary<string, MessageLock>();
         public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();

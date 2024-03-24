@@ -46,14 +46,11 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
-                if (Globals.ValidatorNodes.ContainsKey(peerIP))
+                Globals.P2PValDict.TryAdd(peerIP, Context);
+
+                if (Globals.P2PValDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 {
-                    var vNode = Globals.ValidatorNodes[peerIP];
-                    if(vNode.IsConnected)
-                    {
-                        _ = EndOnConnect(peerIP, address + " attempted to connect as validator", address + " attempted to connect as validator (duplicate)");
-                        return;
-                    }
+                    context.Abort();
                 }
 
                 var SignedMessage = address;
@@ -136,8 +133,7 @@ namespace ReserveBlockCore.P2P
             var peerIP = GetIP(Context);
             //var netVal = Globals.NetworkValidators.Where(x => x.Value.IPAddress == peerIP).FirstOrDefault();
 
-            Globals.P2PPeerDict.TryRemove(peerIP, out _);
-            Globals.ValidatorNodes.TryRemove(peerIP, out _);
+            Globals.P2PValDict.TryRemove(peerIP, out _);
             Context?.Abort();
 
             await base.OnDisconnectedAsync(ex);
@@ -394,6 +390,22 @@ namespace ReserveBlockCore.P2P
         public async Task<string> GetWalletVersionVal()
         {
             return await SignalRQueue(Context, Globals.CLIVersion.Length, async () => Globals.CLIVersion);
+        }
+
+        #endregion
+
+        #region Get Connected Val Count
+
+        public static async Task<int> GetConnectedValCount()
+        {
+            try
+            {
+                var peerCount = Globals.P2PValDict.Count;
+                return peerCount;
+            }
+            catch { }
+
+            return -1;
         }
 
         #endregion
