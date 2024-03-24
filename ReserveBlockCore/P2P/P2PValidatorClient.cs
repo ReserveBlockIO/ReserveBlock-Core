@@ -155,12 +155,6 @@ namespace ReserveBlockCore.P2P
                 if (validator == null)
                     return;
 
-                if(peer.PeerIP.StartsWith("144.126"))
-                {
-                    //
-                    Console.WriteLine("why?");
-                }
-
                 var time = TimeUtil.GetTime().ToString();
                 var signature = SignatureService.ValidatorSignature(validator.Address + ":" + time + ":" + account.PublicKey);
 
