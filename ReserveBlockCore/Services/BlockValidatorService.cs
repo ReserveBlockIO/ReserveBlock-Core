@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Services
                 try { ValidateBlocksSemaphore.Release(); } catch { }
             }
         }
-        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false, bool validateOnly = false)
+        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false, bool validateOnly = false, bool updateCLI = false)
         {
             await ValidateBlockSemaphore.WaitAsync();
 
@@ -509,7 +509,7 @@ namespace ReserveBlockCore.Services
                         if (validateOnly)
                             return result;
 
-                        await BlockchainData.AddBlock(block);//add block to chain.
+                        await BlockchainData.AddBlock(block, updateCLI);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                             
                         await StateData.UpdateTreis(block); //update treis

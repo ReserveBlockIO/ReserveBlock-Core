@@ -163,7 +163,7 @@ namespace ReserveBlockCore.Nodes
             var lastBlock = Globals.LastBlock;
             if (lastBlock.Height < nextBlock.Height)
             {
-                var result = await BlockValidatorService.ValidateBlock(nextBlock, false);
+                var result = await BlockValidatorService.ValidateBlock(nextBlock, true, false, false, true);
                 if (result)
                 {
                     if (nextBlock.Height + 5 > Globals.LastBlock.Height)
@@ -667,7 +667,7 @@ namespace ReserveBlockCore.Nodes
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {
                             //add block and broadcast
-                            var result = await BlockValidatorService.ValidateBlock(block, true);
+                            var result = await BlockValidatorService.ValidateBlock(block, true, false, false, true);
 
                             if(result)
                             {
