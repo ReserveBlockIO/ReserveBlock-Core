@@ -194,7 +194,6 @@ namespace ReserveBlockCore.P2P
             {
                 return await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
-
                     if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                     {
                         var IP = GetIP(Context);
@@ -203,7 +202,10 @@ namespace ReserveBlockCore.P2P
 
                         if (currentHeight >= nextHeight && BlockDownloadService.BlockDict.TryAdd(currentHeight, (nextBlock, IP)))
                         {
-                            await BlockValidatorService.ValidateBlocks();
+                            await Task.Delay(2000);
+
+                            if(Globals.LastBlock.Height < nextBlock.Height)
+                                await BlockValidatorService.ValidateBlocks();
 
                             if (nextHeight == currentHeight)
                             {
