@@ -73,6 +73,9 @@ namespace ReserveBlockCore.Nodes
                 case "6":
                     _ = ReceiveQueueBlock(data);
                     break;
+                case "7":
+                    _ = ReceiveConfirmedBlock(data);
+                    break;
                 case "9999":
                     break;
             }
@@ -146,6 +149,30 @@ namespace ReserveBlockCore.Nodes
         #endregion
 
         #region Messages
+        //7
+        public static async Task ReceiveConfirmedBlock(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return;
+
+            var nextBlock = JsonConvert.DeserializeObject<Block>(data);
+
+            if (nextBlock == null) return;
+
+            var lastBlock = Globals.LastBlock;
+            if (lastBlock.Height < nextBlock.Height)
+            {
+                var result = await BlockValidatorService.ValidateBlock(nextBlock, false);
+                if (result)
+                {
+                    if (nextBlock.Height + 5 > Globals.LastBlock.Height)
+                    {
+                        _ = P2PValidatorClient.BroadcastBlock(nextBlock, false);
+                    }
+                    
+                }
+            }
+        }
+
         //6
         public static async Task ReceiveQueueBlock(string data)
         {
@@ -165,20 +192,18 @@ namespace ReserveBlockCore.Nodes
 
                     if(blockAdded)
                     {
-                        var blockJson = JsonConvert.SerializeObject(nextBlock);
-
                         if (!Globals.BlockQueueBroadcasted.TryGetValue(nextBlock.Height, out var lastBroadcast))
                         {
                             Globals.BlockQueueBroadcasted.TryAdd(nextBlock.Height, DateTime.UtcNow);
 
-                            _ = P2PValidatorClient.BroadcastBlock(nextBlock, false);
+                            _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
                         }
                         else
                         {
                             if (DateTime.UtcNow.AddSeconds(30) > lastBroadcast)
                             {
                                 Globals.BlockQueueBroadcasted[nextBlock.Height] = DateTime.UtcNow;
-                                _ = P2PValidatorClient.BroadcastBlock(nextBlock, false);
+                                _ = P2PValidatorClient.BroadcastBlock(nextBlock, true);
                             }
                         }
                     }
@@ -645,7 +670,7 @@ namespace ReserveBlockCore.Nodes
 
                             _ = P2PValidatorClient.BroadcastBlock(block, false);
 
-                            _ = _hubContext.Clients.All.SendAsync("GetValMessage", "6", blockJson);
+                            _ = _hubContext.Clients.All.SendAsync("GetValMessage", "7", blockJson);
                         }
                         else
                         {

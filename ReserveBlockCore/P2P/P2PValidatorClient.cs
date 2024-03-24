@@ -68,7 +68,7 @@ namespace ReserveBlockCore.P2P
             if (Globals.AdjudicateAccount != null)
                 return;
 
-            await DropDisconnectedPeers();
+            await DropDisconnectedValidator();
 
             var PeersWithSamples = Globals.ValidatorNodes.Where(x => x.Value.SendingBlockTime > 60000)
                 .Select(x => new
@@ -260,7 +260,7 @@ namespace ReserveBlockCore.P2P
             await NodeConnector.StartNodeConnecting(); //TODO: update this for validator peers!
             var peerDB = Peers.GetAll();
 
-            await DropDisconnectedPeers();
+            await DropDisconnectedValidator();
 
             var SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)

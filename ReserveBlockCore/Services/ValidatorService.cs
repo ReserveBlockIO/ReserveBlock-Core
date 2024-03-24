@@ -65,7 +65,11 @@ namespace ReserveBlockCore.Services
                     return;
 
                 var startupCount = Globals.ValidatorNodes.Count / 2 + 1;
-                var delay = Globals.ValidatorNodes.Count < startupCount ? Task.Delay(1000) : Task.Delay(10000);
+                var delay = Globals.ValidatorNodes.Count < startupCount ? 1000 : 15000;
+                if(Globals.IsTestNet)
+                {
+                    delay = 15000;
+                }
                 try
                 {
                     var ConnectedCount = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).Count();
@@ -77,7 +81,7 @@ namespace ReserveBlockCore.Services
                     Console.WriteLine(ex.ToString());
                 }
 
-                await delay;
+                await Task.Delay(delay);
             }
         }
         public static async void DoValidate()
