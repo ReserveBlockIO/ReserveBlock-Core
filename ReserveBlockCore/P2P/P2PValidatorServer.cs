@@ -183,6 +183,14 @@ namespace ReserveBlockCore.P2P
         }
         #endregion
 
+        #region Send Block Height
+        public async Task<long> SendBlockHeight()
+        {
+            return Globals.LastBlock.Height;
+        }
+
+        #endregion
+
         #region Receive Block - Receives Block and then Broadcast out.
         public async Task<bool> ReceiveBlockVal(Block nextBlock)
         {

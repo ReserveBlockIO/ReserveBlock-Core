@@ -511,6 +511,7 @@ namespace ReserveBlockCore
             {
                 _ = ValidatorService.StartValidatorServer();
                 _ = ValidatorService.StartupValidators();
+                _ = Task.Run(ValidatorService.BlockHeightCheckLoop);
             }
             
             Globals.StopAllTimers = true;

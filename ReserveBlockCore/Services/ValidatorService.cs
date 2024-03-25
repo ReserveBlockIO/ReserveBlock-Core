@@ -869,5 +869,43 @@ namespace ReserveBlockCore.Services
             return output;
         }
 
+        #region Block Height Check
+        public static async Task BlockHeightCheckLoop()
+        {
+            while (true)
+            {
+                try
+                {
+                    while (!Globals.ValidatorNodes.Any())
+                        await Task.Delay(20);
+
+                    await P2PValidatorClient.UpdateNodeHeights();
+
+                    var maxHeight = Globals.ValidatorNodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
+                    if (maxHeight > Globals.LastBlock.Height)
+                    {
+                        P2PValidatorClient.UpdateMaxHeight(maxHeight);
+                        _ = BlockDownloadService.GetAllBlocks();
+                    }
+                    else
+                        P2PValidatorClient.UpdateMaxHeight(maxHeight);
+
+                    var MaxHeight = P2PValidatorClient.MaxHeight();
+
+                    foreach (var node in Globals.ValidatorNodes.Values)
+                    {
+                        if (node.NodeHeight < MaxHeight - 3)
+                            await P2PClient.RemoveNode(node);
+                    }
+
+                }
+                catch { }
+
+                await Task.Delay(10000);
+            }
+        }
+
+        #endregion
+
     }
 }

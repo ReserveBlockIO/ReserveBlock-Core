@@ -710,5 +710,13 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        #region Update Validator Node Heights
+        public static async Task UpdateValNodeHeights()
+        {
+            foreach (var node in Globals.ValidatorNodes.Values)
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);
+        }
+        #endregion
     }
 }
