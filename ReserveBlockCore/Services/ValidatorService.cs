@@ -895,7 +895,7 @@ namespace ReserveBlockCore.Services
                     foreach (var node in Globals.ValidatorNodes.Values)
                     {
                         if (node.NodeHeight < MaxHeight - 3)
-                            await P2PClient.RemoveNode(node);
+                            await P2PValidatorClient.RemoveNode(node);
                     }
 
                 }

@@ -364,7 +364,7 @@ namespace ReserveBlockCore.P2P
                 {
                     Height = Globals.LastBlock.Height;
 
-                    Globals.Nodes.Values.ToArray().ParallelLoop(node =>
+                    Globals.ValidatorNodes.Values.ToArray().ParallelLoop(node =>
                     {
                         if (node.Address != Address && !UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                         {
@@ -435,11 +435,8 @@ namespace ReserveBlockCore.P2P
 
         public static async Task UpdateNodeHeights()
         {
-            if (Globals.AdjudicateAccount == null)            
-            {
-                foreach (var node in Globals.Nodes.Values)
-                    (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);
-            }
+            foreach (var node in Globals.ValidatorNodes.Values)
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);   
         }
 
         #endregion
@@ -709,14 +706,6 @@ namespace ReserveBlockCore.P2P
             return "0";
         }
 
-        #endregion
-
-        #region Update Validator Node Heights
-        public static async Task UpdateValNodeHeights()
-        {
-            foreach (var node in Globals.ValidatorNodes.Values)
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);
-        }
         #endregion
     }
 }
