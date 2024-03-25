@@ -284,7 +284,6 @@ namespace ReserveBlockCore.P2P
             {
                 //clear out skipped peers to try again
                 Globals.SkipPeers.Clear();
-                Globals.ReportedIPs.Clear();
 
                 connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
 
