@@ -30,28 +30,14 @@ namespace ReserveBlockCore.Models
 		//Methods
 		public void Build()
 		{
-			bool buildComplete = false;
-			int retryCount = 0;
-			while (buildComplete)
-			{
-                try
-                {
-                    Version = BlockVersionUtility.GetBlockVersion(Height); //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
-                    NumOfTx = Transactions.Count;
-                    TotalAmount = GetTotalAmount();
-                    TotalReward = Globals.LastBlock.Height != -1 ? GetTotalFees() : 0M;
-                    MerkleRoot = GetMerkleRoot();
-                    PrevHash = GetPreviousHash(); //This is done because chain starting there won't be a previous hash. 
-                    Hash = GetBlockHash();
-                    StateRoot = GetStateRoot();
-
-					buildComplete = true;
-
-					if (retryCount >= 3)
-						buildComplete = true;
-                }
-                catch (Exception ex) { retryCount += 1; }
-            }
+            Version = BlockVersionUtility.GetBlockVersion(Height); //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
+            NumOfTx = Transactions.Count;
+            TotalAmount = GetTotalAmount();
+            TotalReward = Globals.LastBlock.Height != -1 ? GetTotalFees() : 0M;
+            MerkleRoot = GetMerkleRoot();
+            PrevHash = GetPreviousHash(); //This is done because chain starting there won't be a previous hash. 
+            Hash = GetBlockHash();
+            StateRoot = GetStateRoot();
 		}
 		public void Rebuild(Block block)
         {
