@@ -342,7 +342,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await conn.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await conn.InvokeAsync<long>("SendBlockHeightForVals");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
