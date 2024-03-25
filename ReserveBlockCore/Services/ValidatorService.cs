@@ -66,10 +66,7 @@ namespace ReserveBlockCore.Services
 
                 var startupCount = Globals.ValidatorNodes.Count / 2 + 1;
                 var delay = Globals.ValidatorNodes.Count < startupCount ? 1000 : 15000;
-                if(Globals.IsTestNet)
-                {
-                    delay = 15000;
-                }
+
                 try
                 {
                     var ConnectedCount = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).Count();

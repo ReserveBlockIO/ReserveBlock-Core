@@ -662,7 +662,7 @@ namespace ReserveBlockCore.Nodes
                     var nextBlock = Globals.LastBlock.Height + 1;
                     var currentTime = TimeUtil.GetTime();
                     var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp);
-                    if (currentDiff >= 24)
+                    if (currentDiff >= 25)
                     {
                         if(Globals.NetworkBlockQueue.TryGetValue(nextBlock, out var block))
                         {
