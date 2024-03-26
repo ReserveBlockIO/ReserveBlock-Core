@@ -247,209 +247,208 @@ namespace ReserveBlockCore.Bitcoin.Models
 
         #endregion
 
-        //TODO: Transfer and Delete
-        //#region TransferAdnrTx(string fromAddress, string toAddress)
-        //public static async Task<(Transaction?, string)> TransferAdnrTx(string fromAddress, string toAddress)
-        //{
-        //    Transaction? adnrTx = null;
+        #region TransferAdnrTx(string fromAddress, string toAddress)
+        public static async Task<(Transaction?, string)> TransferAdnrTx(string fromAddress, string toAddress, string toBtcAddress, string btcFromAddress)
+        {
+            Transaction? adnrTx = null;
 
-        //    var account = AccountData.GetSingleAccount(fromAddress);
-        //    if (account == null)
-        //    {
-        //        ErrorLogUtility.LogError($"Address is not found for : {fromAddress}", "Adnr.CreateAdnrTx(string address, string name)");
-        //        return (null, $"Address is not found for : {fromAddress}");
-        //    }
+            var account = AccountData.GetSingleAccount(fromAddress);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {fromAddress}", "BitcoinAdnr.CreateAdnrTx(string address, string name)");
+                return (null, $"Address is not found for : {fromAddress}");
+            }
 
-        //    var txData = "";
-        //    var timestamp = TimeUtil.GetTime();
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
 
-        //    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-        //    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-        //    txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
+            txData = JsonConvert.SerializeObject(new { Function = "BTCAdnrTransfer()", BTCToAddress = toBtcAddress, BTCFromAddress = btcFromAddress });
 
-        //    adnrTx = new Transaction
-        //    {
-        //        Timestamp = timestamp,
-        //        FromAddress = fromAddress,
-        //        ToAddress = toAddress,
-        //        Amount = Globals.ADNRRequiredRBX,
-        //        Fee = 0,
-        //        Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-        //        TransactionType = TransactionType.ADNR,
-        //        Data = txData
-        //    };
+            adnrTx = new Transaction
+            {
+                Timestamp = timestamp,
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = Globals.ADNRRequiredRBX,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = TransactionType.ADNR,
+                Data = txData
+            };
 
-        //    adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
+            adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
 
-        //    adnrTx.Build();
+            adnrTx.Build();
 
-        //    var txHash = adnrTx.Hash;
-        //    var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-        //    if (sig == "ERROR")
-        //    {
-        //        ErrorLogUtility.LogError($"Signing TX failed for ADNR Request on address {fromAddress}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
-        //        return (null, $"Signing TX failed for ADNR Request on address {fromAddress}");
-        //    }
+            var txHash = adnrTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for ADNR Request on address {fromAddress}", "BitcoinAdnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                return (null, $"Signing TX failed for ADNR Request on address {fromAddress}");
+            }
 
-        //    adnrTx.Signature = sig;
+            adnrTx.Signature = sig;
 
-        //    try
-        //    {
-        //        if (adnrTx.TransactionRating == null)
-        //        {
-        //            var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
-        //            adnrTx.TransactionRating = rating;
-        //        }
+            try
+            {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
 
-        //        var result = await TransactionValidatorService.VerifyTX(adnrTx);
-        //        if (result.Item1 == true)
-        //        {
-        //            adnrTx.TransactionStatus = TransactionStatus.Pending;
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
+                if (result.Item1 == true)
+                {
+                    adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-        //            if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
-        //            {
-        //                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
-        //                ValidatorService.StopValidating(validator);
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
 
-        //            }
-        //            else if (account.IsValidating)
-        //            {
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
-        //            }
-        //            else
-        //            {
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXMempool(adnrTx);//send out to mempool
-        //            }
-        //            return (adnrTx, "Success");
-        //        }
-        //        else
-        //        {
-        //            ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
-        //            return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine("Error: {0}", ex.ToString());
-        //        ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
-        //    }
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
+                    return (adnrTx, "Success");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "BitcoinAdnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "BitcoinAdnr.TransferAdnrTx(string fromAddress, string toAddress)");
+            }
 
-        //    return (null, "Error. Please see message above.");
-        //}
-        //#endregion
+            return (null, "Error. Please see message above.");
+        }
+        #endregion
 
-        //#region DeleteAdnrTx(string address)
-        //public static async Task<(Transaction?, string)> DeleteAdnrTx(string address)
-        //{
-        //    Transaction? adnrTx = null;
+        #region DeleteAdnrTx(string address)
+        public static async Task<(Transaction?, string)> DeleteAdnrTx(string address, string btcFromAddress)
+        {
+            Transaction? adnrTx = null;
 
-        //    var account = AccountData.GetSingleAccount(address);
-        //    if (account == null)
-        //    {
-        //        ErrorLogUtility.LogError($"Address is not found for : {address}", "Adnr.CreateAdnrTx(string address, string name)");
-        //        return (null, $"Address is not found for : {address}");
-        //    }
+            var account = AccountData.GetSingleAccount(address);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {address}", "BitcoinAdnr.CreateAdnrTx(string address, string name)");
+                return (null, $"Address is not found for : {address}");
+            }
 
-        //    var txData = "";
-        //    var timestamp = TimeUtil.GetTime();
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
 
-        //    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-        //    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-        //    txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });
+            txData = JsonConvert.SerializeObject(new { Function = "BTCAdnrDelete()", BTCFromAddress = btcFromAddress });
 
-        //    adnrTx = new Transaction
-        //    {
-        //        Timestamp = timestamp,
-        //        FromAddress = address,
-        //        ToAddress = "Adnr_Base",
-        //        Amount = Globals.ADNRRequiredRBX,
-        //        Fee = 0,
-        //        Nonce = AccountStateTrei.GetNextNonce(address),
-        //        TransactionType = TransactionType.ADNR,
-        //        Data = txData
-        //    };
+            adnrTx = new Transaction
+            {
+                Timestamp = timestamp,
+                FromAddress = address,
+                ToAddress = "Adnr_Base",
+                Amount = Globals.ADNRRequiredRBX,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(address),
+                TransactionType = TransactionType.ADNR,
+                Data = txData
+            };
 
-        //    adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
+            adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
 
-        //    adnrTx.Build();
+            adnrTx.Build();
 
-        //    var txHash = adnrTx.Hash;
-        //    var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-        //    if (sig == "ERROR")
-        //    {
-        //        ErrorLogUtility.LogError($"Signing TX failed for ADNR Delete Request on address {address}", "Adnr.DeleteAdnrTx(string address)");
-        //        return (null, $"Signing TX failed for ADNR Delete Request on address {address}");
-        //    }
+            var txHash = adnrTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for ADNR Delete Request on address {address}", "BitcoinAdnr.DeleteAdnrTx(string address)");
+                return (null, $"Signing TX failed for ADNR Delete Request on address {address}");
+            }
 
-        //    adnrTx.Signature = sig;
+            adnrTx.Signature = sig;
 
-        //    try
-        //    {
-        //        if (adnrTx.TransactionRating == null)
-        //        {
-        //            var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
-        //            adnrTx.TransactionRating = rating;
-        //        }
+            try
+            {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
 
-        //        var result = await TransactionValidatorService.VerifyTX(adnrTx);
-        //        if (result.Item1 == true)
-        //        {
-        //            adnrTx.TransactionStatus = TransactionStatus.Pending;
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
+                if (result.Item1 == true)
+                {
+                    adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-        //            if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
-        //            {
-        //                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
-        //                ValidatorService.StopValidating(validator);
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXMempool(adnrTx);//send out to mempool
-        //                                                      //await P2PClient.SendTXToAdjudicator(txRequest);
-        //                                                      //add method to send to nearest validators too
-        //                                                      //}
-        //            }
-        //            else if (account.IsValidating)
-        //            {
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
-        //            }
-        //            else
-        //            {
-        //                TransactionData.AddToPool(adnrTx);
-        //                TransactionData.AddTxToWallet(adnrTx, true);
-        //                AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-        //                await P2PClient.SendTXMempool(adnrTx);//send out to mempool
-        //            }
-        //            return (adnrTx, "Success");
-        //        }
-        //        else
-        //        {
-        //            ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.DeleteAdnrTx(string address)");
-        //            return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine("Error: {0}", ex.ToString());
-        //    }
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                                                              //await P2PClient.SendTXToAdjudicator(txRequest);
+                                                              //add method to send to nearest validators too
+                                                              //}
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
+                    return (adnrTx, "Success");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "BitcoinAdnr.DeleteAdnrTx(string address)");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
 
-        //    return (null, "Error. Please see message above.");
-        //}
+            return (null, "Error. Please see message above.");
+        }
 
-        //#endregion
+        #endregion
     }
 }

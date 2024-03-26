@@ -9,6 +9,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Bitcoin.Controllers
 {
@@ -269,5 +270,225 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                
             return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
         }
+
+        /// <summary>
+        /// Create an BTC ADNR and associate it to address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="btcAddress"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet("CreateAdnr/{address}/{btcAddress}/{name}")]
+        public async Task<string> CreateAdnr(string address, string btcAddress, string name)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(address);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = BitcoinAdnr.GetBitcoinAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrAddressCheck = adnr.FindOne(x => x.BTCAddress == btcAddress);
+                        if (adnrAddressCheck != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrAddressCheck.Name}" });
+                            return output;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(name))
+                        {
+                            name = name.ToLower();
+
+                            var limit = Globals.ADNRLimit;
+
+                            if (name.Length > limit)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only be a max of 65 characters" });
+                                return output;
+                            }
+
+                            var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
+                            if (!nameCharCheck)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only contain letters and numbers." });
+                                return output;
+                            }
+                            else
+                            {
+                                var nameRBX = name.ToLower() + ".btc";
+                                var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
+                                if (nameCheck == null)
+                                {
+                                    var result = await BitcoinAdnr.CreateAdnrTx(address, name, btcAddress);
+                                    if (result.Item1 != null)
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                                    }
+                                    else
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                                    }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This name already has a DNR associated with it: {nameCheck.Name}" });
+                                    return output;
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Name was empty." });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {address} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Transfer ADNR from one address to another
+        /// </summary>
+        /// <param name="fromAddress"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="btcFromAddress"></param>
+        /// <param name="btcToAddress"></param>
+        /// <returns></returns>
+        [HttpGet("TransferAdnr/{fromAddress}/{toAddress}/{btcFromAddress}/{btcToAddress}")]
+        public async Task<string> TransferAdnr(string fromAddress, string toAddress, string btcFromAddress, string btcToAddress)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(fromAddress);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = BitcoinAdnr.GetBitcoinAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.BTCAddress == btcFromAddress);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address does not have a DNR associated with it." });
+                            return output;
+                        }
+                        if (!string.IsNullOrWhiteSpace(toAddress))
+                        {
+                            var addrVerify = AddressValidateUtility.ValidateAddress(toAddress);
+                            if (addrVerify == true)
+                            {
+                                var toAddrAdnr = adnr.FindOne(x => x.BTCAddress == btcToAddress);
+                                if (toAddrAdnr == null)
+                                {
+                                    var result = await BitcoinAdnr.TransferAdnrTx(fromAddress, toAddress, btcToAddress, btcFromAddress);
+                                    if (result.Item1 != null)
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                                    }
+                                    else
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                                    }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address already has adnr associated to it." });
+                                }
+                            }
+                            else
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address is not a valid RBX address." });
+                            }
+
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Name was empty." });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {fromAddress} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Permanently remove ADNR from address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="btcFromAddress"></param>
+        /// <returns></returns>
+        [HttpGet("DeleteAdnr/{address}/{btcFromAddress}")]
+        public async Task<string> DeleteAdnr(string address, string btcFromAddress)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(address);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = BitcoinAdnr.GetBitcoinAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.BTCAddress == btcFromAddress);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address does not have a DNR associated with it: {adnrCheck.Name}" });
+                            return output;
+                        }
+
+                        var result = await BitcoinAdnr.DeleteAdnrTx(address, btcFromAddress);
+                        if (result.Item1 != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {address} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
     }
 }

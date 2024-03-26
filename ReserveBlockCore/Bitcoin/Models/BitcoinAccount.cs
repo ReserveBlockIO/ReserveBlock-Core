@@ -239,5 +239,46 @@ namespace ReserveBlockCore.Bitcoin.Models
         }
 
         #endregion
+
+        #region Transfer ADNR
+        public static async Task TransferAdnrToAccount(string toAddress)
+        {
+            var adnrs = BitcoinAdnr.GetBitcoinAdnr();
+            if (adnrs != null)
+            {
+                var adnr = adnrs.FindOne(x => x.BTCAddress == toAddress); //state trei has alrea
+                if (adnr != null)
+                {
+                    var accounts = GetBitcoin();
+                    var account = accounts.FindOne(x => x.Address == toAddress);
+
+                    if (account != null)
+                    {
+                        account.ADNR = adnr.Name;
+                        accounts.UpdateSafe(account);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Remove ADNR Record
+        public static async Task RemoveAdnrFromAccount(string address)
+        {
+            var accounts = GetBitcoin();
+            if (accounts != null)
+            {
+                var account = accounts.FindOne(x => x.Address == address);
+
+                if (account != null)
+                {
+                    account.ADNR = null;
+                    accounts.UpdateSafe(account);
+                }
+            }
+        }
+
+        #endregion
     }
 }

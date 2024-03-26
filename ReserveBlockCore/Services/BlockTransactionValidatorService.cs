@@ -396,6 +396,14 @@ namespace ReserveBlockCore.Services
                             {
                                 await Account.TransferAdnrToAccount(tx.FromAddress, tx.ToAddress);
                             }
+                            if (function == "BTCAdnrTransfer()")
+                            {
+                                var BTCToAddress = (string?)scData["BTCToAddress"];
+                                if (!string.IsNullOrWhiteSpace(BTCToAddress))
+                                {
+                                    await BitcoinAccount.TransferAdnrToAccount(BTCToAddress);
+                                }
+                            }
                         }
                     }
                 }
@@ -679,7 +687,7 @@ namespace ReserveBlockCore.Services
 
                     var function = (string?)scData["Function"];
                     var name = (string?)scData["Name"];
-                    var btcAddress = (string?)scData["BTCAddress"];
+                    
                     if (!string.IsNullOrWhiteSpace(function))
                     {
                         if (function == "AdnrCreate()")
@@ -693,12 +701,30 @@ namespace ReserveBlockCore.Services
                         }
                         if (function == "BTCAdnrCreate()")
                         {
+                            var btcAddress = (string?)scData["BTCAddress"];
+
                             if (!string.IsNullOrWhiteSpace(name))
                             {
                                 if (!name.Contains(".btc"))
                                     name = name.ToLower() + ".btc";
                                 if(btcAddress != null)
                                     await BitcoinAccount.AddAdnrToAccount(btcAddress, name);
+                            }
+                        }
+                        if (function == "BTCAdnrTransfer()")
+                        {
+                            var BTCFromAddress = (string?)scData["BTCFromAddress"];
+                            if(!string.IsNullOrWhiteSpace(BTCFromAddress))
+                            {
+                                await BitcoinAccount.RemoveAdnrFromAccount(BTCFromAddress);
+                            }
+                        }
+                        if (function == "BTCAdnrDelete()")
+                        {
+                            var BTCFromAddress = (string?)scData["BTCFromAddress"];
+                            if (!string.IsNullOrWhiteSpace(BTCFromAddress))
+                            {
+                                await BitcoinAccount.RemoveAdnrFromAccount(BTCFromAddress);
                             }
                         }
                         if (function == "AdnrDelete()")

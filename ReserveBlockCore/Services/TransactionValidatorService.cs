@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using NBitcoin.Protocol;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
@@ -11,6 +12,7 @@ using Spectre.Console;
 using System;
 using System.Net;
 using System.Security.Principal;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
@@ -1214,6 +1216,57 @@ namespace ReserveBlockCore.Services
                                     if (messageTimestamp < TimeUtil.GetTime(0, -30))
                                         return (txResult, "Signature message is too old. Please resubmit a new tx.");
 
+                                }
+                            }
+
+                            if(function == "BTCAdnrTransfer()")
+                            {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not transfer an ADNR.");
+
+                                var BTCToAddress = (string?)jobj["BTCToAddress"];
+                                var BTCFromAddress = (string?)jobj["BTCFromAddress"];
+
+                                if (BTCToAddress == null || BTCFromAddress == null)
+                                    return (txResult, "TX data not properly formatted. Something was null.");
+
+                                var adnrList = BitcoinAdnr.GetBitcoinAdnr();
+
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.BTCAddress == BTCFromAddress && x.RBXAddress == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with an active DNR");
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.BTCAddress == BTCToAddress);
+                                    if (toAddressCheck != null)
+                                    {
+                                        return (txResult, "Address is already associated with an active DNR");
+                                    }
+                                }
+
+                            }
+                            if (function == "BTCAdnrDelete()")
+                            {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not delete an ADNR.");
+
+                                var BTCFromAddress = (string?)jobj["BTCFromAddress"];
+
+                                if (BTCFromAddress == null)
+                                    return (txResult, "TX data not properly formatted. Something was null.");
+
+                                var adnrList = BitcoinAdnr.GetBitcoinAdnr();
+
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.BTCAddress == BTCFromAddress && x.RBXAddress == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with an active DNR");
+                                    }
                                 }
                             }
 

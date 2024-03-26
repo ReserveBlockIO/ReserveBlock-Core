@@ -316,6 +316,12 @@ namespace ReserveBlockCore.Data
                                         case "BTCAdnrCreate()":
                                             AddNewBTCAdnr(tx);
                                             break;
+                                        case "BTCAdnrTransfer()":
+                                            TransferBTCAdnr(tx);
+                                            break;
+                                        case "BTCAdnrDelete()":
+                                            DeleteBTCAdnr(tx);
+                                            break;
                                         default:
                                             break;
                                     }
@@ -988,6 +994,62 @@ namespace ReserveBlockCore.Data
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for BTC ADNR", "StateData.AddNewBTCAdnr()");
             }
         }
+
+        private static void TransferBTCAdnr(Transaction tx)
+        {
+            bool complete = false;
+            try
+            {
+                while (!complete)
+                {
+                    if (tx.Data != null)
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        var BTCToAddress = (string?)jobj["BTCToAddress"];
+                        var BTCFromAddress = (string?)jobj["BTCFromAddress"];
+
+                        var adnrs = BitcoinAdnr.GetBitcoinAdnr();
+                        if (adnrs != null)
+                        {
+                            var adnr = adnrs.FindOne(x => x.BTCAddress == BTCFromAddress);
+                            if (adnr != null)
+                            {
+                                adnr.BTCAddress = BTCToAddress;
+                                adnr.RBXAddress = tx.ToAddress;
+                                adnr.TxHash = tx.Hash;
+                                adnrs.UpdateSafe(adnr);
+                                complete = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        complete = true;
+                    }
+                    
+                }
+            }
+            catch { complete = true; }
+        }
+
+        private static void DeleteBTCAdnr(Transaction tx)
+        {
+            try
+            {
+                if(tx.Data != null)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    var BTCFromAddress = (string?)jobj["BTCFromAddress"];
+                    BitcoinAdnr.DeleteAdnr(BTCFromAddress);
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Failed to delete BTC ADNR at state level! Error: {ex}", "StateData.DeleteBTCAdnr()");
+            }
+        }
+
         private static void AddNewAdnr(Transaction tx)
         {
             try
@@ -1006,7 +1068,7 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {                
-                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "StateData.AddNewAdnr()");
+                ErrorLogUtility.LogError("Failed to add ADNR at state level!", "StateData.AddNewAdnr()");
             }
         }
         private static void TransferAdnr(Transaction tx)
@@ -1038,7 +1100,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {                
-                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+                ErrorLogUtility.LogError("Failed to delete ADNR State Level!", "StateData.DeleteAdnr()");
             }
         }
 
