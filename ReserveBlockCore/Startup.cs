@@ -53,6 +53,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Bid>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BitcoinAccount>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BitcoinAdnr>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BitcoinTransaction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BitcoinUTXO>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
@@ -85,6 +86,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<TokenAccount>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TokenDetails>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TokenFeature>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TokenizationFeature>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TopicTrei>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Transaction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Validators>>();
