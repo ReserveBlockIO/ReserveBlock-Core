@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Services
                 StringBuilder strEvolveBld = new StringBuilder();
                 StringBuilder strMultiAssetBld = new StringBuilder();
                 StringBuilder strTokenBld = new StringBuilder();
+                StringBuilder strTokenizationBld = new StringBuilder();
                 var isToken = false;
 
                 var appendChar = "\"|->\"";
@@ -193,6 +194,22 @@ namespace ReserveBlockCore.Services
                             isToken = true;
                             scMain.IsToken = true;
                         }
+                        else if(feature.FeatureName == FeatureName.Tokenization)
+                        {
+                            var tokenization = ((TokenizationFeature)feature.FeatureFeatures);
+                            feature.FeatureFeatures = tokenization;
+
+                            Flist.Add(feature);
+
+                            //create royalty code block
+                            var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                            strBuild = tokenizationSource.Item1;
+                            strTokenizationBld = tokenizationSource.Item2;
+                        }
+                        else
+                        {
+                            //do nothing
+                        }
                     }
                     else
                     {
@@ -241,6 +258,18 @@ namespace ReserveBlockCore.Services
                                 strTokenBld = tokenSource.Item2;
                                 isToken = true;
                                 scMain.IsToken = true;
+                            }
+                            if (x.FeatureName == FeatureName.Tokenization)
+                            {
+                                var tokenization = ((TokenizationFeature)x.FeatureFeatures);
+                                x.FeatureFeatures = tokenization;
+
+                                Flist.Add(x);
+
+                                //create royalty code block
+                                var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                                strBuild = tokenizationSource.Item1;
+                                strTokenizationBld = tokenizationSource.Item2;
                             }
 
                             if (x.FeatureName == FeatureName.Evolving)
@@ -429,6 +458,10 @@ namespace ReserveBlockCore.Services
                     if (featuresList.Exists(x => x.FeatureName == FeatureName.Token))
                     {
                         strBuild.Append(strTokenBld);
+                    }
+                    if (featuresList.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                    {
+                        strBuild.Append(strTokenizationBld);
                     }
                 }
 

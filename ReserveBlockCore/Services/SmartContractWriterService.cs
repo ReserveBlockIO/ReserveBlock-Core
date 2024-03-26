@@ -28,6 +28,7 @@ namespace ReserveBlockCore.Services
             StringBuilder strEvolveBld = new StringBuilder();
             StringBuilder strMultiAssetBld = new StringBuilder();
             StringBuilder strTokenBld = new StringBuilder();
+            StringBuilder strTokenizationBld = new StringBuilder();
 
             scMain.SmartContractUID = scUID;
             scMain.IsMinter = true;
@@ -125,8 +126,27 @@ namespace ReserveBlockCore.Services
                             }
                             if (strBuild.ToString() == "Failed")
                             {
-                                return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
+                                return ("Failed to save smart contract asset for Token. Please try again.", scMain, isToken);
                             }
+                        }
+                        else if(feature.FeatureName == FeatureName.Tokenization)
+                        {
+                            var tokenization = ((JObject)feature.FeatureFeatures).ToObject<TokenizationFeature>();
+                            if(tokenization != null)
+                            {
+                                feature.FeatureFeatures = tokenization;
+                                var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                                strBuild = tokenizationSource.Item1;
+                                strTokenizationBld = tokenizationSource.Item2;
+                            }
+                            if (strBuild.ToString() == "Failed")
+                            {
+                                return ("Failed to save smart contract asset for Tokenization. Please try again.", scMain, isToken);
+                            }
+                        }
+                        else
+                        {
+                            //do nothing
                         }
 
                     }
@@ -226,6 +246,22 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
+                            if(x.FeatureName == FeatureName.Tokenization)
+                            {
+                                var tokenization = ((JObject)x.FeatureFeatures).ToObject<TokenizationFeature>();
+                                if(tokenization != null)
+                                {
+                                    x.FeatureFeatures = tokenization;
+                                    var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                                    strBuild = tokenizationSource.Item1;
+                                    strTokenizationBld = tokenizationSource.Item2;
+                                }
+                                if (strBuild.ToString() == "Failed")
+                                {
+                                    return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
+                                }
+                            }
+
                         }
                     }
                     scMain.Features = Flist;
@@ -317,6 +353,10 @@ namespace ReserveBlockCore.Services
                     if (featuresList.Exists(x => x.FeatureName == FeatureName.Token))
                     {
                         strBuild.Append(strTokenBld);
+                    }
+                    if (featuresList.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                    {
+                        strBuild.Append(strTokenizationBld);
                     }
                 }
 
