@@ -374,6 +374,9 @@ namespace ReserveBlockCore.Data
             var sizedMempoolList = MempoolSizeUtility.SizeMempoolDown(memPoolTxList);
 
             var approvedMemPoolList = new List<Transaction>();
+            var queuedMempoolTxList = new List<Transaction>();
+
+            queuedMempoolTxList = Globals.NetworkBlockQueue.Values.SelectMany(x => x.Transactions).ToList();
 
             var adnrNameList = new List<string>();
 
@@ -384,7 +387,8 @@ namespace ReserveBlockCore.Data
                     try
                     {
                         var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
-                        if (!txExist)
+                        var queuedTxExist = queuedMempoolTxList.Exists(x => x.Hash == tx.Hash);
+                        if (!txExist && !queuedTxExist)
                         {
                             var reject = false;
                             if (tx.TransactionType != TransactionType.TX &&

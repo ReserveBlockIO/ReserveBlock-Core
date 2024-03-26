@@ -674,7 +674,9 @@ namespace ReserveBlockCore.P2P
                     {
                         failCount += 1;
                     }
-                }                
+                }
+
+                failCount += 1;
             }
 
             ConsoleWriterService.Output($"Adj Success Count: {SuccessNodes.Count()}");
