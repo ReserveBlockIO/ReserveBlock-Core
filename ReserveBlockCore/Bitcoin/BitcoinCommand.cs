@@ -500,7 +500,7 @@ namespace ReserveBlockCore.Bitcoin
 
                             btcAccountList.ToList().ForEach(x => {
                                 btcAccountNumberList.Add(count.ToString(), x);
-                                table.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
+                                table2.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
                                 count++;
                             });
 
