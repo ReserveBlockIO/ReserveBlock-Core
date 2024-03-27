@@ -345,7 +345,7 @@ namespace ReserveBlockCore.Services
                 Globals.WinningProofs.TryRemove(height, out _);
                 Globals.FinalizedWinner.TryRemove(height, out _);
             }
-            catch { }
+            catch(Exception ex) { ErrorLogUtility.LogError($"Error: {ex}", "ValidatorService.UpdateBlockMemory()"); }
         }
 
         public static async Task PerformErrorCountCheck()
@@ -766,13 +766,18 @@ namespace ReserveBlockCore.Services
 
         public static async Task UpdateActiveValidators(Block? block)
         {
-            if (block != null)
+            try
             {
-                if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
-                    Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
-                else
-                    Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
+                if (block != null)
+                {
+                    if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
+                        Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
+                    else
+                        Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
+                }
             }
+            catch(Exception ex) { ErrorLogUtility.LogError($"Error: {ex}", "ValidatorService.UpdateActiveValidators()"); }
+            
         }
 
         private static async Task<string> GenesisValidatorStart(Account account, string uName = "")

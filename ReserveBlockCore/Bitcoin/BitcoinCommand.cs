@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Bitcoin
 {
@@ -442,6 +443,177 @@ namespace ReserveBlockCore.Bitcoin
             {
                 ErrorLogUtility.LogError($"Error Tokenizing BTC. Error: {ex.ToString}", "BitcoinCommand.TokenizeBitcoin()");
             }
+        }
+
+        public static async Task<string> CreateDnr()
+        {
+            var output = "";
+            Console.WriteLine("Please select the wallet you'd like to create a domain name registration for...");
+            var accountList = AccountData.GetAccountsWithBalanceForAdnr();
+            var btcAccountList = BitcoinAccount.GetBitcoinAccounts();
+            var accountNumberList = new Dictionary<string, Account>();
+            var btcAccountNumberList = new Dictionary<string, BitcoinAccount>();
+
+            if (accountList.Count() > 0)
+            {
+                try
+                {
+                    int count = 1;
+                    var table = new Table();
+
+                    table.Title("[green]Please select a account to own the BTC ADNR.[/]").Centered();
+                    table.AddColumn(new TableColumn(new Panel("#")));
+                    table.AddColumn(new TableColumn(new Panel("Address")));
+                    table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
+                    accountList.ToList().ForEach(x => {
+                        accountNumberList.Add(count.ToString(), x);
+                        table.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
+                        count++;
+                    });
+
+                    table.Border(TableBorder.Rounded);
+
+                    AnsiConsole.Write(table);
+                    string? walletChoice = "";
+                    walletChoice = await ReadLineUtility.ReadLine();
+
+                    if (!string.IsNullOrEmpty(walletChoice))
+                    {
+                        var keyCheck = accountNumberList.ContainsKey(walletChoice);
+
+                        if (keyCheck == false)
+                        {
+                            Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
+                            return output;
+                        }
+                        else
+                        {
+                            var wallet = accountNumberList[walletChoice];
+
+                            var table2 = new Table();
+
+                            table2.Title("[green]Please select a account to own the BTC ADNR.[/]").Centered();
+                            table2.AddColumn(new TableColumn(new Panel("#")));
+                            table2.AddColumn(new TableColumn(new Panel("Address")));
+                            table2.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
+                            btcAccountList.ToList().ForEach(x => {
+                                btcAccountNumberList.Add(count.ToString(), x);
+                                table.AddRow($"[yellow]{count}[/]", $"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
+                                count++;
+                            });
+
+                            table2.Border(TableBorder.Rounded);
+
+                            AnsiConsole.Write(table2);
+                            string? btcWalletChoice = "";
+                            btcWalletChoice = await ReadLineUtility.ReadLine();
+                            if (string.IsNullOrEmpty(btcWalletChoice))
+                            {
+                                Console.WriteLine($"Incorrect input for BTC Address");
+                                return output;
+                            }
+
+                            var btcWallet = btcAccountNumberList[btcWalletChoice];
+
+                            var address = wallet.Address;
+                            var btcAddress = btcWallet.Address;
+
+                            var adnr = BitcoinAdnr.GetBitcoinAdnr();
+                            var adnrCheck = adnr.FindOne(x => x.BTCAddress == btcAddress);
+                            if (adnrCheck != null)
+                            {
+                                Console.WriteLine($"This address already has a DNR associated with it: {adnrCheck.Name}");
+                                return output;
+                            }
+                            bool nameFound = true;
+                            while (nameFound)
+                            {
+                                Console.WriteLine($"You have selected the following wallet: {btcAddress}");
+                                Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
+                                Console.WriteLine("type exit to leave this menu.");
+                                var name = await ReadLineUtility.ReadLine();
+                                if (!string.IsNullOrWhiteSpace(name) && name != "exit")
+                                {
+                                    var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
+                                    if (!nameCharCheck)
+                                    {
+                                        Console.WriteLine("-->ERROR! A DNR may only contain letters and numbers. ERROR!<--");
+                                    }
+                                    else
+                                    {
+                                        var nameRBX = name.ToLower() + ".btc";
+                                        var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
+                                        if (nameCheck == null)
+                                        {
+                                            nameFound = false;
+                                            Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
+                                            var response = await ReadLineUtility.ReadLine();
+                                            if (!string.IsNullOrWhiteSpace(response))
+                                            {
+                                                if (response.ToLower() == "y")
+                                                {
+                                                    Console.WriteLine("Sending Transaction now.");
+                                                    var result = await BitcoinAdnr.CreateAdnrTx(address, name, btcAddress);
+                                                    if (result.Item1 != null)
+                                                    {
+                                                        Console.WriteLine("DNR Request has been sent to mempool.");
+                                                        Console.WriteLine("......3");
+                                                        Thread.Sleep(1000);
+                                                        Console.WriteLine("......2");
+                                                        Thread.Sleep(1000);
+                                                        Console.WriteLine("......1");
+                                                        Thread.Sleep(1000);
+                                                        await Bitcoin.BitcoinMenu();
+                                                    }
+                                                    else
+                                                    {
+                                                        Console.WriteLine("DNR Request failed to enter the mempool.");
+                                                        Console.WriteLine($"Error: {result.Item2}");
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    StartupService.MainMenu();
+                                                    Console.WriteLine("DNR Request has been cancelled.");
+                                                }
+                                            }
+
+                                        }
+                                        else
+                                        {
+                                            StartupService.MainMenu();
+                                            Console.WriteLine("DNR Request has been cancelled. Name already belongs to another address.");
+                                        }
+                                    }
+
+                                }
+                                else
+                                {
+                                    StartupService.MainMenu();
+                                    Console.WriteLine("DNR Request has been cancelled. Incorrect format inputted.");
+                                }
+
+                            }
+
+                        }
+                    }
+                    return output;
+                }
+                catch (Exception ex)
+                {
+                    output = "DNR Request has been cancelled.";
+                    return output;
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a dnr.");
+                return output;
+            }
+
         }
     }
 }

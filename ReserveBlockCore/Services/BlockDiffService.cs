@@ -1,4 +1,6 @@
-﻿namespace ReserveBlockCore.Services
+﻿using ReserveBlockCore.Utilities;
+
+namespace ReserveBlockCore.Services
 {
     public class BlockDiffService
     {
@@ -19,7 +21,7 @@
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { ErrorLogUtility.LogError($"Error: {ex}", "BlockDiffService.UpdateQueue()"); }
         }
 
         public static double CalculateAverage()

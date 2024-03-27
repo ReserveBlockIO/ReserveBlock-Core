@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Bitcoin.Integrations;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
+using ReserveBlockCore.Commands;
 using ReserveBlockCore.Services;
 using Spectre.Console;
 
@@ -73,7 +74,9 @@ namespace ReserveBlockCore.Bitcoin
                     await BitcoinCommand.ImportAddress();
                     break;
                 case "6": //Bitcoin ADNR
-                    
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.CreateDnr();
+                    Globals.StopConsoleOutput = false;
                     break;
                 case "7": //Reset Accounts
                     await BitcoinCommand.ResetAccounts();
@@ -167,7 +170,7 @@ namespace ReserveBlockCore.Bitcoin
             Console.WriteLine("| 7. Reset/Resync Accounts               |");
             Console.WriteLine("| 8. Exit Bitcoin Wallet                 |");
             Console.WriteLine("|========================================|");
-            Console.WriteLine("|type /btc to come back to the vote area |");
+            Console.WriteLine("|type /btc to come back to the main area |");
             Console.WriteLine("|type /menu to go back to RBX Wallet     |");
             Console.WriteLine("|========================================|");
         }

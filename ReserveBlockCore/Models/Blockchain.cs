@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Models
             return header;
         }
 
-        public static void AddBlock(Block block)
+        public static void AddBlockHeader(Block block)
         {
             var blockchain = GetBlockchain();
             if (blockchain != null)

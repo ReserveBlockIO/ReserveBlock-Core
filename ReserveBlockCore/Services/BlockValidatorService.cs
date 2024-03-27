@@ -121,12 +121,12 @@ namespace ReserveBlockCore.Services
                 if (block?.Height <= Globals.LastBlock.Height)
                     return block.Hash == Globals.LastBlock.Hash;
 
-                if (block?.Height % 1000 == 0)
+                if (block?.Height % 150 == 0)
                 {
                     await DbContext.CheckPoint();
                 }
 
-                DbContext.BeginTrans();
+                //DbContext.BeginTrans();
 
                 bool result = false;
 
@@ -636,7 +636,7 @@ namespace ReserveBlockCore.Services
 
                     await TransactionData.UpdateWalletTXTask();
 
-                    DbContext.Commit();
+                    //DbContext.Commit();
 
                     return result;//block accepted
                 }

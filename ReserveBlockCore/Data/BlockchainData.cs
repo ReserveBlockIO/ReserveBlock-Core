@@ -444,23 +444,24 @@ namespace ReserveBlockCore.Data
                 var blockCheck = blocks.Find(Query.All(Query.Descending)).Take(100).Where(x => x.Height == block.Height).FirstOrDefault();
                 if (blockCheck == null)
                 {
-                    //insert block to db
-                    blocks.InsertSafe(block);
-
                     //Update in memory block.
                     Globals.LastBlock = block;
-                    Blockchain.AddBlock(block);
-                    if (Globals.ValidatorAddress == block.Validator)
-                        Globals.LastWonBlock = block;
                     var currentTime = TimeUtil.GetTime();
                     Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                     Globals.LastBlockAddedTimestamp = currentTime;
+
+                    Blockchain.AddBlockHeader(block);
+                    if (Globals.ValidatorAddress == block.Validator)
+                        Globals.LastWonBlock = block;
 
                     _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                     _ = ValidatorService.UpdateActiveValidators(block);
                     _ = ValidatorService.UpdateBlockMemory(block.Height);
 
-                    if(notifyCLI)
+                    //insert block to db
+                    blocks.InsertSafe(block);
+
+                    if (notifyCLI)
                     {
                         if (!Globals.BasicCLI)
                         {
