@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Bitcoin
                     break;
                 case "6": //Bitcoin ADNR
                     Globals.StopConsoleOutput = true;
-                    await BaseCommandServices.CreateDnr();
+                    await BitcoinCommand.CreateDnr();
                     Globals.StopConsoleOutput = false;
                     break;
                 case "7": //Reset Accounts
