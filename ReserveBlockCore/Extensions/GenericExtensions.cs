@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models;
+﻿using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
@@ -281,7 +282,25 @@ namespace ReserveBlockCore.Extensions
 
             return source;
         }
+        public static string ToBTCAddressNormalize(this string source)
+        {
+            var adnrCheck = source.ToLower().Contains(".btc");
 
+            if (adnrCheck)
+            {
+                var result = BitcoinAdnr.GetAddress(source);
+                if (result.Item1 == true)
+                {
+                    return result.Item2;
+                }
+                else
+                {
+                    return source;
+                }
+            }
+
+            return source;
+        }
         public static string ToStringFromBase64(this string source)
         {
             var base64EncodedString = Convert.FromBase64String(source);

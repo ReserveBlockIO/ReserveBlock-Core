@@ -219,6 +219,11 @@ namespace ReserveBlockCore.Bitcoin
 
                     var result = await TransactionService.SendTransaction(fromAddress, toAddress, amount, feeResult, overrideInternal);
                     Console.WriteLine(result.Item2);
+
+                    if(!result.Item1)
+                    {
+                        ErrorLogUtility.LogError($"Error Sending BTC. Error: {result.Item2}", "BitcoinCommand.SendBitcoinTransaction()");
+                    }
                 }
                 else
                 {

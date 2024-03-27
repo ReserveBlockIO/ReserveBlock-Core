@@ -2,6 +2,7 @@
 using NBitcoin.Protocol;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using static ReserveBlockCore.Models.Integrations;
@@ -14,6 +15,9 @@ namespace ReserveBlockCore.Bitcoin.Services
         public static decimal SatoshiMultiplier = 0.00000001M;
         public static async Task<(bool, string)> SendTransaction(string sender, string receiver, decimal sendAmount, long chosenFeeRate, bool overrideInternalSend = false)
         {
+
+            receiver = receiver.ToBTCAddressNormalize();
+
             var btcAccount = BitcoinAccount.GetBitcoinAccount(sender);
             var receiverAccount = BitcoinAccount.GetBitcoinAccount(receiver);
             if (btcAccount == null)
@@ -27,6 +31,8 @@ namespace ReserveBlockCore.Bitcoin.Services
 
             if(sendAmount < Globals.BTCMinimumAmount)
                 return (false, $"This wallet does not support sends smaller than {Globals.BTCMinimumAmount} BTC.");
+
+            ConsoleWriterService.Output($"Account Checks Passed.");
 
             string senderPrivateKeyHex = btcAccount.PrivateKey;
 
@@ -52,6 +58,8 @@ namespace ReserveBlockCore.Bitcoin.Services
                 .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
                 .SetChange(senderAddress);
 
+            ConsoleWriterService.Output($"TX builder Done.");
+
             // Get the count of inputs and outputs
             int inputCount = unspentCoins.Count();
             int outputCount = 2; // one for recipient, one for change
@@ -68,16 +76,21 @@ namespace ReserveBlockCore.Bitcoin.Services
             byte[] privateKeyBytes = senderPrivateKeyHex.HexToByteArray();
             Key senderKey = new Key(privateKeyBytes);
 
+            ConsoleWriterService.Output($"Fees calculated...");
+
             var signedTransaction = txBuilder
                 .AddKeys(senderKey)
                 .SendFees(new Money(fee, MoneyUnit.Satoshi))
                 .SetOptInRBF(true)
                 .BuildTransaction(true);
 
+            ConsoleWriterService.Output($"Tx Has been signed");
+
             var txVerified = txBuilder.Verify(signedTransaction);
 
             if(txVerified)
             {
+                ConsoleWriterService.Output($"Tx Has been verified.");
                 btcAccount.Balance -= totalAmountSpent;
                 var btcDb = BitcoinAccount.GetBitcoin();
                 if(btcDb != null)
@@ -107,9 +120,17 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 BitcoinTransaction.SaveBitcoinTX(tx);
 
+                ConsoleWriterService.Output($"Broadcast started @ {DateTime.Now}");
+
                 _ = BroadcastService.BroadcastTx(signedTransaction);
 
-                return (true, $"{signedTransaction.GetHash()}");
+                ConsoleWriterService.Output($"Broadcast completed @ {DateTime.Now}");
+
+                return (true, $"{tx.Hash}");
+            }
+            else
+            {
+                ConsoleWriterService.Output($"Tx FAILED to verify.");
             }
             
             return (false, $"Unknown Error");
