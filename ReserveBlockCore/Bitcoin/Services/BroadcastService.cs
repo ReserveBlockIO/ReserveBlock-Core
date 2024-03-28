@@ -7,12 +7,12 @@ namespace ReserveBlockCore.Bitcoin.Services
 {
     public class BroadcastService
     {
-        public static async Task<bool> BroadcastTx(Transaction tx)
+        public static async Task BroadcastTx(Transaction tx)
         {
             var broadcastNodes = await NodeFinder.GetNodeList();
 
-            if(!broadcastNodes.Any())
-                return false;
+            if (!broadcastNodes.Any())
+                return;
 
             foreach (IPAddress address in broadcastNodes)
             {
@@ -30,7 +30,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 catch { }
             }
 
-            return true;
+            return;
         }
     }
 }

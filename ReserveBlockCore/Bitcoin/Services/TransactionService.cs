@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             if(sendAmount < Globals.BTCMinimumAmount)
                 return (false, $"This wallet does not support sends smaller than {Globals.BTCMinimumAmount} BTC.");
 
-            ConsoleWriterService.Output($"Account Checks Passed.");
+            Console.WriteLine($"Account Checks Passed.");
 
             string senderPrivateKeyHex = btcAccount.PrivateKey;
 
@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
                 .SetChange(senderAddress);
 
-            ConsoleWriterService.Output($"TX builder Done.");
+            Console.WriteLine($"TX builder Done.");
 
             // Get the count of inputs and outputs
             int inputCount = unspentCoins.Count();
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             byte[] privateKeyBytes = senderPrivateKeyHex.HexToByteArray();
             Key senderKey = new Key(privateKeyBytes);
 
-            ConsoleWriterService.Output($"Fees calculated...");
+            Console.WriteLine($"Fees calculated...");
 
             var signedTransaction = txBuilder
                 .AddKeys(senderKey)
@@ -84,13 +84,13 @@ namespace ReserveBlockCore.Bitcoin.Services
                 .SetOptInRBF(true)
                 .BuildTransaction(true);
 
-            ConsoleWriterService.Output($"Tx Has been signed");
+            Console.WriteLine($"Tx Has been signed");
 
             var txVerified = txBuilder.Verify(signedTransaction);
 
             if(txVerified)
             {
-                ConsoleWriterService.Output($"Tx Has been verified.");
+                Console.WriteLine($"Tx Has been verified.");
                 btcAccount.Balance -= totalAmountSpent;
                 var btcDb = BitcoinAccount.GetBitcoin();
                 if(btcDb != null)
@@ -120,17 +120,17 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 BitcoinTransaction.SaveBitcoinTX(tx);
 
-                ConsoleWriterService.Output($"Broadcast started @ {DateTime.Now}");
+                Console.WriteLine($"Broadcast started @ {DateTime.Now}");
 
                 _ = BroadcastService.BroadcastTx(signedTransaction);
 
-                ConsoleWriterService.Output($"Broadcast completed @ {DateTime.Now}");
+                Console.WriteLine($"Broadcast completed @ {DateTime.Now}");
 
                 return (true, $"{tx.Hash}");
             }
             else
             {
-                ConsoleWriterService.Output($"Tx FAILED to verify.");
+                Console.WriteLine($"Tx FAILED to verify.");
             }
             
             return (false, $"Unknown Error");
