@@ -981,7 +981,7 @@ namespace ReserveBlockCore.Data
                     {
                         BTCAddress = btcAddress,
                         RBXAddress = tx.FromAddress,
-                        Name = name,
+                        Name = name + ".btc",
                         Timestamp = tx.Timestamp,
                         TxHash = tx.Hash
                     };
