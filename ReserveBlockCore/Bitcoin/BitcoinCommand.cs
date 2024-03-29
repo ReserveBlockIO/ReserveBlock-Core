@@ -61,10 +61,12 @@ namespace ReserveBlockCore.Bitcoin
                 if (privateKey?.Length > 58)
                 {
                     BitcoinAccount.ImportPrivateKey(privateKey, scriptPubKeyType);
+                    await ReturnToMenu("Private key has been imported!");
                 }
                 else
                 {
                     BitcoinAccount.ImportPrivateKeyWIF(privateKey, scriptPubKeyType);
+                    await ReturnToMenu("Private key has been imported!");
                 }
             }
             catch (Exception ex)
@@ -72,6 +74,18 @@ namespace ReserveBlockCore.Bitcoin
                 Console.WriteLine("The key provided could not be restore. Please check format and ensure key is not incomplete or corrupt.");
             }
             
+        }
+
+        public static async Task ReturnToMenu(string message = "Returning to BTC menu.")
+        {
+            Console.WriteLine(message);
+            Console.WriteLine("......3");
+            Thread.Sleep(1000);
+            Console.WriteLine("......2");
+            Thread.Sleep(1000);
+            Console.WriteLine("......1");
+            Thread.Sleep(1000);
+            await Bitcoin.BitcoinMenu();
         }
 
         public static async Task ShowBitcoinAccounts()
@@ -536,7 +550,7 @@ namespace ReserveBlockCore.Bitcoin
                             while (nameFound)
                             {
                                 Console.WriteLine($"You have selected the following wallet: {btcAddress}");
-                                Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
+                                Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.btc' will automatically be added. DO NOT INCLUDE IT.");
                                 Console.WriteLine("type exit to leave this menu.");
                                 var name = await ReadLineUtility.ReadLine();
                                 if (!string.IsNullOrWhiteSpace(name) && name != "exit")

@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using NBitcoin;
 using Newtonsoft.Json;
+using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using System.Security.Principal;
@@ -132,6 +134,88 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Get Adnr from Address
+        /// </summary>
+        /// <param name="adnr"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("ResolveAdnr/{**adnr}")]
+        public async Task<string> ResolveAdnr(string adnr)
+        {
+            if(!string.IsNullOrEmpty(adnr))
+            {
+                if (adnr.ToLower().Contains(".rbx"))
+                {
+                    var rbxAdnr = Adnr.GetAddress(adnr.ToLower());
+                    if(rbxAdnr.Item1)
+                    {
+                        return JsonConvert.SerializeObject(new { Success = true, Message = $"ADNR Resolved", Address = rbxAdnr.Item2 });
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"ADNR Could not be resolved for RBX" });
+                    }
+                }
+
+                if(adnr.ToLower().Contains(".btc"))
+                {
+                    var btcAdnr = BitcoinAdnr.GetAddress(adnr.ToLower());
+                    if (btcAdnr.Item1)
+                    {
+                        return JsonConvert.SerializeObject(new { Success = true, Message = $"ADNR Resolved", Address = btcAdnr.Item2 });
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"ADNR Could not be resolved for BTC" });
+                    }
+                }
+            }
+            
+            return JsonConvert.SerializeObject(new { Success = false, Message = $"ADNR Could not be resolved." });
+        }
+
+        /// <summary>
+        /// Get adnr from address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="asset"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("ResolveAddressAdnr/{address}/{asset}")]
+        public async Task<string> ResolveAddressAdnr(string address, string asset)
+        {
+            if (!string.IsNullOrEmpty(address) && !string.IsNullOrEmpty(asset))
+            {
+                if (asset.ToLower() == "rbx")
+                {
+                    var rbxAdnr = Adnr.GetAdnr(address);
+                    if (!string.IsNullOrEmpty(rbxAdnr))
+                    {
+                        return JsonConvert.SerializeObject(new { Success = true, Message = $"Address Resolved", Adnr = rbxAdnr });
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Address Could not be resolved for RBX" });
+                    }
+                }
+
+                if (asset.ToLower() == "btc")
+                {
+                    var btcAdnr = BitcoinAdnr.GetAdnr(address);
+                    if (!string.IsNullOrEmpty(btcAdnr))
+                    {
+                        return JsonConvert.SerializeObject(new { Success = true, Message = $"Address Resolved", Adnr = btcAdnr });
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Address Could not be resolved for BTC" });
+                    }
+                }
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = $"Address Could not be resolved." });
+        }
 
         /// <summary>
         /// Get Validator Winning Proofs
