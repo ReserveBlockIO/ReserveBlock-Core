@@ -13,6 +13,8 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             strBuild.AppendLine("let AssetName = \"" + tknz.AssetName + "\"");
             strBuild.AppendLine("let AssetTicker = \"" + tknz.AssetTicker + "\"");
             strBuild.AppendLine("let AssetDepositAddress = \"" + "{DEPO_ADDR}" + "\"");
+            strBuild.AppendLine("let KeyRevealRequestHash = \"" + "{TX_HASH}" + "\"");
+            strBuild.AppendLine("let KeyRevealed = false");
 
             strTknzBld.AppendLine("function GetDepositAddressShares() : string");
             strTknzBld.AppendLine("{");

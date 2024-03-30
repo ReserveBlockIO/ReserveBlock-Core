@@ -516,7 +516,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if(!publishSc.Item1)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed To Produce a Valid TX. Reason: {publishSc.Item2}" });
 
-                return JsonConvert.SerializeObject(new { Success = true, Message = publishSc.Item2 });
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = publishSc.Item2 });
 
             }
             catch(Exception ex)
@@ -556,6 +556,17 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             }
 
             return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to Produce valid shares and address." });
+        }
+
+        /// <summary>
+        /// Unwrapps
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("RevealPrivateKey/{scUID}")]
+        public async Task<string> RevealPrivateKey(string scUID)
+        {
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Coming Soon..." });
         }
 
     }
