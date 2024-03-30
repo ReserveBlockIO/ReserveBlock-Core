@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
         }
 
-        public static async Task<(bool, string)> MintSmartContract(string id)
+        public static async Task<(bool, string)> MintSmartContract(string id, bool returnTx = false)
         {
             try
             {
@@ -157,6 +157,10 @@ namespace ReserveBlockCore.Bitcoin.Services
                     {
                         await TokenizedBitcoin.SetTokenContractIsPublished(scMain.SmartContractUID);
                         NFTLogUtility.Log($"Smart contract has been published to mempool : {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
+
+                        if (returnTx)
+                            return (true, scTx.Hash);
+
                         return (true, "Smart contract has been published to mempool");
                     }
                 }
@@ -165,6 +169,69 @@ namespace ReserveBlockCore.Bitcoin.Services
             {
                 return (false, $"Fatal Error: {ex}");
             }
+        }
+
+        public static async Task<string> GenerateAddressFromMPC()
+        {
+            try
+            {
+                Random random = new Random();
+                string address = "btc"; // btc-like address format
+                for (int i = 0; i < 40; i++)
+                {
+                    address += random.Next(16).ToString("X"); // Random hexadecimal digit
+                }
+
+                if (address.Length > 100)
+                    throw new Exception("Error: Unable to connect to MPC to generate address.");
+
+                return address;
+            }
+            catch(Exception ex) { return "FAIL"; }
+        }
+
+        public static async Task<List<string>> AddressGenerationMutation(string scUID)
+        {
+            List<string> shares = new List<string>();
+
+            try
+            {
+                char[] charArray = scUID.ToCharArray();
+
+                // Mutate the characters in the array
+                for (int i = 0; i < charArray.Length; i++)
+                {
+                    if (char.IsLetter(charArray[i]))
+                    {
+                        // Increment the ASCII value of letters
+                        charArray[i] = (char)(charArray[i] + 1);
+                    }
+                }
+
+                // Convert the character array back to a string
+                string mutatedString = new string(charArray);
+
+                charArray = mutatedString.ToCharArray();
+                Array.Reverse(charArray);
+                mutatedString = new string(charArray);
+
+                // Convert lowercase letters to uppercase
+                mutatedString = mutatedString.ToUpper();
+
+                // Split the input string into equal parts
+                int shareSize = mutatedString.Length / 3; // Divide the string into 3 equal parts
+                for (int i = 0; i < mutatedString.Length; i += shareSize)
+                {
+                    // Extract the current share
+                    string share = mutatedString.Substring(i, Math.Min(shareSize, mutatedString.Length - i));
+                    shares.Add(share);
+                }
+            }
+            catch (Exception ex) 
+            { 
+            }
+
+            return shares;
         }
     }
 }

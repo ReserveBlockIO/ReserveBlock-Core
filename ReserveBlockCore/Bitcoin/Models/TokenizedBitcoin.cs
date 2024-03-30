@@ -87,6 +87,21 @@ namespace ReserveBlockCore.Bitcoin.Models
             return null;
         }
 
+        public static async Task<List<TokenizedBitcoin>?> GetTokenizedList()
+        {
+            var scs = GetDb();
+            if (scs != null)
+            {
+                var sc = scs.FindAll().ToList();
+                if (sc.Any())
+                {
+                    return sc;
+                }
+            }
+
+            return null;
+        }
+
         public static async Task SaveSmartContract(SmartContractMain scMain, string? scText)
         {
             var scs = GetDb();
