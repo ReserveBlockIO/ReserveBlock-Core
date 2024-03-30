@@ -489,7 +489,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("TokenizeBitcoin")]
-        public static async Task<string> TokenizeBitcoin([FromBody] object jsonData)
+        public async Task<string> TokenizeBitcoin([FromBody] object jsonData)
         {
             try
             {
