@@ -7,6 +7,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Text;
 using ReserveBlockCore.Bitcoin.Models;
+using System.IO;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -16,15 +17,28 @@ namespace ReserveBlockCore.Bitcoin.Services
         {
             try
             {
-                if (!File.Exists(fileLocation))
+                string fileName = "";
+                string fileExtension = "";
+                long fileSizeInBytes = 0;
+                if (fileLocation != "default")
                 {
-                    return null;
+                    if (!File.Exists(fileLocation))
+                    {
+                        return null;
+                    }
+                    FileInfo fileInfo = new FileInfo(fileLocation);
+                    fileName = fileInfo.Name;
+                    fileExtension = fileInfo.Extension;
+                    fileSizeInBytes = fileInfo.Length;
                 }
-                FileInfo fileInfo = new FileInfo(fileLocation);
-                var fileName = fileInfo.Name;
-                var fileExtension = fileInfo.Extension;
-                var fileSizeInBytes = fileInfo.Length;
-
+                else
+                {
+                    fileName = "defaultvBTC.png";
+                    fileExtension = ".png";
+                    fileSizeInBytes = 46056;
+                    fileLocation = NFTAssetFileUtility.GetvBTCDefaultLogoLocation();
+                }
+                
                 var scMain = new SmartContractMain
                 {
                     MinterAddress = address,

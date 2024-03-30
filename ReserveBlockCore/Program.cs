@@ -118,6 +118,8 @@ namespace ReserveBlockCore
 
             Globals.BuildVer = WalletVersionUtility.GetBuildVersion();
 
+            _ = NFTAssetFileUtility.GeneratevBTCDefaultLogo();
+
             Globals.CLIVersion = $"{Globals.MajorVer}.{Globals.MinorVer}.{Globals.RevisionVer}.{WalletVersionUtility.GetBuildVersion()}-beta";
 
             var logCLIVer = Globals.CLIVersion;

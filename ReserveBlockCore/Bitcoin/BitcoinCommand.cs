@@ -424,8 +424,11 @@ namespace ReserveBlockCore.Bitcoin
                     AnsiConsole.MarkupLine($"Creating vBTC token for: [green]{fromAddress}[/]");
 
                     
-                    Console.WriteLine("\nPlease enter path for vBTC image.");
+                    Console.WriteLine("\nPlease enter path for vBTC image. Press Enter for Default image.");
                     string? fileLocation = await ReadLineUtility.ReadLine();
+
+                    if (string.IsNullOrEmpty(fileLocation))
+                        fileLocation = "default";
 
                     Console.WriteLine("\nPlease enter vBTC token Name. Press enter for default 'vBTC Token'");
                     string? tokenNameInput = await ReadLineUtility.ReadLine();
