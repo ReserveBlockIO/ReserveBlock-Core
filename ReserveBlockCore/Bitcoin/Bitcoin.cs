@@ -70,6 +70,12 @@ namespace ReserveBlockCore.Bitcoin
                 case "4": //Tokenize
                     await BitcoinCommand.TokenizeBitcoin();
                     break;
+                case "4a": //Tokenize Generate Deposit Address
+                    await BitcoinCommand.GenerateBTCTokenAddress();
+                    break;
+                case "4b": //Tokenize Transfer
+                    Console.WriteLine("No vBTC Tokens to transfer at this time");
+                    break;
                 case "5": //Import address
                     await BitcoinCommand.ImportAddress();
                     break;
@@ -165,6 +171,8 @@ namespace ReserveBlockCore.Bitcoin
             Console.WriteLine("| 2. Show Address(es)                    |");
             Console.WriteLine("| 3. Send Transaction                    |");
             Console.WriteLine("| 4. Tokenize Bitcoin                    |");
+            Console.WriteLine("| 4a. Generate vBTC Deposit Address      |");
+            Console.WriteLine("| 4b. Transfer vBTC                      |");
             Console.WriteLine("| 5. Import Address                      |");
             Console.WriteLine("| 6. Bitcoin ADNR Register               |");
             Console.WriteLine("| 7. Reset/Resync Accounts               |");

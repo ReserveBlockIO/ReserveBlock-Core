@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using ImageMagick;
+using NBitcoin;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Services;
 using ReserveBlockCore.Data;
@@ -387,15 +388,15 @@ namespace ReserveBlockCore.Bitcoin
 
             try
             {
-                var accountList = BitcoinAccount.GetBitcoinAccounts();
-                var accountNumberList = new Dictionary<string, BitcoinAccount>();
+                var accountList = AccountData.GetAccountsWithBalance();
+                var accountNumberList = new Dictionary<string, Account>();
 
                 if (accountList?.Count() > 0)
                 {
                     int count = 1;
                     var table = new Table();
 
-                    table.Title("[green]Please select a Bitcoin account to tokenize.[/]").Centered();
+                    table.Title("[green]Please select an VBX address to tokeninze your BTC under.[/]").Centered();
                     table.AddColumn(new TableColumn(new Panel("#")));
                     table.AddColumn(new TableColumn(new Panel("Address")));
                     table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
@@ -420,48 +421,142 @@ namespace ReserveBlockCore.Bitcoin
                     var wallet = accountNumberList[walletChoice];
                     Console.WriteLine("********************************************************************");
                     string fromAddress = wallet.Address;
-                    AnsiConsole.MarkupLine($"Tokenizing: [green]{fromAddress}[/]");
+                    AnsiConsole.MarkupLine($"Creating vBTC token for: [green]{fromAddress}[/]");
+
                     
-                    Console.WriteLine("\nPlease enter ADNR Name.");
-                    string? adnrName = await ReadLineUtility.ReadLine();
+                    Console.WriteLine("\nPlease enter path for vBTC image.");
+                    string? fileLocation = await ReadLineUtility.ReadLine();
 
-                    if (string.IsNullOrEmpty(fromAddress) ||
-                    string.IsNullOrEmpty(adnrName))
+                    Console.WriteLine("\nPlease enter vBTC token Name. Press enter for default 'vBTC Token'");
+                    string? tokenNameInput = await ReadLineUtility.ReadLine();
+                    string tokenName = string.IsNullOrWhiteSpace(tokenNameInput) ? "vBTC Token" : tokenNameInput;
+
+                    Console.WriteLine("\nPlease enter vBTC token description. Press enter for default 'vBTC Token'");
+                    string? tokenDescInput = await ReadLineUtility.ReadLine();
+                    string tokenDesc = string.IsNullOrWhiteSpace(tokenDescInput) ? "vBTC Token" : tokenDescInput;
+
+                    if (string.IsNullOrEmpty(fromAddress) || string.IsNullOrEmpty(fileLocation))
                     {
-
                         Console.WriteLine("\n\nError! Please input all fields: tokenize address and the name.\n");
+                        await ReturnToMenu();
                         return;
                     }
 
-                    // FIND network MCP
-                    if(adnrName != "")
-                        ErrorLogUtility.LogError($"Network MCP Could not be located on testnet.", "BitcoinCommand.TokenizeBitcoin()");
-                    Console.WriteLine("Error Tokenizing BTC. Please Review Logs and Try again.");
-                    Console.WriteLine("Returning you to BTC Menu");
-                    Console.WriteLine("......3");
-                    Thread.Sleep(1000);
-                    Console.WriteLine("......2");
-                    Thread.Sleep(1000);
-                    Console.WriteLine("......1");
-                    Thread.Sleep(1000);
-                    await Bitcoin.BitcoinMenu();
+                    Console.WriteLine("Generating vBTC token contract.");
+                    var scMain = await TokenizationService.CreateTokenizationScMain(fromAddress, fileLocation, tokenName, tokenDesc);
+                    if(scMain == null) 
+                    {
+                        await ReturnToMenu("Failed to generate vBTC token. Please check logs for more.");
+                        return;
+                    }
+                    var createSC = await TokenizationService.CreateTokenizationSmartContract(scMain);
+
+                    if(!createSC.Item1)
+                    {
+                        await ReturnToMenu("Failed to write vBTC token contract. Please check logs for more.");
+                        return;
+                    }
+
+                    var publishSc = await TokenizationService.MintSmartContract(createSC.Item2);
+
+                    if(!publishSc.Item1)
+                    {
+                        await ReturnToMenu($"Failed to publish vBTC token contract. Reason: {publishSc.Item2}. Please check logs for more.");
+                        return;
+                    }
+
+                    AnsiConsole.MarkupLine($"[green]{publishSc.Item2}[/]");
+                    await ReturnToMenu();
                 }
                 else
                 {
-                    Console.WriteLine("No Accounts Found. Returning you to BTC Menu");
-                    Console.WriteLine("......3");
-                    Thread.Sleep(1000);
-                    Console.WriteLine("......2");
-                    Thread.Sleep(1000);
-                    Console.WriteLine("......1");
-                    Thread.Sleep(1000);
-                    await Bitcoin.BitcoinMenu();
+                    await ReturnToMenu("No Accounts Found. Returning you to BTC Menu");
+                    return;
                 }
             }
             catch(Exception ex) 
             {
                 ErrorLogUtility.LogError($"Error Tokenizing BTC. Error: {ex.ToString}", "BitcoinCommand.TokenizeBitcoin()");
             }
+        }
+
+        public static async Task GenerateBTCTokenAddress()
+        {
+            var publishedTokens = await TokenizedBitcoin.GetTokenPublishedNoAddressList();
+
+            if(!publishedTokens.Any())
+            {
+                await ReturnToMenu("No Tokens Found ready for generation.");
+                return;
+            } 
+            var btcAccountNumberList = new Dictionary<string, TokenizedBitcoin>();
+            int count = 1;
+            var table = new Table();
+
+            table.Title("[green]Please select a token to generate a deposit address.[/]").Centered();
+            table.AddColumn(new TableColumn(new Panel("#")));
+            table.AddColumn(new TableColumn(new Panel("Token Name")));
+            table.AddColumn(new TableColumn(new Panel("Token Desc."))).Centered();
+            table.AddColumn(new TableColumn(new Panel("RBX Address")));
+            table.AddColumn(new TableColumn(new Panel("SmartContractUID")));
+
+
+
+
+             publishedTokens.ToList().ForEach(x => {
+                btcAccountNumberList.Add(count.ToString(), x);
+                 var tokDesc = x.TokenDescription.Length > 21 ? x.TokenDescription.Substring(0, 20) : x.TokenDescription.Substring(0, x.TokenDescription.Length - 1);
+                table.AddRow($"[yellow]{count}[/]", 
+                    $"[green]{x.TokenName}[/]", 
+                    $"[green]{tokDesc}[/]", 
+                    $"[blue]{x.RBXAddress}[/]", 
+                    $"[purple]{x.SmartContractUID}[/]");
+                count++;
+            });
+
+            table.Border(TableBorder.Rounded);
+
+            AnsiConsole.Write(table);
+
+            string? walletChoice = "";
+            walletChoice = await ReadLineUtility.ReadLine();
+            while (string.IsNullOrEmpty(walletChoice))
+            {
+                Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
+                walletChoice = await ReadLineUtility.ReadLine();
+            }
+            var wallet = btcAccountNumberList[walletChoice];
+            Console.WriteLine("********************************************************************");
+            Console.WriteLine("From Address address:");
+            string fromAddress = wallet.RBXAddress;
+            Console.WriteLine(fromAddress);
+
+            AnsiConsole.MarkupLine("Starting MPC Connection");
+            await Task.Delay(1000);
+            AnsiConsole.MarkupLine("Connected!");
+            await AnsiConsole.Progress()
+                .Columns(new ProgressColumn[] {
+                    new TaskDescriptionColumn(),    // Task description
+                    new ProgressBarColumn(),        // Progress bar
+                    new PercentageColumn(),         // Percentage
+                    new RemainingTimeColumn(),      // Remaining time
+                    new SpinnerColumn()             // Spinner
+                    })
+                .StartAsync(async ctx =>
+                {
+                    // Define tasks
+                    var task1 = ctx.AddTask("[green]Initiating MPC Protocols[/]");
+                    var task2 = ctx.AddTask("[blue]Share Generation Progress[/]");
+                    var task3 = ctx.AddTask("[purple]Connection Stabilizer Running[/]");
+
+                    while (!ctx.IsFinished)
+                    {
+                        task1.Increment(2.5);
+                        task2.Increment(1.5);
+                        task2.Increment(5.5);
+                        await Task.Delay(200);
+                    }
+                });
         }
 
         public static async Task<string> CreateDnr()
