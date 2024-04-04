@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Utilities
             uint vrfNum = 0;
             var proof = "";
             // Random seed
-            string seed = publicKey + blockHeight.ToString();
+            string seed = publicKey + blockHeight.ToString(); //add previous block hash here!
             
             // Convert the combined input to bytes (using UTF-8 encoding)
             byte[] combinedBytes = Encoding.UTF8.GetBytes(seed);
