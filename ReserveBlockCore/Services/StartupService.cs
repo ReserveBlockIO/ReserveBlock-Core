@@ -26,6 +26,7 @@ using System.Data;
 using System.Diagnostics;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Dealer;
 
 namespace ReserveBlockCore.Services
 {
@@ -417,6 +418,21 @@ namespace ReserveBlockCore.Services
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
                     Thread obj_thread = new Thread(server.StartServer());
                     Console.WriteLine("Beacon Stopped");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        internal static async Task StartDealer()
+        {
+            try
+            {
+                if (Globals.IsDealer)
+                {
+                    _ = DealerServer.Start();
                 }
             }
             catch (Exception ex)

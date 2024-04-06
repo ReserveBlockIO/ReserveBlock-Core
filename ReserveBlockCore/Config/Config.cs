@@ -232,6 +232,7 @@ namespace ReserveBlockCore.Config
             {
                 Globals.ADJPort = 13339;
 				Globals.ValPort = 13339;
+				Globals.DealerPort = 13342;
                 Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;

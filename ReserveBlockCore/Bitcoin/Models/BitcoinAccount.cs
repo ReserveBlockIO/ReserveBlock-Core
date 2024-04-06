@@ -120,7 +120,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Create Bitcoin Address
-        public static BitcoinAccount CreateAddress()
+        public static BitcoinAccount CreateAddress(bool save = true)
         {
             Key privateKey = new Key();
             PubKey publicKey = privateKey.PubKey;
@@ -140,7 +140,8 @@ namespace ReserveBlockCore.Bitcoin.Models
                 WifKey = wif, 
             };
 
-            SaveBitcoinAddress(btcAddress);
+            if(save)
+                SaveBitcoinAddress(btcAddress);
 
             return btcAddress;
         }

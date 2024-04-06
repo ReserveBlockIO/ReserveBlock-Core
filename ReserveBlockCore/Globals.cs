@@ -111,6 +111,7 @@ namespace ReserveBlockCore
         public static int ValPort = 3339;
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
+        public static int DealerPort = 3342;
         public static int APIPort = 7292;
         public static int APIPortSSL = 7777;
         public static int MajorVer = 5;
@@ -203,6 +204,7 @@ namespace ReserveBlockCore
         public static bool LogMemory = false;
         public static bool BlockSeedCalls = false;
         public static bool UseV2BlockDownload = false;
+        public static bool IsDealer = false;
         
         public static CancellationToken CancelledToken;
 
