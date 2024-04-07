@@ -226,6 +226,7 @@ namespace ReserveBlockCore
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString DecryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
+        public static SecureString DealerEncryptPassword = new SecureString();
 
         public static IHttpClientFactory HttpClientFactory;        
 

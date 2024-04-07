@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models
         public bool IsLocked { get; set; }
         public string? Locators { get; set; }
         public long Nonce { get; set; }
+        public bool KeyRevealed { get; set; }
         public bool? IsToken { get; set; }
         public string? MD5List { get; set; }
         public bool? MinterManaged { get; set; }

@@ -423,6 +423,35 @@ namespace ReserveBlockCore.Extensions
 
             return Convert.ToBase64String(array);
         }
+        public static string ToEncrypt(this string source, string passPhrase)
+        {
+            byte[] key = GetKey(passPhrase);
+            byte[] iv = new byte[16];
+            byte[] array;
+
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = key;
+                aes.IV = iv;
+
+                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
+                        {
+                            streamWriter.Write(source);
+                        }
+
+                        array = memoryStream.ToArray();
+                    }
+                }
+            }
+
+            return Convert.ToBase64String(array);
+        }
         public static string ToDecrypt(this string cipherText, string passPhrase)
         {
             try
