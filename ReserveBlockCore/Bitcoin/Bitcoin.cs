@@ -122,6 +122,20 @@ namespace ReserveBlockCore.Bitcoin
                             await Task.Delay(3000);
                         }
                     }
+
+                    var tokenizeList = await TokenizedBitcoin.GetTokenizedList();
+                    if(tokenizeList?.Count != 0)
+                    {
+                        foreach (var address in tokenizeList)
+                        {
+                            if(address.BTCAddress != null)
+                            {
+                                await Explorers.GetAddressInfo(address.BTCAddress, true);
+                                await Task.Delay(5000);
+                            }
+                            
+                        }
+                    }
                 }
                 catch
                 {

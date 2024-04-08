@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Bitcoin.Integrations
 {
     public class MempoolSpace
     {
-        public static async Task GetAddressBalance(string address)
+        public static async Task GetAddressBalance(string address, bool isTokenAddress = false)
         {
             var baseUri = GetBaseURL();
             var uri = $"{baseUri}/address/{address}";
@@ -30,6 +30,11 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                 {
                                     btcAccount.Balance = (response.chain_stats.funded_txo_sum - response.chain_stats.spent_txo_sum) / 100_000_000M;
                                     BitcoinAccount.GetBitcoin()?.UpdateSafe(btcAccount);
+                                }
+                                if (isTokenAddress)
+                                {
+                                    var balance = (response.chain_stats.funded_txo_sum - response.chain_stats.spent_txo_sum) / 100_000_000M;
+                                    await TokenizedBitcoin.UpdateBalance(returnedAddress, balance);
                                 }
                             }
                         }

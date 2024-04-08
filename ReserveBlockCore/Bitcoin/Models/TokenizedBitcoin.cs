@@ -13,6 +13,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public string SmartContractUID { get; set; }
         public string RBXAddress { get; set; }
         public string? BTCAddress { get; set; }
+        public decimal Balance { get; set; }
         public string TokenName { get; set; }
         public string TokenDescription { get; set; }
         public long SmartContractMainId { get; set; }
@@ -39,6 +40,19 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
 
             return null;
+        }
+        public static async Task UpdateBalance(string address, decimal balance)
+        {
+            var scs = GetDb();
+            if (scs != null)
+            {
+                var sc = scs.FindOne(x => x.BTCAddress == address);
+                if (sc != null)
+                {
+                    sc.Balance = balance;
+                    scs.UpdateSafe(sc);
+                }
+            }
         }
 
         public static async Task<List<TokenizedBitcoin>> GetTokenPublishedNoAddressList()

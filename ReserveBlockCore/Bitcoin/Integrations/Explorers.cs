@@ -5,19 +5,19 @@ namespace ReserveBlockCore.Bitcoin.Integrations
     public class Explorers
     {
         public static ConcurrentDictionary<ExplorersEnum, int> ExplorerDictionary { get; set; }
-        public static async Task GetAddressInfo(string address)
+        public static async Task GetAddressInfo(string address, bool isTokenAddress = false)
         {
             //get balance
             var explorer = ExplorerDictionary.OrderBy(x => x.Value).FirstOrDefault();
             
             if(explorer.Key == ExplorersEnum.MempoolSpace)
             {
-                await MempoolSpace.GetAddressBalance(address);
+                await MempoolSpace.GetAddressBalance(address, isTokenAddress);
                 ExplorerDictionary.TryUpdate(explorer.Key, (explorer.Value + 1), explorer.Value);
             }
             else if(explorer.Key == ExplorersEnum.Blockstream)
             {
-                await Blockstream.GetAddressBalance(address);
+                await Blockstream.GetAddressBalance(address, isTokenAddress);
                 ExplorerDictionary.TryUpdate(explorer.Key, (explorer.Value + 1), explorer.Value);
             }
             else
@@ -25,21 +25,24 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                 //no explorers are available, log error.
             }
 
-            //get utxo spend
-            var explorerUTXO = ExplorerDictionary.OrderBy(x => x.Value).FirstOrDefault();
-            if (explorerUTXO.Key == ExplorersEnum.MempoolSpace)
+            if(!isTokenAddress) 
             {
-                await MempoolSpace.GetAddressUTXO(address);
-                ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
-            }
-            else if (explorerUTXO.Key == ExplorersEnum.Blockstream)
-            {
-                await Blockstream.GetAddressUTXO(address);
-                ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
-            }
-            else
-            {
-                //no explorers are available, log error.
+                //get utxo spend
+                var explorerUTXO = ExplorerDictionary.OrderBy(x => x.Value).FirstOrDefault();
+                if (explorerUTXO.Key == ExplorersEnum.MempoolSpace)
+                {
+                    await MempoolSpace.GetAddressUTXO(address);
+                    ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
+                }
+                else if (explorerUTXO.Key == ExplorersEnum.Blockstream)
+                {
+                    await Blockstream.GetAddressUTXO(address);
+                    ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
+                }
+                else
+                {
+                    //no explorers are available, log error.
+                }
             }
         }
 

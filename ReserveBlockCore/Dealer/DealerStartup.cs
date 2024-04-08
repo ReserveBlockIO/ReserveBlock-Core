@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Services;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.SecretSharing.Cryptography;
 using ReserveBlockCore.SecretSharing.Math;
 using ReserveBlockCore.Utilities;
@@ -54,6 +55,24 @@ namespace ReserveBlockCore.Dealer
                     {
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
                         var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Smart Contract UID" }, Formatting.Indented);
+                        await context.Response.WriteAsync(response);
+                        return;
+                    }
+
+                    var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                    if(sc == null)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Token not found in State Trei." }, Formatting.Indented);
+                        await context.Response.WriteAsync(response);
+                        return;
+                    }
+
+                    if(sc.OwnerAddress != address)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Token Owner does not match. State Address: {sc.OwnerAddress} / URL Address: {address}" }, Formatting.Indented);
                         await context.Response.WriteAsync(response);
                         return;
                     }
