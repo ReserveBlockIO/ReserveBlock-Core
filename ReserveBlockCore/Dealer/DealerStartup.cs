@@ -110,12 +110,14 @@ namespace ReserveBlockCore.Dealer
 
                         //TODO: DONE
                         //Save Shares here
-                        var share = new Shares { SCUID = scUID, Share = share1, IsEncrypted = false };
+                        var share = new Shares { SCUID = scUID, Share = share1.ToEncrypt(Globals.DealerEncryptPassword.ToUnsecureString()), IsEncrypted = true };
                         Shares.SaveShare(share);
 
-                        //TODO:
+                        //TODO: DONE
                         //Put other share into memory - DONT SAVE
                         var memoryShare = new Shares { SCUID = scUID, Share = share4, IsEncrypted = false };
+                        var btcMemShare = new BitcoinValShares { CreateDate = TimeUtil.GetTime(), Share = memoryShare, RemoveDate = TimeUtil.GetTime(0,0,0,1) };
+                        Globals.DealerValidatorShares.TryAdd(scUID, btcMemShare);
 
                         //TODO:DONE
                         //Encrypt the share3 below before sending.

@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Models
         {
             try
             {
-                var proofResult = ProofUtility.VerifyProofSync(PublicKey, BlockHeight, ProofHash);
+                var proofResult = ProofUtility.VerifyProof(PublicKey, BlockHeight, ProofHash);
 
                 return proofResult;
             }

@@ -744,6 +744,16 @@ namespace ReserveBlockCore.Services
                 .Select(x => x.Transactions.Select(y => new { y.Hash, x.Height})).SelectMany(x => x).ToDictionary(x => x.Hash, x => x.Height));
         }
 
+        internal static void StartupBlockHashes()
+        {
+            var blockChain = BlockchainData.GetBlocks();
+            Globals.BlockHashes = new ConcurrentDictionary<long, string>(
+                blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending)).Take(400)
+                    .Select(x => new { x.Hash, x.Height })
+                    .ToDictionary(x => x.Height, x => x.Hash)
+                );
+        }
+
         public static async Task ConnectToConsensusNodes()
         {
             if (Globals.AdjudicateAccount == null)

@@ -10,18 +10,29 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             var appendChar = "\"|->\"";
             StringBuilder strTknzBld = new StringBuilder();
 
+            var depositAddress = !string.IsNullOrWhiteSpace(tknz.DepositAddress) ? tknz.DepositAddress.ToString() : "{DEPO_ADDR}";
+            var share = !string.IsNullOrWhiteSpace(tknz.Share) ? tknz.Share.ToString() : "{SHARES_REPLACE}";
+            var backupShare = !string.IsNullOrWhiteSpace(tknz.BackupShare) ? tknz.BackupShare.ToString() : "{SHARES_BACKUP_REPLACE}";
+            var txHash = !string.IsNullOrWhiteSpace(tknz.KeyRevealRequestHash) ? tknz.KeyRevealRequestHash.ToString() : "{TX_HASH}";
+
             strBuild.AppendLine("let AssetName = \"" + tknz.AssetName + "\"");
             strBuild.AppendLine("let AssetTicker = \"" + tknz.AssetTicker + "\"");
-            strBuild.AppendLine("let AssetDepositAddress = \"" + "{DEPO_ADDR}" + "\"");
-            strBuild.AppendLine("let KeyRevealRequestHash = \"" + "{TX_HASH}" + "\"");
-            strBuild.AppendLine("let KeyRevealed = false");
+            strBuild.AppendLine("let AssetDepositAddress = \"" + depositAddress + "\"");
+            strBuild.AppendLine("let KeyRevealRequestHash = \"" + txHash + "\"");
 
-            strTknzBld.AppendLine("function GetDepositAddressShares() : string");
+            strTknzBld.AppendLine("function GetDepositAddressShare() : string");
             strTknzBld.AppendLine("{");
-            strTknzBld.AppendLine("   var shares =  \"" + "{SHARES_REPLACE}" + "\"");
-            strTknzBld.AppendLine("   return (shares)");
+            strTknzBld.AppendLine("   var share =  \"" + share + "\"");
+            strTknzBld.AppendLine("   return (share)");
             strTknzBld.AppendLine("}");
 
+            strTknzBld.AppendLine("function GetDepositAddressShareBackup() : string");
+            strTknzBld.AppendLine("{");
+            strTknzBld.AppendLine("   var backupShare =  \"" + backupShare + "\"");
+            strTknzBld.AppendLine("   return (backupShare)");
+            strTknzBld.AppendLine("}");
+            
+            
             return (strBuild, strTknzBld);
         }
     }

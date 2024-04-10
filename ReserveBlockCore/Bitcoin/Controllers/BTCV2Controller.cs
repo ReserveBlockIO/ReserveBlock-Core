@@ -543,19 +543,12 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         [HttpGet("GenerateTokenizedAddress/{scUID}")]
         public async Task<string> GenerateTokenizedAddress(string scUID)
         {
-            var shares = await TokenizationService.AddressGenerationMutation(scUID);
+            var result = await TokenizationService.GenerateAddress(scUID);
 
-            if(shares.Any())
-            {
-                var result = await TokenizationService.GenerateAddressFromMPC();
+            if(result == "FAIL")
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to Produce valid shares and address." });
 
-                if(result == "FAIL")
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to Produce valid shares and address." });
-
-                return JsonConvert.SerializeObject(new { Success = true, Message = $"", Address = result });
-            }
-
-            return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to Produce valid shares and address." });
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Address Generated. Verify TX was sent and confirmed before depositing.", Address = result });
         }
 
         /// <summary>

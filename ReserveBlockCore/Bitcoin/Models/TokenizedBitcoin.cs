@@ -3,6 +3,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ReserveBlockCore.Bitcoin.Models
 {
@@ -192,6 +193,19 @@ namespace ReserveBlockCore.Bitcoin.Models
             {
                 NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
                 "TokenizedBitcoin.SaveSCLocally(SmartContractMain scMain, string scText)");
+            }
+        }
+
+        public static async Task AddDepositAddress(string scUID, string btcAddress)
+        {
+            var scs = GetDb();
+
+            var scMain = GetTokenContract(scUID);
+
+            if (scMain != null)
+            {
+                scMain.BTCAddress = btcAddress;
+                scs.UpdateSafe(scMain);
             }
         }
     }

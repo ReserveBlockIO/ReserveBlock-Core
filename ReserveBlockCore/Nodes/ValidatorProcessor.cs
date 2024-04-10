@@ -561,7 +561,7 @@ namespace ReserveBlockCore.Nodes
                             {
                                 if (winningProof != null)
                                 {
-                                    if (ProofUtility.VerifyProofSync(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
+                                    if (ProofUtility.VerifyProof(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
                                     {
                                         Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
                                     }

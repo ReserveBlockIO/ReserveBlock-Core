@@ -211,6 +211,9 @@ namespace ReserveBlockCore.Data
                                     case "Mint()":
                                         AddNewlyMintedContract(tx);
                                         break;
+                                    case "Update()":
+                                        UpdateSmartContract(tx);
+                                        break;
                                     case "Transfer()":
                                         TransferSmartContract(tx);
                                         break;
@@ -1151,6 +1154,35 @@ namespace ReserveBlockCore.Data
                 //Save to state trei
                 SmartContractStateTrei.SaveSmartContract(scST);
             }
+        }
+        private static void UpdateSmartContract(Transaction tx)
+        {
+            try
+            {
+                SmartContractStateTrei scST = new SmartContractStateTrei();
+                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                var scData = scDataArray[0];
+                if (scData != null)
+                {
+                    var function = (string?)scData["Function"];
+                    var data = (string?)scData["Data"];
+                    var scUID = (string?)scData["ContractUID"];
+
+                    if (scUID != null)
+                    {
+                        var scMain = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                        if(scMain != null)
+                        {
+                            //Update state level contract data.
+                            scMain.ContractData = data;
+                            SmartContractStateTrei.UpdateSmartContract(scMain);
+                        }
+                    }
+                }
+            }
+            catch { }
+            
         }
         private static void TransferSmartContract(Transaction tx)
         {

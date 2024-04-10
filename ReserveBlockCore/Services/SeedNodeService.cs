@@ -159,6 +159,17 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async Task GetDealerFromSeed()
+        {
+            if(Globals.IsTestNet)
+            {
+                Globals.DealerURI = $"http://162.248.14.123:{Globals.DealerPort}";
+            }
+            else
+            {
+                //TODO: Call to Seed for Dealer Seed
+            }
+        }
 
         public static async Task GetSeedNodePeersTestnet()
         {

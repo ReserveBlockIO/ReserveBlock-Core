@@ -31,6 +31,17 @@ namespace ReserveBlockCore.Services
             }            
         }
 
+        public static void UpdateMemBlocksHashes(Block block)
+        {
+            Globals.BlockHashes[block.Height] = block.Hash;
+
+            var HeightDiff = Globals.LastBlock.Height - 400;
+            foreach (var pair in Globals.BlockHashes.Where(x => x.Key <= HeightDiff))
+            {
+                Globals.BlockHashes.TryRemove(pair.Key, out _);
+            }
+        }
+
         public static async Task ValidationDelay()
         {
             await ValidateBlocks();
@@ -511,7 +522,8 @@ namespace ReserveBlockCore.Services
 
                         await BlockchainData.AddBlock(block, updateCLI);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
-                            
+                        UpdateMemBlocksHashes(block);
+
                         await StateData.UpdateTreis(block); //update treis
                         await ReserveService.Run(); //updates treis for reserve pending txs
 

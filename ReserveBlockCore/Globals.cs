@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
@@ -154,6 +155,7 @@ namespace ReserveBlockCore
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
         public static string GenesisValidator = "";
+        public static string DealerURI = "";
 
         public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;
@@ -209,6 +211,7 @@ namespace ReserveBlockCore
         public static CancellationToken CancelledToken;
 
         public static ConcurrentDictionary<string, long> MemBlocks = new ConcurrentDictionary<string, long>();
+        public static ConcurrentDictionary<long, string> BlockHashes = new ConcurrentDictionary<long, string>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, AdjBench> AdjBench = new ConcurrentDictionary<string, AdjBench>(); // IP Address:Key
         public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
@@ -221,6 +224,7 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
         public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
         public static ConcurrentBag<StunServer> STUNServers = new ConcurrentBag<StunServer>();
+        public static ConcurrentDictionary<string, BitcoinValShares> DealerValidatorShares = new ConcurrentDictionary<string, BitcoinValShares>();
 
 
         public static SecureString EncryptPassword = new SecureString();

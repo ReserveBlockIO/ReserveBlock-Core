@@ -394,6 +394,9 @@ namespace ReserveBlockCore.Services
                                             if (stateAccount == null)
                                                 return (txResult, "Could not find account at state level.");
 
+                                            if(scStateTreiRec.KeyRevealed)
+                                                return (txResult, "Key has been revealed. This token may no longer be transferred.");
+
                                             var tokenDetails = scStateTreiRec.TokenDetails;
 
                                             if(tokenDetails == null)
@@ -562,7 +565,27 @@ namespace ReserveBlockCore.Services
 
                                             break;
                                         }
+                                    case "Update()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                    return (txResult, "You are attempting to update a SC you don't own.");
 
+                                                if (scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to update a SC that is locked.");
+
+                                                if (scStateTreiRec.NextOwner != null)
+                                                    return (txResult, "You are attempting to update a SC that has a new owner assigned to it.");
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "SC does not exist.");
+                                            }
+
+                                            break;
+                                        }
                                     case "Transfer()":
                                         {
                                             var toAddress = (string?)scData["ToAddress"];

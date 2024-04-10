@@ -44,7 +44,13 @@ namespace ReserveBlockCore.Utilities
             uint vrfNum = 0;
             var proof = "";
             // Random seed
-            string seed = publicKey + blockHeight.ToString(); //add previous block hash here!
+            string seed = publicKey + blockHeight.ToString();
+            if (Globals.BlockHashes.Count > 10)
+            {
+                var height = blockHeight - 7;
+                seed = seed + Globals.BlockHashes[height].ToString();
+            }
+            //add previous block hash here!
             
             // Convert the combined input to bytes (using UTF-8 encoding)
             byte[] combinedBytes = Encoding.UTF8.GetBytes(seed);
@@ -73,6 +79,11 @@ namespace ReserveBlockCore.Utilities
                 var proof = "";
                 // Random seed
                 string seed = publicKey + blockHeight.ToString();
+                if (Globals.BlockHashes.Count > 10)
+                {
+                    var height = blockHeight - 7;
+                    seed = seed + Globals.BlockHashes[height].ToString();
+                }
 
                 // Convert the combined input to bytes (using UTF-8 encoding)
                 byte[] combinedBytes = Encoding.UTF8.GetBytes(seed);
@@ -99,7 +110,7 @@ namespace ReserveBlockCore.Utilities
             
         }
 
-        public static bool VerifyProofSync(string publicKey, long blockHeight, string proofHash)
+        public static bool VerifyProof(string publicKey, long blockHeight, string proofHash)
         {
             try
             {

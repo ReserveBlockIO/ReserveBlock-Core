@@ -8,6 +8,9 @@ using ReserveBlockCore.Utilities;
 using System.Text;
 using ReserveBlockCore.Bitcoin.Models;
 using System.IO;
+using System;
+using ReserveBlockCore.Data;
+using ReserveBlockCore.Dealer;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -185,23 +188,83 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
         }
 
-        public static async Task<string> GenerateAddressFromMPC()
+        public static async Task<string> GenerateAddress(string scUID)
         {
             try
             {
-                Random random = new Random();
-                string address = "btc"; // btc-like address format
-                for (int i = 0; i < 40; i++)
+                using (var client = Globals.HttpClientFactory.CreateClient())
                 {
-                    address += random.Next(16).ToString("X"); // Random hexadecimal digit
+                    var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if (sc == null)
+                        return "FAIL";
+
+                    var account = AccountData.GetSingleAccount(sc.OwnerAddress);
+
+                    if (account == null)
+                        return "FAIL";
+
+                    var message = TimeUtil.GetTime(1);
+                    var signature = SignatureService.CreateSignature(account.PrivateKey, message.ToString());
+                    string url = $"{Globals.DealerURI}/depositaddress/{account.Address}/{scUID}/{message}/{signature}";
+                    var response = await client.GetAsync(url);
+
+                    if(response != null)
+                    {
+                        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            var responseContent = await response.Content.ReadAsStringAsync();
+                            if (responseContent != null)
+                            {
+                                DealerResponse.DealerAddressRequest? dealerResponse = JsonConvert.DeserializeObject<DealerResponse.DealerAddressRequest>(responseContent);
+                                if (dealerResponse == null)
+                                    return "FAIL";
+
+                                //Add Deposit address to token tool
+                                await TokenizedBitcoin.AddDepositAddress(scUID, dealerResponse.Address);
+
+                                //Update SCMain
+                                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                if(scMain != null)
+                                {
+                                    var nonTokenizedFeatures = scMain.Features?.Where(x => x.FeatureName != FeatureName.Tokenization).ToList();
+                                    var tokenFeature = scMain.Features?.Where(x => x.FeatureName == FeatureName.Tokenization).FirstOrDefault();
+                                    if(tokenFeature != null)
+                                    {
+                                        var tokenization = (TokenizationFeature)tokenFeature.FeatureFeatures;
+                                        tokenization.DepositAddress = dealerResponse.Address;
+                                        tokenization.Share = dealerResponse.Share;
+                                        tokenization.BackupShare = dealerResponse.EncryptedShare;
+
+                                        //This may not be necessary will need to step through code.
+                                        if(nonTokenizedFeatures?.Count > 0)
+                                        {
+                                            nonTokenizedFeatures.Add(tokenFeature);
+                                            scMain.Features = nonTokenizedFeatures;
+                                        }
+                                        else
+                                        {
+                                            scMain.Features = new List<SmartContractFeatures> { tokenFeature };
+                                        }
+
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+                                    //TODO Create TX:
+                                    _ = SmartContractService.UpdateSmartContractTX(scMain);
+
+                                    return dealerResponse.Address;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return "FAIL";
+                        }
+                    }
                 }
-
-                if (address.Length > 100)
-                    throw new Exception("Error: Unable to connect to MPC to generate address.");
-
-                return address;
             }
             catch(Exception ex) { return "FAIL"; }
+
+            return "FAIL";
         }
 
         public static async Task<List<string>> AddressGenerationMutation(string scUID)

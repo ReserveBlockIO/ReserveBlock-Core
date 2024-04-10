@@ -285,6 +285,36 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             }
                                             break;
                                         }
+                                    case FeatureName.Tokenization:
+                                        {
+                                            var assetName = repl.Run(@"AssetName").Value;
+                                            var assetTicker = repl.Run(@"AssetTicker").Value;
+                                            var depositAddress = repl.Run(@"AssetDepositAddress").Value;
+                                            var keyRevealTxHash = repl.Run(@"KeyRevealRequestHash").Value;
+
+                                            var share = repl.Run(@"GetDepositAddressShare()").Value;
+                                            var backupShare = repl.Run(@"GetDepositAddressShareBackup()").Value;
+
+                                            if(assetName != null && assetTicker != null && depositAddress != null && keyRevealTxHash != null && share != null && backupShare != null)
+                                            {
+                                                TokenizationFeature tokenizationFeature = new TokenizationFeature
+                                                {
+                                                    AssetName = assetName.ToString(),
+                                                    AssetTicker = assetTicker.ToString(),
+                                                    BackupShare = backupShare.ToString() == "{SHARES_BACKUP_REPLACE}" ? null : backupShare.ToString(),
+                                                    DepositAddress = depositAddress.ToString() == "{DEPO_ADDR}" ? null : depositAddress.ToString(),
+                                                    KeyRevealRequestHash = keyRevealTxHash.ToString() == "{TX_HASH}" ? null : keyRevealTxHash.ToString(),
+                                                    Share = share.ToString() == "{SHARES_REPLACE}" ? null : share.ToString(),
+                                                };
+
+                                                scFeature.FeatureName = FeatureName.Tokenization;
+                                                scFeature.FeatureFeatures = tokenizationFeature;
+
+                                                featuresList.Add(scFeature);
+                                            }
+
+                                            break;
+                                        }
                                     case FeatureName.MultiAsset:
                                         var multiAssetList = new List<string>();
                                         var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -342,7 +372,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             }
                         }
-                        else
+                        else /////////////////////////////////////////////////////////////////////////////////////////////////////
                         {
                             SmartContractFeatures scFeature = new SmartContractFeatures();
                             var featureName = (FeatureName)Convert.ToInt32(feats);
@@ -373,6 +403,37 @@ namespace ReserveBlockCore.Models.SmartContracts
                                                 smartContractMain.IsToken = true;
                                             }
                                         }
+                                        break;
+                                    }
+
+                                case FeatureName.Tokenization:
+                                    {
+                                        var assetName = repl.Run(@"AssetName").Value;
+                                        var assetTicker = repl.Run(@"AssetTicker").Value;
+                                        var depositAddress = repl.Run(@"AssetDepositAddress").Value;
+                                        var keyRevealTxHash = repl.Run(@"KeyRevealRequestHash").Value;
+
+                                        var share = repl.Run(@"GetDepositAddressShare()").Value;
+                                        var backupShare = repl.Run(@"GetDepositAddressShareBackup()").Value;
+
+                                        if (assetName != null && assetTicker != null && depositAddress != null && keyRevealTxHash != null && share != null && backupShare != null)
+                                        {
+                                            TokenizationFeature tokenizationFeature = new TokenizationFeature
+                                            {
+                                                AssetName = assetName.ToString(),
+                                                AssetTicker = assetTicker.ToString(),
+                                                BackupShare = backupShare.ToString() == "{SHARES_BACKUP_REPLACE}" ? null : backupShare.ToString(),
+                                                DepositAddress = depositAddress.ToString() == "{DEPO_ADDR}" ? null : depositAddress.ToString(),
+                                                KeyRevealRequestHash = keyRevealTxHash.ToString() == "{TX_HASH}" ? null : keyRevealTxHash.ToString(),
+                                                Share = share.ToString() == "{SHARES_REPLACE}" ? null : share.ToString(),
+                                            };
+
+                                            scFeature.FeatureName = FeatureName.Tokenization;
+                                            scFeature.FeatureFeatures = tokenizationFeature;
+
+                                            featuresList.Add(scFeature);
+                                        }
+
                                         break;
                                     }
                                 case FeatureName.MultiAsset:
