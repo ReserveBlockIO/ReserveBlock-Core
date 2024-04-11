@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Utilities
             var proof = "";
             // Random seed
             string seed = publicKey + blockHeight.ToString();
-            if (Globals.BlockHashes.Count >= 10)
+            if (Globals.BlockHashes.Count >= 35)
             {
                 var height = blockHeight - 7;
                 seed = seed + Globals.BlockHashes[height].ToString();
@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Utilities
                 var proof = "";
                 // Random seed
                 string seed = publicKey + blockHeight.ToString();
-                if (Globals.BlockHashes.Count >= 10)
+                if (Globals.BlockHashes.Count >= 35)
                 {
                     var height = blockHeight - 7;
                     seed = seed + Globals.BlockHashes[height].ToString();
@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Utilities
                 var proof = "";
                 // Random seed
                 string seed = publicKey + blockHeight.ToString();
-                if (Globals.BlockHashes.Count >= 10)
+                if (Globals.BlockHashes.Count >= 35)
                 {
                     var height = blockHeight - 7;
                     seed = seed + Globals.BlockHashes[height].ToString();
