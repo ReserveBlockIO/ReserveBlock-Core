@@ -1236,9 +1236,11 @@ namespace ReserveBlockCore.Services
                                     if (!messageParse)
                                         return (txResult, "Improper Message Format. Message must be a timestamp.");
 
-                                    if (messageTimestamp < TimeUtil.GetTime(0, -30))
-                                        return (txResult, "Signature message is too old. Please resubmit a new tx.");
-
+                                    if (!blockDownloads)
+                                    {
+                                        if (messageTimestamp < TimeUtil.GetTime(0, -30))
+                                            return (txResult, "Signature message is too old. Please resubmit a new tx.");
+                                    }
                                 }
                             }
 
