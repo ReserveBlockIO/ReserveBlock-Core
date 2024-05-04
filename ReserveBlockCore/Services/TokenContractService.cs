@@ -151,7 +151,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.FTKN_MINT,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = null
                 };
