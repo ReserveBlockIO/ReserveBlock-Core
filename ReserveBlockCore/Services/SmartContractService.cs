@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Services
                 Amount = 0.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(scMain.MinterAddress),
-                TransactionType = txType,
+                TransactionType = scData.Item3 ? TransactionType.TKNZ_MINT : txType,
                 Data = txData
             };
 
