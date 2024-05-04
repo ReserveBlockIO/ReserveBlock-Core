@@ -254,7 +254,7 @@ namespace ReserveBlockCore.Controllers
                 else
                 {
                     scs = SmartContractMain.SmartContractData.GetSCs()
-                   .FindAll()
+                   .Find(x => x.Features == null || !x.Features.Any(x => x.FeatureName != FeatureName.Tokenization))
                    .ToList();
                 }
 
