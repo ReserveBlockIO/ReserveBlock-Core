@@ -511,7 +511,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if (!createSC.Item1)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to write vBTC token contract. Please check logs for more." });
 
-                var publishSc = await TokenizationService.MintSmartContract(createSC.Item2, true);
+                var publishSc = await TokenizationService.MintSmartContract(createSC.Item2, true, TransactionType.TKNZ_MINT);
 
                 if(!publishSc.Item1)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed To Produce a Valid TX. Reason: {publishSc.Item2}" });

@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = rAccount != null ? TimeUtil.GetReserveTime(unlockTime) : null
                 };
@@ -151,7 +151,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_MINT,
                     Data = txData,
                     UnlockTime = null
                 };
@@ -254,7 +254,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = rAccount != null ? TimeUtil.GetReserveTime(unlockTime) : null
                 };
@@ -356,7 +356,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = null
                 };
@@ -455,7 +455,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = null
                 };
@@ -554,7 +554,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = null
                 };
@@ -652,7 +652,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = null
                 };
@@ -755,7 +755,7 @@ namespace ReserveBlockCore.Services
                     Amount = 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
-                    TransactionType = TransactionType.NFT_TX,
+                    TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
                     UnlockTime = rAccount != null ? TimeUtil.GetReserveTime(unlockTime) : null
                 };

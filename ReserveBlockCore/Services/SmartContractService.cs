@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Services
     public static class SmartContractService
     {
         #region MintSmartContractTx
-        public static async Task<Transaction?> MintSmartContractTx(SmartContractMain scMain)
+        public static async Task<Transaction?> MintSmartContractTx(SmartContractMain scMain, TransactionType txType = TransactionType.NFT_MINT)
         {
             Transaction? scTx = null;
 
@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Services
 
             if(scStateTrei != null)
             {
-                NFTLogUtility.Log($"This NFT has already be minted : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"This SC has already be minted : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;// record already exist
             }
 
@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Services
                 Amount = 0.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(scMain.MinterAddress),
-                TransactionType = TransactionType.NFT_MINT,
+                TransactionType = txType,
                 Data = txData
             };
 
@@ -81,7 +81,7 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((scTx.Amount + scTx.Fee) > senderBalance)
             {
-                NFTLogUtility.Log($"Balance insufficient to send NFT : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"Balance insufficient to send SC : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;//balance insufficient
             }
 
@@ -92,7 +92,7 @@ namespace ReserveBlockCore.Services
             var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR")
             {
-                NFTLogUtility.Log($"Signing NFT TX failed : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"Signing SC TX failed : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null; //TX sig failed
             }
 
@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region
+        #region Update SC for BTC Tokenize
 
         public static async Task<Transaction?> UpdateSmartContractTX(SmartContractMain scMain)
         {
@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Services
 
             if (scStateTrei != null)
             {
-                NFTLogUtility.Log($"This NFT has already be minted : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"This SC has already be minted : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;// record already exist
             }
 
@@ -215,7 +215,7 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((scTx.Amount + scTx.Fee) > senderBalance)
             {
-                NFTLogUtility.Log($"Balance insufficient to send NFT : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"Balance insufficient to send SC : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;//balance insufficient
             }
 
@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Services
             var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR")
             {
-                NFTLogUtility.Log($"Signing NFT TX failed : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                NFTLogUtility.Log($"Signing SC TX failed : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null; //TX sig failed
             }
 

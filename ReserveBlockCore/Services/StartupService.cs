@@ -26,7 +26,7 @@ using System.Data;
 using System.Diagnostics;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models.DST;
-using ReserveBlockCore.Dealer;
+using ReserveBlockCore.Arbiter;
 
 namespace ReserveBlockCore.Services
 {
@@ -426,13 +426,13 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static async Task StartDealer()
+        internal static async Task StartArbiter()
         {
             try
             {
-                if (Globals.IsDealer)
+                if (Globals.IsArbiter)
                 {
-                    _ = DealerServer.Start();
+                    _ = ArbiterServer.Start();
                 }
             }
             catch (Exception ex)

@@ -112,7 +112,7 @@ namespace ReserveBlockCore
         public static int ValPort = 3339;
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
-        public static int DealerPort = 3342;
+        public static int ArbiterPort = 3342;
         public static int APIPort = 7292;
         public static int APIPortSSL = 7777;
         public static int MajorVer = 5;
@@ -155,7 +155,7 @@ namespace ReserveBlockCore
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
         public static string GenesisValidator = "";
-        public static string DealerURI = "";
+        public static string ArbiterURI = "";
 
         public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;
@@ -206,7 +206,7 @@ namespace ReserveBlockCore
         public static bool LogMemory = false;
         public static bool BlockSeedCalls = false;
         public static bool UseV2BlockDownload = false;
-        public static bool IsDealer = false;
+        public static bool IsArbiter = false;
         
         public static CancellationToken CancelledToken;
 
@@ -224,13 +224,13 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
         public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
         public static ConcurrentBag<StunServer> STUNServers = new ConcurrentBag<StunServer>();
-        public static ConcurrentDictionary<string, BitcoinValShares> DealerValidatorShares = new ConcurrentDictionary<string, BitcoinValShares>();
+        public static ConcurrentDictionary<string, BitcoinValShares> ArbiterValidatorShares = new ConcurrentDictionary<string, BitcoinValShares>();
 
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString DecryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
-        public static SecureString DealerEncryptPassword = new SecureString();
+        public static SecureString ArbiterEncryptPassword = new SecureString();
 
         public static IHttpClientFactory HttpClientFactory;        
 

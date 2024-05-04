@@ -194,8 +194,18 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.TransactionType != TransactionType.TX)
             {
-                if (txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT
-                    || txRequest.TransactionType == TransactionType.NFT_BURN)
+                if (txRequest.TransactionType == TransactionType.NFT_TX 
+                    || txRequest.TransactionType == TransactionType.NFT_MINT
+                    || txRequest.TransactionType == TransactionType.NFT_BURN 
+                    || txRequest.TransactionType == TransactionType.FTKN_MINT 
+                    || txRequest.TransactionType == TransactionType.FTKN_TX
+                    || txRequest.TransactionType == TransactionType.FTKN_BURN 
+                    || txRequest.TransactionType == TransactionType.TKNZ_MINT 
+                    || txRequest.TransactionType == TransactionType.TKNZ_TX
+                    || txRequest.TransactionType == TransactionType.TKNZ_BURN 
+                    || txRequest.TransactionType == TransactionType.SC_MINT 
+                    || txRequest.TransactionType == TransactionType.SC_TX
+                    || txRequest.TransactionType == TransactionType.SC_BURN)
                 {
                     try
                     {

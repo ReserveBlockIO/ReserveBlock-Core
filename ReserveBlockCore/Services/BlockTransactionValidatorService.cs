@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Services
                 }
                 
             }
-            if (tx.TransactionType == TransactionType.NFT_TX)
+            if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.FTKN_TX)
             {
                 string scUID = "";
                 string function = "";
@@ -185,7 +185,10 @@ namespace ReserveBlockCore.Services
             {
                 if(!Globals.IgnoreIncomingNFTs)
                 {
-                    if (tx.TransactionType == TransactionType.NFT_MINT)
+                    if (tx.TransactionType == TransactionType.NFT_MINT || 
+                        tx.TransactionType == TransactionType.FTKN_MINT || 
+                        tx.TransactionType == TransactionType.TKNZ_MINT ||
+                        tx.TransactionType == TransactionType.SC_MINT)
                     {
                         NFTLogUtility.Log($"NFT TX Detected (Mint): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                         var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -209,7 +212,8 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
-                    if (tx.TransactionType == TransactionType.NFT_TX)
+                    if (tx.TransactionType == TransactionType.NFT_TX || 
+                        tx.TransactionType == TransactionType.FTKN_TX)
                     {
                         NFTLogUtility.Log($"NFT TX Detected (TX): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                         string function = "";
@@ -424,7 +428,11 @@ namespace ReserveBlockCore.Services
 
             if (tx.TransactionType != TransactionType.TX)
             {
-                if (tx.TransactionType == TransactionType.NFT_TX)
+                if (tx.TransactionType == TransactionType.NFT_TX || 
+                    tx.TransactionType == TransactionType.FTKN_TX ||
+                    tx.TransactionType == TransactionType.FTKN_MINT ||
+                    tx.TransactionType == TransactionType.FTKN_BURN ||
+                    tx.TransactionType == TransactionType.TKNZ_TX)
                 {
                     string scUID = "";
                     string function = "";

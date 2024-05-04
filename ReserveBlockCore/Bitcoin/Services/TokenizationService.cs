@@ -10,7 +10,7 @@ using ReserveBlockCore.Bitcoin.Models;
 using System.IO;
 using System;
 using ReserveBlockCore.Data;
-using ReserveBlockCore.Dealer;
+using ReserveBlockCore.Arbiter;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -145,7 +145,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
         }
 
-        public static async Task<(bool, string)> MintSmartContract(string id, bool returnTx = false)
+        public static async Task<(bool, string)> MintSmartContract(string id, bool returnTx = false, TransactionType txType = TransactionType.NFT_MINT)
         {
             try
             {
@@ -164,7 +164,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 }
                 else
                 {
-                    var scTx = await SmartContractService.MintSmartContractTx(scMain);
+                    var scTx = await SmartContractService.MintSmartContractTx(scMain, txType);
                     if (scTx == null)
                     {
                         NFTLogUtility.Log($"Failed to publish smart contract: {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                     var message = TimeUtil.GetTime(1);
                     var signature = SignatureService.CreateSignature(account.PrivateKey, message.ToString());
-                    string url = $"{Globals.DealerURI}/depositaddress/{account.Address}/{scUID}/{message}/{signature}";
+                    string url = $"{Globals.ArbiterURI}/depositaddress/{account.Address}/{scUID}/{message}/{signature}";
                     var response = await client.GetAsync(url);
 
                     if(response != null)
@@ -215,12 +215,12 @@ namespace ReserveBlockCore.Bitcoin.Services
                             var responseContent = await response.Content.ReadAsStringAsync();
                             if (responseContent != null)
                             {
-                                DealerResponse.DealerAddressRequest? dealerResponse = JsonConvert.DeserializeObject<DealerResponse.DealerAddressRequest>(responseContent);
-                                if (dealerResponse == null)
+                                ArbiterResponse.ArbiterAddressRequest? arbiterResponse = JsonConvert.DeserializeObject<ArbiterResponse.ArbiterAddressRequest>(responseContent);
+                                if (arbiterResponse == null)
                                     return "FAIL";
 
                                 //Add Deposit address to token tool
-                                await TokenizedBitcoin.AddDepositAddress(scUID, dealerResponse.Address);
+                                await TokenizedBitcoin.AddDepositAddress(scUID, arbiterResponse.Address);
 
                                 //Update SCMain
                                 var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
@@ -231,9 +231,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                                     if(tokenFeature != null)
                                     {
                                         var tokenization = (TokenizationFeature)tokenFeature.FeatureFeatures;
-                                        tokenization.DepositAddress = dealerResponse.Address;
-                                        tokenization.Share = dealerResponse.Share;
-                                        tokenization.BackupShare = dealerResponse.EncryptedShare;
+                                        tokenization.DepositAddress = arbiterResponse.Address;
+                                        tokenization.Share = arbiterResponse.Share;
+                                        tokenization.BackupShare = arbiterResponse.EncryptedShare;
 
                                         //This may not be necessary will need to step through code.
                                         if(nonTokenizedFeatures?.Count > 0)
@@ -249,9 +249,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                                         SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
                                     }
                                     //TODO Create TX:
-                                    _ = SmartContractService.UpdateSmartContractTX(scMain);
+                                    //_ = SmartContractService.UpdateSmartContractTX(scMain);
 
-                                    return dealerResponse.Address;
+                                    return arbiterResponse.Address;
                                 }
                             }
                         }

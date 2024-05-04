@@ -175,8 +175,18 @@ namespace ReserveBlockCore.Data
 
                     if (tx.TransactionType != TransactionType.TX)
                     {
-                        if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_MINT
-                            || tx.TransactionType == TransactionType.NFT_BURN)
+                        if (tx.TransactionType == TransactionType.NFT_TX
+                            || tx.TransactionType == TransactionType.NFT_MINT
+                            || tx.TransactionType == TransactionType.NFT_BURN
+                            || tx.TransactionType == TransactionType.FTKN_MINT
+                            || tx.TransactionType == TransactionType.FTKN_TX
+                            || tx.TransactionType == TransactionType.FTKN_BURN
+                            || tx.TransactionType == TransactionType.TKNZ_MINT
+                            || tx.TransactionType == TransactionType.TKNZ_TX
+                            || tx.TransactionType == TransactionType.TKNZ_BURN
+                            || tx.TransactionType == TransactionType.SC_MINT
+                            || tx.TransactionType == TransactionType.SC_TX
+                            || tx.TransactionType == TransactionType.SC_BURN)
                         {
                             string scUID = "";
                             string function = "";

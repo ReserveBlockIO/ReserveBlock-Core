@@ -1,4 +1,4 @@
-﻿using ReserveBlockCore.Dealer;
+﻿using ReserveBlockCore.Arbiter;
 
 namespace ReserveBlockCore.Bitcoin.Models
 {

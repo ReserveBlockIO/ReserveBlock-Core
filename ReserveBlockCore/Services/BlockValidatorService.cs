@@ -447,7 +447,7 @@ namespace ReserveBlockCore.Services
 
                                                                     foreach (var otx in otherTxs)
                                                                     {
-                                                                        if (otx.TransactionType == TransactionType.NFT_TX)
+                                                                        if (otx.TransactionType == TransactionType.FTKN_TX)
                                                                         {
                                                                             if (otx.Data != null)
                                                                             {

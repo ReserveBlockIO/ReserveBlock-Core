@@ -3,25 +3,25 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 
-namespace ReserveBlockCore.Dealer
+namespace ReserveBlockCore.Arbiter
 {
-    public class DealerServer
+    public class ArbiterServer
     {
         public static async Task Start()
         {
             try
             {
-                if (Globals.IsDealer)
+                if (Globals.IsArbiter)
                 {
                     var builder = Host.CreateDefaultBuilder()
                     .ConfigureWebHostDefaults(webBuilder =>
                     {
                         webBuilder.UseKestrel(options =>
                         {
-                            //options.ListenAnyIP(Globals.DealerPort);
-                            options.ListenAnyIP(Globals.DealerPort);
+                            //options.ListenAnyIP(Globals.ArbiterPort);
+                            options.ListenAnyIP(Globals.ArbiterPort);
                         })
-                        .UseStartup<DealerStartup>()
+                        .UseStartup<ArbiterStartup>()
                         .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                     });
 

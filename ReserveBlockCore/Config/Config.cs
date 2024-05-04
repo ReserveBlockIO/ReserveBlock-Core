@@ -18,7 +18,7 @@ namespace ReserveBlockCore.Config
 		public bool AlwaysRequireWalletPassword { get; set; }
 		public string? APIPassword { get; set; }
 		public bool AlwaysRequireAPIPassword { get; set; }
-		public string? DealerPassword { get; set; }
+		public string? ArbiterPassword { get; set; }
 		public string? APICallURL { get; set; }
 		public int WalletUnlockTime { get; set; }
         public bool ChainCheckPoint { get; set; }
@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Config
 				config.WalletPassword = dict.ContainsKey("WalletPassword") ? dict["WalletPassword"] : null;
 				config.AlwaysRequireWalletPassword = dict.ContainsKey("AlwaysRequireWalletPassword") ? Convert.ToBoolean(dict["AlwaysRequireWalletPassword"]) : false;
 				config.APIPassword = dict.ContainsKey("APIPassword") ? dict["APIPassword"] : null;
-                config.DealerPassword = dict.ContainsKey("DealerPassword") ? dict["DealerPassword"] : null;
+                config.ArbiterPassword = dict.ContainsKey("ArbiterPassword") ? dict["ArbiterPassword"] : null;
                 config.AlwaysRequireAPIPassword = dict.ContainsKey("AlwaysRequireAPIPassword") ? Convert.ToBoolean(dict["AlwaysRequireAPIPassword"]) : false;
 				config.APICallURL = dict.ContainsKey("APICallURL") ? dict["APICallURL"] : null;
 				config.ValidatorAddress = dict.ContainsKey("ValidatorAddress") ? dict["ValidatorAddress"] : null;
@@ -234,7 +234,7 @@ namespace ReserveBlockCore.Config
             {
                 Globals.ADJPort = 13339;
 				Globals.ValPort = 13339;
-				Globals.DealerPort = 13342;
+				Globals.ArbiterPort = 13342;
                 Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;
@@ -249,12 +249,12 @@ namespace ReserveBlockCore.Config
 				Globals.BTCNetwork = NBitcoin.Network.TestNet;
                 Globals.SegwitP2SHStartPrefix = "2";
                 Globals.SegwitTaprootStartPrefix = "tb1";
-                Globals.DealerEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
+                Globals.ArbiterEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
             }
 
-			if(!string.IsNullOrEmpty(config.DealerPassword))
+			if(!string.IsNullOrEmpty(config.ArbiterPassword))
 			{
-                Globals.DealerEncryptPassword = config.DealerPassword.ToSecureString();
+                Globals.ArbiterEncryptPassword = config.ArbiterPassword.ToSecureString();
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

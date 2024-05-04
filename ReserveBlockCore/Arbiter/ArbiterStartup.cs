@@ -10,13 +10,13 @@ using ReserveBlockCore.SecretSharing.Math;
 using ReserveBlockCore.Utilities;
 using System.Numerics;
 
-namespace ReserveBlockCore.Dealer
+namespace ReserveBlockCore.Arbiter
 {
-    public class DealerStartup
+    public class ArbiterStartup
     {
         public IConfiguration Configuration { get; }
 
-        public DealerStartup(IConfiguration configuration)
+        public ArbiterStartup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
@@ -103,29 +103,29 @@ namespace ReserveBlockCore.Dealer
                             return;
                         }
 
-                        var share1 = shares[0].ToString(); //save with dealer - (1)
+                        var share1 = shares[0].ToString(); //save with Arbiter - (1)
                         var share2 = shares[1].ToString(); //send to requestor - (2)
                         var share3 = shares[2].ToString(); //send to requestor encrypted - (3)
                         var share4 = shares[3].ToString(); //send to validators - (4)
 
                         //TODO: DONE
                         //Save Shares here
-                        var share = new Shares { SCUID = scUID, Share = share1.ToEncrypt(Globals.DealerEncryptPassword.ToUnsecureString()), IsEncrypted = true };
+                        var share = new Shares { SCUID = scUID, Share = share1.ToEncrypt(Globals.ArbiterEncryptPassword.ToUnsecureString()), IsEncrypted = true };
                         Shares.SaveShare(share);
 
                         //TODO: DONE
                         //Put other share into memory - DONT SAVE
                         var memoryShare = new Shares { SCUID = scUID, Share = share4, IsEncrypted = false };
                         var btcMemShare = new BitcoinValShares { CreateDate = TimeUtil.GetTime(), Share = memoryShare, RemoveDate = TimeUtil.GetTime(0,0,0,1) };
-                        Globals.DealerValidatorShares.TryAdd(scUID, btcMemShare);
+                        Globals.ArbiterValidatorShares.TryAdd(scUID, btcMemShare);
 
                         //TODO:DONE
                         //Encrypt the share3 below before sending.
-                        DealerResponse.DealerAddressRequest requestorResponse = new DealerResponse.DealerAddressRequest
+                        ArbiterResponse.ArbiterAddressRequest requestorResponse = new ArbiterResponse.ArbiterAddressRequest
                         {
                             Address = account.Address,
                             Share = share2,
-                            EncryptedShare = share3.ToEncrypt(Globals.DealerEncryptPassword.ToUnsecureString()),
+                            EncryptedShare = share3.ToEncrypt(Globals.ArbiterEncryptPassword.ToUnsecureString()),
                         };
 
                         var requestorResponseJson = JsonConvert.SerializeObject(new { Success = true, Message = $"Shares created", Response = requestorResponse }, Formatting.Indented);

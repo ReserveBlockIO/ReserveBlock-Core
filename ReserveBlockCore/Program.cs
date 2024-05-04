@@ -145,9 +145,9 @@ namespace ReserveBlockCore
                         Console.WriteLine(Globals.CLIVersion);
                         runSingleRequest = true;
                     }
-                    if (argC == "dealer")
+                    if (argC == "arbiter")
                     {
-                        Globals.IsDealer = true;
+                        Globals.IsArbiter = true;
                     }
                     if (argC == "testnet")
                     {
@@ -776,7 +776,7 @@ namespace ReserveBlockCore
         private static void CommandLoop3()
         {
             _ = StartupService.StartBeacon();
-            _ = StartupService.StartDealer();
+            _ = StartupService.StartArbiter();
         }
 
         #endregion

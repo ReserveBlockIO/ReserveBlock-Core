@@ -2,7 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 
-namespace ReserveBlockCore.Dealer
+namespace ReserveBlockCore.Arbiter
 {
     public class Shares
     {
