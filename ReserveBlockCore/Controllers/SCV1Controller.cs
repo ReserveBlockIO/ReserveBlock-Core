@@ -253,9 +253,12 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
+                    //LiteDB.LiteException: 'Any/All requires simple parameter on left side. Eg: `
+                    //x => x.Phones.Select(p => p.Number).Any(n => n > 5)`'
                     scs = SmartContractMain.SmartContractData.GetSCs()
-                   .Find(x => x.Features == null || !x.Features.Any(y => y.FeatureName == FeatureName.Tokenization))
-                   .ToList();
+                    .Find(x => x.Features == null ||
+                        !x.Features.Where(y => y != null && y.FeatureName == FeatureName.Tokenization).Any())
+                    .ToList();
                 }
 
                 var scStateTrei = SmartContractStateTrei.GetSCST();
