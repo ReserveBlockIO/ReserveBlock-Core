@@ -768,7 +768,7 @@ namespace ReserveBlockCore.Controllers
                         Amount = 0.0M,
                         Fee = 0,
                         Nonce = AccountStateTrei.GetNextNonce(scMain.MinterAddress),
-                        TransactionType = TransactionType.NFT_MINT,
+                        TransactionType = !result.Item3 ? TransactionType.NFT_MINT : TransactionType.FTKN_MINT,
                         Data = txData
                     };
 
