@@ -36,7 +36,25 @@ namespace ReserveBlockCore.Services
                 {
                     rating = await NFTRating(tx);
                 }
-                if(tx.TransactionType == TransactionType.VOTE_TOPIC)
+                if (tx.TransactionType == TransactionType.SC_MINT ||
+                    tx.TransactionType == TransactionType.SC_BURN ||
+                    tx.TransactionType == TransactionType.SC_TX)
+                {
+                    rating = await SCRating(tx);
+                }
+                if (tx.TransactionType == TransactionType.TKNZ_MINT ||
+                    tx.TransactionType == TransactionType.TKNZ_BURN ||
+                    tx.TransactionType == TransactionType.TKNZ_TX)
+                {
+                    rating = await TKNZRating(tx);
+                }
+                if (tx.TransactionType == TransactionType.FTKN_MINT ||
+                    tx.TransactionType == TransactionType.FTKN_BURN ||
+                    tx.TransactionType == TransactionType.FTKN_TX)
+                {
+                    rating = await FTKNRating(tx);
+                }
+                if (tx.TransactionType == TransactionType.VOTE_TOPIC)
                 {
                     rating = await VoteTopicRating(tx);
                 }
@@ -70,6 +88,122 @@ namespace ReserveBlockCore.Services
                         x.TransactionType == TransactionType.NFT_SALE ||
                         x.TransactionType == TransactionType.NFT_BURN ||
                         x.TransactionType == TransactionType.NFT_TX));
+                    if (txs.Count() > 25)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = TransactionRating.E; // current TXs in mempool have been lowered to protect against spammers
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
+        private static async Task<TransactionRating> SCRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() > 25)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.SC_MINT ||
+                        x.TransactionType == TransactionType.SC_BURN ||
+                        x.TransactionType == TransactionType.SC_TX));
+                    if (txs.Count() > 25)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = TransactionRating.E; // current TXs in mempool have been lowered to protect against spammers
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+        private static async Task<TransactionRating> TKNZRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() > 25)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.TKNZ_MINT ||
+                        x.TransactionType == TransactionType.TKNZ_BURN ||
+                        x.TransactionType == TransactionType.TKNZ_TX));
+                    if (txs.Count() > 25)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = TransactionRating.E; // current TXs in mempool have been lowered to protect against spammers
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
+        private static async Task<TransactionRating> FTKNRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() > 25)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.FTKN_MINT ||
+                        x.TransactionType == TransactionType.FTKN_BURN ||
+                        x.TransactionType == TransactionType.FTKN_TX));
                     if (txs.Count() > 25)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
