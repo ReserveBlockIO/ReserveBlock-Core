@@ -69,6 +69,7 @@ namespace ReserveBlockCore
         public static string SegwitP2SHStartPrefix { get; set; }
         public static string SegwitTaprootStartPrefix { get; set; }
         public static Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
+        public static Account ArbiterSigningAddress { get; set; }
         public static NBitcoin.ScriptPubKeyType ScriptPubKeyType { get; set; }
         public static DateTime BTCAccountLastCheckedDate = DateTime.Now;
         public static DateTime LastRanBTCReset = DateTime.Now.AddMinutes(-5);
@@ -141,6 +142,9 @@ namespace ReserveBlockCore
         public static decimal CurrentMemory = 0;
         public static decimal ProjectedMemory = 0;
         public static long SystemMemory = 1;
+        public static int TotalArbiterParties = 5;
+        public static int TotalArbiterThreshold = 3;
+        
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
@@ -156,6 +160,7 @@ namespace ReserveBlockCore
         public static string? CustomPath = null;
         public static string GenesisValidator = "";
         public static string ArbiterURI = "";
+        public static List<Models.Arbiter> Arbiters = new List<Models.Arbiter>();
 
         public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;

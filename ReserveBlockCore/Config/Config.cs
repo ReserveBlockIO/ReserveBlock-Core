@@ -250,6 +250,8 @@ namespace ReserveBlockCore.Config
                 Globals.SegwitP2SHStartPrefix = "2";
                 Globals.SegwitTaprootStartPrefix = "tb1";
                 Globals.ArbiterEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
+				Globals.TotalArbiterParties = 2;
+				Globals.TotalArbiterThreshold = 2;
             }
 
 			if(!string.IsNullOrEmpty(config.ArbiterPassword))

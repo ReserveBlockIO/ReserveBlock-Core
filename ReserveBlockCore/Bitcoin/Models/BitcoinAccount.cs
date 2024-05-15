@@ -3,6 +3,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ReserveBlockCore.Bitcoin.Models
@@ -123,6 +124,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public static BitcoinAccount CreateAddress(bool save = true)
         {
             Key privateKey = new Key();
+
             PubKey publicKey = privateKey.PubKey;
 
             // Create a Bitcoin address from the public key
@@ -144,6 +146,19 @@ namespace ReserveBlockCore.Bitcoin.Models
                 SaveBitcoinAddress(btcAddress);
 
             return btcAddress;
+        }
+        #endregion
+
+        #region Create Bitcoin Address For Arbiter
+        public static string CreatePublicKeyForArbiter(string signingPrivateKey, int count)
+        {
+            byte[] hash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(signingPrivateKey + count.ToString()));
+            // Generate a random private key
+            Key privateKey = new Key(hash);
+
+            // Derive the corresponding public key
+            PubKey publicKey = privateKey.PubKey;
+            return publicKey.ToString();
         }
         #endregion
 

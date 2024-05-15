@@ -8,6 +8,7 @@ using ReserveBlockCore.Controllers;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
@@ -501,7 +502,15 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if(payload == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
 
-                var scMain = await TokenizationService.CreateTokenizationScMain(payload.RBXAddress, payload.FileLocation, payload.Name, payload.Description);
+                //TODO:
+                //Get Deposit Address - Get Proofs too
+                var tokenizationDetails = await ArbiterService.GetTokenizationDetails(payload.RBXAddress);
+
+                if(tokenizationDetails.Item1 == "FAIL")
+                    return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item1 });
+
+                var scMain = await TokenizationService.CreateTokenizationScMain(payload.RBXAddress, payload.FileLocation, 
+                    tokenizationDetails.Item1, tokenizationDetails.Item2, payload.Name, payload.Description);
 
                 if (scMain == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to generate vBTC token. Please check logs for more." });
@@ -533,22 +542,6 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         public async Task<string> GetTokenizedBTCList()
         {
             return JsonConvert.SerializeObject(new { Success = true, Message = "If no tokenized elements TokenizedList will be 'NULL'", TokenizedList = TokenizedBitcoin.GetTokenizedList() });
-        }
-
-        /// <summary>
-        /// Get Tokenized BTC List
-        /// </summary>
-        /// <param name="scUID"></param>
-        /// <returns></returns>
-        [HttpGet("GenerateTokenizedAddress/{scUID}")]
-        public async Task<string> GenerateTokenizedAddress(string scUID)
-        {
-            var result = await TokenizationService.GenerateAddress(scUID);
-
-            if(result == "FAIL")
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to Produce valid shares and address." });
-
-            return JsonConvert.SerializeObject(new { Success = true, Message = $"Address Generated. Verify TX was sent and confirmed before depositing.", Address = result });
         }
 
         /// <summary>

@@ -56,7 +56,43 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
-		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false, bool skipSave = false)
+
+        public static Account GenerateArbiterSigningAccount(string validatorPrivateKey)
+        {
+            Account account = new Account();
+            var accountMade = false;
+            while (accountMade == false)
+            {
+                try
+                {
+                    BigInteger b1 = BigInteger.Parse(validatorPrivateKey, NumberStyles.AllowHexSpecifier);
+					b1 = b1 * 2;
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var privKeySecretHex = privateKey.secret.ToString("x");
+                    var pubKey = privateKey.publicKey();
+
+                    account.PrivateKey = privKeySecretHex;
+                    account.PublicKey = "04" + ByteToHex(pubKey.toString());
+                    account.Balance = 0.00M;
+                    account.Address = GetHumanAddress(account.PublicKey);
+
+                    var sig = Ecdsa.sign("test", privateKey);
+                    var verify = Ecdsa.verify("test", sig, privateKey.publicKey());
+
+					if (verify)
+						accountMade = true;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AccountData.GenerateArbiterSigningAccount()");
+                }
+            }
+
+            return account;
+        }
+
+        public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false, bool skipSave = false)
         {
 			Account account = new Account();
             try

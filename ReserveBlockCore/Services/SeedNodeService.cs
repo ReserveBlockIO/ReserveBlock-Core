@@ -161,14 +161,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task GetArbiterFromSeed()
         {
-            if(Globals.IsTestNet)
-            {
-                Globals.ArbiterURI = $"http://162.248.14.123:{Globals.ArbiterPort}";
-            }
-            else
-            {
-                //TODO: Call to Seed for Arbiter Seed
-            }
+            //TODO
         }
 
         public static async Task GetSeedNodePeersTestnet()

@@ -289,22 +289,18 @@ namespace ReserveBlockCore.Models.SmartContracts
                                         {
                                             var assetName = repl.Run(@"AssetName").Value;
                                             var assetTicker = repl.Run(@"AssetTicker").Value;
-                                            var depositAddress = repl.Run(@"AssetDepositAddress").Value;
-                                            var keyRevealTxHash = repl.Run(@"KeyRevealRequestHash").Value;
+                                            var depositAddress = repl.Run(@"DepositAddress").Value;
+                                            var pubKeyProofs = repl.Run(@"GetPublicKeyProofs()").Value;
 
-                                            var share = repl.Run(@"GetDepositAddressShare()").Value;
-                                            var backupShare = repl.Run(@"GetDepositAddressShareBackup()").Value;
-
-                                            if(assetName != null && assetTicker != null && depositAddress != null && keyRevealTxHash != null && share != null && backupShare != null)
+                                            if(assetName != null && assetTicker != null && depositAddress != null && pubKeyProofs != null)
                                             {
                                                 TokenizationFeature tokenizationFeature = new TokenizationFeature
                                                 {
                                                     AssetName = assetName.ToString(),
                                                     AssetTicker = assetTicker.ToString(),
-                                                    BackupShare = backupShare.ToString() == "{SHARES_BACKUP_REPLACE}" ? null : backupShare.ToString(),
-                                                    DepositAddress = depositAddress.ToString() == "{DEPO_ADDR}" ? null : depositAddress.ToString(),
-                                                    KeyRevealRequestHash = keyRevealTxHash.ToString() == "{TX_HASH}" ? null : keyRevealTxHash.ToString(),
-                                                    Share = share.ToString() == "{SHARES_REPLACE}" ? null : share.ToString(),
+                                                    PublicKeyProofs = pubKeyProofs.ToString(),
+                                                    DepositAddress = depositAddress.ToString(),
+                                                    
                                                 };
 
                                                 scFeature.FeatureName = FeatureName.Tokenization;
@@ -410,22 +406,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     {
                                         var assetName = repl.Run(@"AssetName").Value;
                                         var assetTicker = repl.Run(@"AssetTicker").Value;
-                                        var depositAddress = repl.Run(@"AssetDepositAddress").Value;
-                                        var keyRevealTxHash = repl.Run(@"KeyRevealRequestHash").Value;
+                                        var depositAddress = repl.Run(@"DepositAddress").Value;
+                                        var pubKeyProofs = repl.Run(@"GetPublicKeyProofs()").Value;
 
-                                        var share = repl.Run(@"GetDepositAddressShare()").Value;
-                                        var backupShare = repl.Run(@"GetDepositAddressShareBackup()").Value;
-
-                                        if (assetName != null && assetTicker != null && depositAddress != null && keyRevealTxHash != null && share != null && backupShare != null)
+                                        if (assetName != null && assetTicker != null && depositAddress != null && pubKeyProofs != null)
                                         {
                                             TokenizationFeature tokenizationFeature = new TokenizationFeature
                                             {
                                                 AssetName = assetName.ToString(),
                                                 AssetTicker = assetTicker.ToString(),
-                                                BackupShare = backupShare.ToString() == "{SHARES_BACKUP_REPLACE}" ? null : backupShare.ToString(),
-                                                DepositAddress = depositAddress.ToString() == "{DEPO_ADDR}" ? null : depositAddress.ToString(),
-                                                KeyRevealRequestHash = keyRevealTxHash.ToString() == "{TX_HASH}" ? null : keyRevealTxHash.ToString(),
-                                                Share = share.ToString() == "{SHARES_REPLACE}" ? null : share.ToString(),
+                                                PublicKeyProofs = pubKeyProofs.ToString(),
+                                                DepositAddress = depositAddress.ToString(),
                                             };
 
                                             scFeature.FeatureName = FeatureName.Tokenization;

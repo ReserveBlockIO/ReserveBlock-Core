@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 {
     public class TokenizationService
     {
-        public static async Task<SmartContractMain?> CreateTokenizationScMain(string address, string fileLocation, string tokenName = "vBTC Token", string description = "vBTC Token")
+        public static async Task<SmartContractMain?> CreateTokenizationScMain(string address, string fileLocation, string depositAddress, string proofJson, string tokenName = "vBTC Token", string description = "vBTC Token")
         {
             try
             {
@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     Features = new List<SmartContractFeatures> {
                     new SmartContractFeatures {
                         FeatureName = FeatureName.Tokenization,
-                        FeatureFeatures = new TokenizationFeature { AssetName = "Bitcoin", AssetTicker = "BTC" }
+                        FeatureFeatures = new TokenizationFeature { AssetName = "Bitcoin", AssetTicker = "BTC", DepositAddress = depositAddress, PublicKeyProofs = proofJson }
                     }
                 },
                     IsMinter = true,
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                         AssetId = new Guid(),
                         Name = fileName,
                         Location = fileLocation,
-                        AssetAuthorName = "Author Man",
+                        AssetAuthorName = "Default",
                         Extension = fileExtension,
                         FileSize = fileSizeInBytes
                     },
@@ -186,129 +186,6 @@ namespace ReserveBlockCore.Bitcoin.Services
             {
                 return (false, $"Fatal Error: {ex}");
             }
-        }
-
-        public static async Task<string> GenerateAddress(string scUID)
-        {
-            try
-            {
-                using (var client = Globals.HttpClientFactory.CreateClient())
-                {
-                    var sc = SmartContractStateTrei.GetSmartContractState(scUID);
-                    if (sc == null)
-                        return "FAIL";
-
-                    var account = AccountData.GetSingleAccount(sc.OwnerAddress);
-
-                    if (account == null)
-                        return "FAIL";
-
-                    var message = TimeUtil.GetTime(1);
-                    var signature = SignatureService.CreateSignature(account.PrivateKey, message.ToString());
-                    string url = $"{Globals.ArbiterURI}/depositaddress/{account.Address}/{scUID}/{message}/{signature}";
-                    var response = await client.GetAsync(url);
-
-                    if(response != null)
-                    {
-                        if(response.StatusCode == System.Net.HttpStatusCode.OK)
-                        {
-                            var responseContent = await response.Content.ReadAsStringAsync();
-                            if (responseContent != null)
-                            {
-                                ArbiterResponse.ArbiterAddressRequest? arbiterResponse = JsonConvert.DeserializeObject<ArbiterResponse.ArbiterAddressRequest>(responseContent);
-                                if (arbiterResponse == null)
-                                    return "FAIL";
-
-                                //Add Deposit address to token tool
-                                await TokenizedBitcoin.AddDepositAddress(scUID, arbiterResponse.Address);
-
-                                //Update SCMain
-                                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-                                if(scMain != null)
-                                {
-                                    var nonTokenizedFeatures = scMain.Features?.Where(x => x.FeatureName != FeatureName.Tokenization).ToList();
-                                    var tokenFeature = scMain.Features?.Where(x => x.FeatureName == FeatureName.Tokenization).FirstOrDefault();
-                                    if(tokenFeature != null)
-                                    {
-                                        var tokenization = (TokenizationFeature)tokenFeature.FeatureFeatures;
-                                        tokenization.DepositAddress = arbiterResponse.Address;
-                                        tokenization.Share = arbiterResponse.Share;
-                                        tokenization.BackupShare = arbiterResponse.EncryptedShare;
-
-                                        //This may not be necessary will need to step through code.
-                                        if(nonTokenizedFeatures?.Count > 0)
-                                        {
-                                            nonTokenizedFeatures.Add(tokenFeature);
-                                            scMain.Features = nonTokenizedFeatures;
-                                        }
-                                        else
-                                        {
-                                            scMain.Features = new List<SmartContractFeatures> { tokenFeature };
-                                        }
-
-                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
-                                    }
-                                    //TODO Create TX:
-                                    //_ = SmartContractService.UpdateSmartContractTX(scMain);
-
-                                    return arbiterResponse.Address;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            return "FAIL";
-                        }
-                    }
-                }
-            }
-            catch(Exception ex) { return "FAIL"; }
-
-            return "FAIL";
-        }
-
-        public static async Task<List<string>> AddressGenerationMutation(string scUID)
-        {
-            List<string> shares = new List<string>();
-
-            try
-            {
-                char[] charArray = scUID.ToCharArray();
-
-                // Mutate the characters in the array
-                for (int i = 0; i < charArray.Length; i++)
-                {
-                    if (char.IsLetter(charArray[i]))
-                    {
-                        // Increment the ASCII value of letters
-                        charArray[i] = (char)(charArray[i] + 1);
-                    }
-                }
-
-                // Convert the character array back to a string
-                string mutatedString = new string(charArray);
-
-                charArray = mutatedString.ToCharArray();
-                Array.Reverse(charArray);
-                mutatedString = new string(charArray);
-
-                // Convert lowercase letters to uppercase
-                mutatedString = mutatedString.ToUpper();
-
-                // Split the input string into equal parts
-                int shareSize = mutatedString.Length / 3; // Divide the string into 3 equal parts
-                for (int i = 0; i < mutatedString.Length; i += shareSize)
-                {
-                    // Extract the current share
-                    string share = mutatedString.Substring(i, Math.Min(shareSize, mutatedString.Length - i));
-                    shares.Add(share);
-                }
-            }
-            catch (Exception ex) 
-            { 
-            }
-
-            return shares;
         }
     }
 }

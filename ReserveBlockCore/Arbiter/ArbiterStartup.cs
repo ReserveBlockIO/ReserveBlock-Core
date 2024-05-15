@@ -44,102 +44,55 @@ namespace ReserveBlockCore.Arbiter
                     await context.Response.WriteAsync($"Hello {ipAddress}, this is the server's response!");
                 });
 
-                endpoints.MapGet("/depositaddress/{address}/{scUID}/{message}/{signature}", async context =>
+                endpoints.MapGet("/getsigneraddress", async context =>
                 {
-                    var address = context.Request.RouteValues["address"] as string;
-                    var scUID = context.Request.RouteValues["scUID"] as string;
-                    var message = context.Request.RouteValues["message"] as long?;
-                    var signature = context.Request.RouteValues["signature"] as string;
-
-                    if (string.IsNullOrEmpty(address) || string.IsNullOrEmpty(scUID) || message == null || string.IsNullOrEmpty(signature))
+                    // Handle the GET request
+                    if (Globals.ArbiterSigningAddress == null)
                     {
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Smart Contract UID" }, Formatting.Indented);
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Signing Address" }, Formatting.Indented);
                         await context.Response.WriteAsync(response);
-                        return;
-                    }
-
-                    var sc = SmartContractStateTrei.GetSmartContractState(scUID);
-
-                    if(sc == null)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Token not found in State Trei." }, Formatting.Indented);
-                        await context.Response.WriteAsync(response);
-                        return;
-                    }
-
-                    if(sc.OwnerAddress != address)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Token Owner does not match. State Address: {sc.OwnerAddress} / URL Address: {address}" }, Formatting.Indented);
-                        await context.Response.WriteAsync(response);
-                        return;
-                    }
-
-                    var signatureVerified = Services.SignatureService.VerifySignature(address, message.Value.ToString(), signature);
-                    var now = TimeUtil.GetTime();
-                    if(((message.Value + 15) < now) || !signatureVerified)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Signature invalid or message too old" }, Formatting.Indented);
-                        await context.Response.WriteAsync(response);
-                        return;
-                    }
-
-                    var account = BitcoinAccount.CreateAddress(false);
-
-                    var gcd = new ExtendedEuclideanAlgorithm<BigInteger>();
-                    var split = new ShamirsSecretSharing<BigInteger>(gcd);
-                    var shares = split.MakeShares(3, 4, account.PrivateKey);
-
-                    if (shares.OriginalSecret.HasValue)
-                    {
-                        if(shares.OriginalSecret.Value.ToString() != account.PrivateKey)
-                        {
-                            context.Response.StatusCode = StatusCodes.Status417ExpectationFailed;
-                            var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Shares were not created" }, Formatting.Indented);
-                            await context.Response.WriteAsync(response);
-                            return;
-                        }
-
-                        var share1 = shares[0].ToString(); //save with Arbiter - (1)
-                        var share2 = shares[1].ToString(); //send to requestor - (2)
-                        var share3 = shares[2].ToString(); //send to requestor encrypted - (3)
-                        var share4 = shares[3].ToString(); //send to validators - (4)
-
-                        //TODO: DONE
-                        //Save Shares here
-                        var share = new Shares { SCUID = scUID, Share = share1.ToEncrypt(Globals.ArbiterEncryptPassword.ToUnsecureString()), IsEncrypted = true };
-                        Shares.SaveShare(share);
-
-                        //TODO: DONE
-                        //Put other share into memory - DONT SAVE
-                        var memoryShare = new Shares { SCUID = scUID, Share = share4, IsEncrypted = false };
-                        var btcMemShare = new BitcoinValShares { CreateDate = TimeUtil.GetTime(), Share = memoryShare, RemoveDate = TimeUtil.GetTime(0,0,0,1) };
-                        Globals.ArbiterValidatorShares.TryAdd(scUID, btcMemShare);
-
-                        //TODO:DONE
-                        //Encrypt the share3 below before sending.
-                        ArbiterResponse.ArbiterAddressRequest requestorResponse = new ArbiterResponse.ArbiterAddressRequest
-                        {
-                            Address = account.Address,
-                            Share = share2,
-                            EncryptedShare = share3.ToEncrypt(Globals.ArbiterEncryptPassword.ToUnsecureString()),
-                        };
-
-                        var requestorResponseJson = JsonConvert.SerializeObject(new { Success = true, Message = $"Shares created", Response = requestorResponse }, Formatting.Indented);
-                        await context.Response.WriteAsync(requestorResponseJson);
                         return;
                     }
                     else
                     {
-                        context.Response.StatusCode = StatusCodes.Status417ExpectationFailed;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Shares were not created" }, Formatting.Indented);
+                        var response = JsonConvert.SerializeObject(new { Success = true, Message = $"Address Found", Address = $"{Globals.ArbiterSigningAddress.Address}" }, Formatting.Indented);
+                        context.Response.StatusCode = StatusCodes.Status200OK;
+                        await context.Response.WriteAsync(response);
+                        return;
+                    }
+                });
+
+                endpoints.MapGet("/depositaddress/{address}", async context =>
+                 {
+                    var address = context.Request.RouteValues["address"] as string;
+
+                    if (string.IsNullOrEmpty(address))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Address" }, Formatting.Indented);
                         await context.Response.WriteAsync(response);
                         return;
                     }
 
+                    //TODO MAKE THIS WORK!
+                    var publicKey = BitcoinAccount.CreatePublicKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, 0);
+
+                    var signature = SignatureService.CreateSignature(Globals.ArbiterSigningAddress.GetKey, publicKey);
+
+                    if(signature == "F")
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Signature Failed." }, Formatting.Indented);
+                        await context.Response.WriteAsync(response);
+                        return;
+                    }
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    var requestorResponseJson = JsonConvert.SerializeObject(new { Success = true, Message = $"PubKey created", PublicKey = publicKey, Signature = signature }, Formatting.Indented);
+                    await context.Response.WriteAsync(requestorResponseJson);
+                    return;
+                    
                 });
             });
         }

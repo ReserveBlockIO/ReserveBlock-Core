@@ -251,6 +251,7 @@ namespace ReserveBlockCore.Services
                                             
                                             if(txRequest.FromAddress.StartsWith("xRBX"))
                                                 return (txResult, "A reserve account may not mint a smart contract.");
+
                                             break;
                                         }
 

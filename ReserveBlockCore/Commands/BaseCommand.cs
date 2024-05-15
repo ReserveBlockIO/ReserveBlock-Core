@@ -213,7 +213,8 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/synctrei":
                     Globals.StopConsoleOutput = true;
-                    await BaseCommandServices.SyncTreis();
+                    //Deprecated: v5.0.0
+                    //await BaseCommandServices.SyncTreis();
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/setto":

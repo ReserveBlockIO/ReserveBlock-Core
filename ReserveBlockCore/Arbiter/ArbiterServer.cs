@@ -18,7 +18,6 @@ namespace ReserveBlockCore.Arbiter
                     {
                         webBuilder.UseKestrel(options =>
                         {
-                            //options.ListenAnyIP(Globals.ArbiterPort);
                             options.ListenAnyIP(Globals.ArbiterPort);
                         })
                         .UseStartup<ArbiterStartup>()

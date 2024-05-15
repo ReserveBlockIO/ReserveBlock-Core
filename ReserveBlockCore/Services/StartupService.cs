@@ -426,6 +426,60 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async Task GetArbiters()
+        {
+            if(Globals.IsTestNet)
+            {
+                Globals.Arbiters = new List<Models.Arbiter>
+                {
+                    new Models.Arbiter {
+                        Address = "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC",
+                        SigningAddress = "xPqVbS8X6X9ofeD5F2VsEV4KHBeMZoVawa",
+                        Generation = 0,
+                        IPAddress = "162.248.14.123",
+                        StartOfService = 1715745443,
+                        Title = "Arbiter1"
+                    },
+                    new Models.Arbiter {
+                        Address = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj",
+                        SigningAddress = "",
+                        Generation = 0,
+                        IPAddress = "144.126.156.102",
+                        StartOfService = 1715745443,
+                        Title = "Arbiter2"
+                    }
+                };
+            }
+            else
+            {
+                //TODO: Call to SEED/Peers
+                //TODO.2: Create initial seeding protocol.
+                
+            }
+        }
+
+        public static void ArbiterCheck()
+        {
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                if (Globals.Arbiters.Any(x => x.Address == Globals.ValidatorAddress))
+                {
+                    Globals.IsArbiter = true;
+                    //TODO: Create Address
+                    var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    if(account != null)
+                    {
+                        var signingAccount = AccountData.GenerateArbiterSigningAccount(account.GetKey);
+                        Globals.ArbiterSigningAddress = signingAccount;
+                    }
+                    else
+                    {
+                        Globals.IsArbiter = false;
+                    }
+                }
+            }
+        }
+
         internal static async Task StartArbiter()
         {
             try
@@ -1348,21 +1402,8 @@ namespace ReserveBlockCore.Services
                 await delay;
             }
         }
-        internal static async Task<bool> DownloadBlocks() //download genesis block
-        {
-            var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected)
-            {
-                if(Globals.LastBlock.Height == -1)
-                {
-                    //This just gets first few blocks to start chain off.
-                    Console.WriteLine("Downloading Blocks First.");
-                    await BlockDownloadService.GetAllBlocks();         
-                }
-            }
-            return true;
-        }
+
 
         internal static void StartupMenu()
         {

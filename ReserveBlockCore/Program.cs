@@ -145,10 +145,6 @@ namespace ReserveBlockCore
                         Console.WriteLine(Globals.CLIVersion);
                         runSingleRequest = true;
                     }
-                    if (argC == "arbiter")
-                    {
-                        Globals.IsArbiter = true;
-                    }
                     if (argC == "testnet")
                     {
                         //Launch testnet
@@ -307,6 +303,7 @@ namespace ReserveBlockCore
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             SeedNodeService.SeedNodes(); //adds nodes to initial find blocks
             SeedNodeService.SeedBench(); //seeds adj bench
+            await StartupService.GetArbiters();
             await BadTransaction.PopulateBadTXList(); //adds bad txs to ignore
             await WalletService.BalanceRectify(); //checks balance local against state
 
@@ -318,6 +315,8 @@ namespace ReserveBlockCore
             //await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
+            StartupService.ArbiterCheck();
+
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
@@ -645,6 +644,8 @@ namespace ReserveBlockCore
 
             _ = MemoryService.Run();
             _ = MemoryService.RunGlobals();
+
+            _ = ArbiterService.GetArbiterSigningAddress();
 
             await Task.WhenAll(tasks);
 
