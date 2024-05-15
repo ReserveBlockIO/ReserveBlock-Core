@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
@@ -125,17 +126,40 @@ namespace ReserveBlockCore.Bitcoin.Models
 
             if (exist == null)
             {
-                TokenizedBitcoin tokenizedBitcoin = new TokenizedBitcoin 
-                { 
-                    BTCAddress = null,
-                    IsPublished = false,
-                    RBXAddress = scMain.MinterAddress,
-                    SmartContractMainId = scMain.Id,
-                    SmartContractUID = scMain.SmartContractUID,
-                    TokenDescription = scMain.Description,
-                    TokenName = scMain.Name,
-                };
-                scs.InsertSafe(tokenizedBitcoin);
+                if(scMain.Features != null)
+                {
+                    var tknzFeature = scMain.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+                    if (tknzFeature != null)
+                    {
+                        var tknz = (TokenizationFeature)tknzFeature;
+                        if(tknz != null)
+                        {
+                            TokenizedBitcoin tokenizedBitcoin = new TokenizedBitcoin
+                            {
+                                BTCAddress = tknz.DepositAddress,
+                                IsPublished = false,
+                                RBXAddress = scMain.MinterAddress,
+                                SmartContractMainId = scMain.Id,
+                                SmartContractUID = scMain.SmartContractUID,
+                                TokenDescription = scMain.Description,
+                                TokenName = scMain.Name,
+                            };
+                            scs.InsertSafe(tokenizedBitcoin);
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log("Failed to read tokenization feature, but it was found", "TokenizedBitcoin.SaveSmartContract()");
+                        }
+                    }
+                    else
+                    {
+                        NFTLogUtility.Log("No tokenization features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                    }
+                }
+                else
+                {
+                    NFTLogUtility.Log("No features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                }
             }
             if (scText != null)
             {
