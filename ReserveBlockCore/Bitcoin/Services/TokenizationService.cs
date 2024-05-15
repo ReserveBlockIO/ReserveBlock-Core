@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     Features = new List<SmartContractFeatures> {
                     new SmartContractFeatures {
                         FeatureName = FeatureName.Tokenization,
-                        FeatureFeatures = new TokenizationFeature { AssetName = "Bitcoin", AssetTicker = "BTC", DepositAddress = depositAddress, PublicKeyProofs = proofJson }
+                        FeatureFeatures = new TokenizationFeature { AssetName = "Bitcoin", AssetTicker = "BTC", DepositAddress = depositAddress, PublicKeyProofs = proofJson.ToBase64() }
                     }
                 },
                     IsMinter = true,
