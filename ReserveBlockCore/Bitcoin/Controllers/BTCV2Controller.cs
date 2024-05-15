@@ -502,8 +502,6 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if(payload == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
 
-                //TODO:
-                //Get Deposit Address - Get Proofs too
                 var tokenizationDetails = await ArbiterService.GetTokenizationDetails(payload.RBXAddress);
 
                 if(tokenizationDetails.Item1 == "FAIL")

@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
-using ReserveBlockCore.Bitcoin.Services;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.SecretSharing.Cryptography;
 using ReserveBlockCore.SecretSharing.Math;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Numerics;
 
@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Arbiter
                     //TODO MAKE THIS WORK!
                     var publicKey = BitcoinAccount.CreatePublicKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, 0);
 
-                    var signature = SignatureService.CreateSignature(Globals.ArbiterSigningAddress.GetKey, publicKey);
+                    var signature = SignatureService.CreateSignature(publicKey, Globals.ArbiterSigningAddress.GetPrivKey, Globals.ArbiterSigningAddress.PublicKey);
 
                     if(signature == "F")
                     {
