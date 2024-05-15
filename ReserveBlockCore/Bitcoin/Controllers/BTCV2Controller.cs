@@ -507,7 +507,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 var tokenizationDetails = await ArbiterService.GetTokenizationDetails(payload.RBXAddress);
 
                 if(tokenizationDetails.Item1 == "FAIL")
-                    return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item1 });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item2 });
 
                 var scMain = await TokenizationService.CreateTokenizationScMain(payload.RBXAddress, payload.FileLocation, 
                     tokenizationDetails.Item1, tokenizationDetails.Item2, payload.Name, payload.Description);
