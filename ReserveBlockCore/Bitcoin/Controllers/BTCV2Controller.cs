@@ -539,7 +539,8 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         [HttpGet("GetTokenizedBTCList")]
         public async Task<string> GetTokenizedBTCList()
         {
-            return JsonConvert.SerializeObject(new { Success = true, Message = "If no tokenized elements TokenizedList will be 'NULL'", TokenizedList = TokenizedBitcoin.GetTokenizedList() });
+            var tknzList = TokenizedBitcoin.GetTokenizedList();
+            return JsonConvert.SerializeObject(new { Success = true, Message = "If no tokenized elements TokenizedList will be 'NULL'", TokenizedList = tknzList });
         }
 
         /// <summary>
