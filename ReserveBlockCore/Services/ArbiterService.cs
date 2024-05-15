@@ -73,7 +73,9 @@ namespace ReserveBlockCore.Services
         public static async Task GetArbiterSigningAddress()
         {
             await Task.Delay(10000);
-            foreach (var arbiter in Globals.Arbiters)
+            var arbList = Globals.Arbiters.ToList();
+                
+            foreach (var arbiter in arbList)
             {
                 using (var client = Globals.HttpClientFactory.CreateClient())
                 {
@@ -81,7 +83,7 @@ namespace ReserveBlockCore.Services
                     {
                         string url = $"http://{arbiter.IPAddress}:{Globals.ArbiterPort}/getsigneraddress";
 
-                        var response = await client.GetAsync(url);
+                        var response = await client.GetAsync(url).WaitAsync(new TimeSpan(0,0,3));
                         if (response == null)
                             return;
 
@@ -106,6 +108,8 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
+
+            var check = Globals.Arbiters;
         }
 
         private static string CreateDepositAddress(List<PubKey> shares)
