@@ -128,9 +128,9 @@ namespace ReserveBlockCore.Bitcoin
                     {
                         foreach (var address in tokenizeList)
                         {
-                            if(address.BTCAddress != null)
+                            if(address.DepositAddress != null)
                             {
-                                await Explorers.GetAddressInfo(address.BTCAddress, true);
+                                await Explorers.GetAddressInfo(address.DepositAddress, true);
                                 await Task.Delay(5000);
                             }
                             

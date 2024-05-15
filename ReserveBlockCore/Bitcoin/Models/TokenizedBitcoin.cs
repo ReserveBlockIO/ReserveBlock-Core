@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public long Id { get; set; }
         public string SmartContractUID { get; set; }
         public string RBXAddress { get; set; }
-        public string? BTCAddress { get; set; }
+        public string? DepositAddress { get; set; }
         public decimal Balance { get; set; }
         public string TokenName { get; set; }
         public string TokenDescription { get; set; }
@@ -48,7 +48,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             var scs = GetDb();
             if (scs != null)
             {
-                var sc = scs.FindOne(x => x.BTCAddress == address);
+                var sc = scs.FindOne(x => x.DepositAddress == address);
                 if (sc != null)
                 {
                     sc.Balance = balance;
@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             var scs = GetDb();
             if (scs != null)
             {
-                tokenList = scs.Find(x => x.IsPublished && x.BTCAddress == null).ToList();
+                tokenList = scs.Find(x => x.IsPublished && x.DepositAddress == null).ToList();
                 if (tokenList.Any())
                 {
                     return tokenList;
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.Bitcoin.Models
                         {
                             TokenizedBitcoin tokenizedBitcoin = new TokenizedBitcoin
                             {
-                                BTCAddress = tknz.DepositAddress,
+                                DepositAddress = tknz.DepositAddress,
                                 IsPublished = false,
                                 RBXAddress = scMain.MinterAddress,
                                 SmartContractMainId = scMain.Id,
@@ -220,17 +220,5 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
         }
 
-        public static async Task AddDepositAddress(string scUID, string btcAddress)
-        {
-            var scs = GetDb();
-
-            var scMain = GetTokenContract(scUID);
-
-            if (scMain != null)
-            {
-                scMain.BTCAddress = btcAddress;
-                scs.UpdateSafe(scMain);
-            }
-        }
     }
 }
