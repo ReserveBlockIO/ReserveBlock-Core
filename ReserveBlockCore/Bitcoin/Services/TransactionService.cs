@@ -207,7 +207,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                     spentList.Add(x);
 
-                    if (utxoAmount >= amountBeingSent)
+                    if (utxoAmount > amountBeingSent)
                     {
                         break;
                     }

@@ -254,7 +254,7 @@ namespace ReserveBlockCore.Bitcoin
             }
             catch(Exception ex)
             {
-                
+                Console.WriteLine($"ERROR: {ex}");
             }
 
         }
