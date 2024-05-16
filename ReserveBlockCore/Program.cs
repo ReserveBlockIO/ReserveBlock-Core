@@ -179,7 +179,6 @@ namespace ReserveBlockCore
                         Globals.GUI = true;
                         Explorers.PopulateExplorerDictionary();
                         _ = NodeFinder.GetNode();
-                        _ = Bitcoin.Bitcoin.AccountCheck();
                     }
                     if(argC == "blockv2")
                     {
@@ -339,6 +338,10 @@ namespace ReserveBlockCore
                     {
                         //Launch testnet
                         Globals.TestURL = true;
+                    }
+                    if (argC == "gui")
+                    {
+                        _ = Bitcoin.Bitcoin.AccountCheck();
                     }
                     if (argC.Contains("privkey"))
                     {
