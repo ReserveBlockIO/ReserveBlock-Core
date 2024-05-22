@@ -11,6 +11,12 @@ using System.IO;
 using System;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Arbiter;
+using System.Runtime.ConstrainedExecution;
+using System.Data;
+using System.Net;
+using System.Xml.Linq;
+using NBitcoin;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -186,6 +192,200 @@ namespace ReserveBlockCore.Bitcoin.Services
             {
                 return (false, $"Fatal Error: {ex}");
             }
+        }
+
+        public static async Task<string> TransferCoin(object? jsonData)
+        {
+            try
+            {
+                if (jsonData == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Payload body was null" });
+
+                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
+
+                if (payload == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
+
+                if(payload.FromAddress == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"From address cannot be null." });
+
+                var account = AccountData.GetSingleAccount(payload.FromAddress);
+
+                if(account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find account." });
+
+                var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(payload.SCUID);
+
+                if (btcTkn == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find BTC Token: {payload.SCUID}" });
+
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(btcTkn.SmartContractUID);
+
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find Smart Contract Data: {payload.SCUID}" });
+
+                if (sc.Features == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has no features: {payload.SCUID}" });
+
+                var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+                if (tknzFeature == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract missing a tokenization feature: {payload.SCUID}" });
+
+                var tknz = (TokenizationFeature)tknzFeature;
+
+                if (tknz == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Token feature error: {payload.SCUID}" });
+
+                var scState = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+
+                if (scState == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State Missing: {payload.SCUID}" });
+
+                bool isOwner = false;
+                if (scState.OwnerAddress == account.Address)
+                    isOwner = true;
+
+                if(scState.SCStateTreiTokenizationTXes != null)
+                {
+                    var balances = scState.SCStateTreiTokenizationTXes.Where(x => x.FromAddress == account.Address || x.ToAddress == account.Address).ToList();
+                    if(balances.Any() || isOwner)
+                    {
+                        var balance = balances.Sum(x => x.Amount);
+                        bool good = false;
+                        if(isOwner)
+                        {
+                            var finalBalance = btcTkn.Balance + balance;
+                            if(finalBalance < payload.Amount)
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {finalBalance}" });
+                            good = true;
+                        }
+                        else
+                        {
+                            var finalBalance = balance;
+                            if (finalBalance < payload.Amount)
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {finalBalance}" });
+                            good = true;
+                        }
+
+                        if(good)
+                        {
+                            var scTx = new ReserveBlockCore.Models.Transaction();
+                            var newSCInfo = new[]
+                            {
+                                new { Function = "TransferCoin()" }
+                            };
+
+                            var txData = JsonConvert.SerializeObject(newSCInfo);
+
+                            scTx = new ReserveBlockCore.Models.Transaction
+                            {
+                                Timestamp = TimeUtil.GetTime(),
+                                FromAddress = payload.FromAddress,
+                                ToAddress = payload.ToAddress,
+                                Amount = 0.0M,
+                                Fee = 0,
+                                Nonce = AccountStateTrei.GetNextNonce(payload.FromAddress),
+                                TransactionType = TransactionType.TKNZ_TX,
+                                Data = txData,
+                                UnlockTime = null //TODO: need to make compatible with reserve.
+                            };
+
+                            scTx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(scTx);
+
+                            scTx.Build();
+
+                            var senderBalance = AccountStateTrei.GetAccountBalance(payload.FromAddress);
+                            if ((scTx.Amount + scTx.Fee) > senderBalance)
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Failed;
+                                TransactionData.AddTxToWallet(scTx, true);
+                                NFTLogUtility.Log($"Balance insufficient. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Balance insufficient. SCUID: {payload.SCUID}" });
+                            }
+
+                            if (account.GetPrivKey == null)
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Failed;
+                                TransactionData.AddTxToWallet(scTx, true);
+                                NFTLogUtility.Log($"Private key was null for account {payload.FromAddress}", "TokenizationService.TransferCoin()");
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Private key was null for account {payload.FromAddress}" });
+                            }
+                            var txHash = scTx.Hash;
+                            var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
+                            if (signature == "ERROR")
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Failed;
+                                TransactionData.AddTxToWallet(scTx, true);
+                                NFTLogUtility.Log($"TX Signature Failed. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"TX Signature Failed. SCUID: {payload.SCUID}" });
+                            }
+
+                            scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+
+                            if (scTx.TransactionRating == null)
+                            {
+                                var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                                scTx.TransactionRating = rating;
+                            }
+
+                            var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                            if (result.Item1 == true)
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                                if (account != null)
+                                {
+                                    await WalletService.SendTransaction(scTx, account);
+                                }
+                                //if (rAccount != null)
+                                //{
+                                //    await WalletService.SendReserveTransaction(scTx, rAccount, true);
+                                //}
+
+                                NFTLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                                return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = txHash });
+                            }
+                            else
+                            {
+                                var output = "Fail! Transaction Verify has failed.";
+                                scTx.TransactionStatus = TransactionStatus.Failed;
+                                TransactionData.AddTxToWallet(scTx, true);
+                                NFTLogUtility.Log($"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", "TokenizationService.TransferCoin()");
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", Hash = txHash }); ;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    //just send it
+                    //check balance against amount and send.
+                }
+
+                //if(string.IsNullOrEmpty(tknz.PublicKeyProofs))
+                //    return JsonConvert.SerializeObject(new { Success = false, Message = $"Missing Tokenization Proofs: {payload.SCUID}" });
+
+                //var proofs = JsonConvert.DeserializeObject<List<ArbiterProof>?>(tknz.PublicKeyProofs.ToStringFromBase64());
+
+                //if(proofs == null || !proofs.Any())
+                //    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize proofs: {payload.SCUID}" });
+
+                //foreach (var proof in proofs)
+                //{
+                //    var arbiter = Globals.Arbiters.Where(x => x.SigningAddress == proof.SigningAddress).FirstOrDefault();
+                //}
+
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            return "ERROR!";
         }
     }
 }

@@ -99,6 +99,7 @@ namespace ReserveBlockCore
                 if(Globals.APIToken?.Length > 0)
                     c.OperationFilter<SwaggerHeaderFilter>();
             });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

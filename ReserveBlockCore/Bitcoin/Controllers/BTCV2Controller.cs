@@ -10,8 +10,10 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
+using static ReserveBlockCore.Services.ArbiterService;
 
 namespace ReserveBlockCore.Bitcoin.Controllers
 {
@@ -544,13 +546,45 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
-        /// Unwrapps
+        /// Transfer amount to VFX
         /// </summary>
-        /// <param name="scUID"></param>
         /// <returns></returns>
-        [HttpGet("RevealPrivateKey/{scUID}")]
-        public async Task<string> RevealPrivateKey(string scUID)
+        [HttpPost("TransferCoin")]
+        public async Task<string> TransferCoin([FromBody] object jsonData)
         {
+            try
+            {
+                var result = await TokenizationService.TransferCoin(jsonData);
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
+
+        /// <summary>
+        /// Withdrawal to BTC address
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("WithdrawalCoin")]
+        public async Task<string> WithdrawalCoin([FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Payload body was null" });
+
+                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
+
+                if (payload == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
+            }
+            catch (Exception ex)
+            {
+
+            }
             return JsonConvert.SerializeObject(new { Success = true, Message = $"Coming Soon..." });
         }
 

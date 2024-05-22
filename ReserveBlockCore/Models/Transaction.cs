@@ -97,7 +97,8 @@ namespace ReserveBlockCore.Models
         Failed,
         Reserved,
         CalledBack,
-        Recovered
+        Recovered,
+        Invalid = 999
     }
 
     public enum TransactionRating

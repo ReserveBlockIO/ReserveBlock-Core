@@ -153,7 +153,7 @@ namespace ReserveBlockCore.Services
             public string Message { get; set; }
             public string Address { get; set; }
         }
-        private class ArbiterProof
+        public class ArbiterProof
         {
             public string Signature { get; set; }
             public string SigningAddress { get; set; }

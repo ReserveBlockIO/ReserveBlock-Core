@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Models
         public decimal? PurchaseAmount { get; set; } //Royalty is included in this.
         public List<string>? PurchaseKeys { get; set; }
         public TokenDetails? TokenDetails { get; set; }
+        public List<SmartContractStateTreiTokenizationTX>? SCStateTreiTokenizationTXes { get; set; }
 
         public static LiteDB.ILiteCollection<SmartContractStateTrei> GetSCST()
         {
