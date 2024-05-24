@@ -354,7 +354,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                                 scTx.TransactionStatus = TransactionStatus.Failed;
                                 TransactionData.AddTxToWallet(scTx, true);
                                 NFTLogUtility.Log($"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", Hash = txHash }); ;
+                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", Hash = txHash });
                             }
                         }
                     }

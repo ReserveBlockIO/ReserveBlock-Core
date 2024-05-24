@@ -546,6 +546,21 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Get Tokenized BTC List
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ReplaceByFee/{txid}/{feeRate}")]
+        public async Task<string> ReplaceByFee(string txid, int feeRate)
+        {
+            if(string.IsNullOrEmpty(txid) || feeRate == 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Incorrect URL parameters" });
+
+            var result = await TransactionService.ReplaceByFeeTransaction(txid, feeRate);
+
+            return result;
+        }
+
+        /// <summary>
         /// Transfer amount to VFX
         /// </summary>
         /// <returns></returns>

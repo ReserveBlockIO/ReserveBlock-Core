@@ -58,6 +58,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<BitcoinUTXO>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BTCTokenizePayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BTCTokenizeTransaction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DSTConnection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();

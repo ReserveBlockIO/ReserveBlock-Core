@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public string Signature { get; set; }
         public BTCTransactionType TransactionType { get; set; }
         public long FeeRate { get; set; }
+        public List<BitcoinUTXO> BitcoinUTXOs { get; set; }
 
         #endregion
 
@@ -66,6 +67,30 @@ namespace ReserveBlockCore.Bitcoin.Models
         }
         #endregion
 
+        #region Update Bitcoin TX
+        public static bool UpdateBitcoinTX(BitcoinTransaction btcUTXO)
+        {
+            var bitcoin = GetBitcoinTX();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetBitcoinTX() returned a null value.", "BitcoinTransaction.GetBitcoinTX()");
+            }
+            else
+            {
+                var utxo = bitcoin.FindOne(x => x.Hash == btcUTXO.Hash && x.FromAddress == btcUTXO.FromAddress);
+                if (utxo != null)
+                {
+                    bitcoin.UpdateSafe(btcUTXO);
+                    return true;
+                }
+                
+            }
+
+            return false;
+
+        }
+        #endregion
+
         #region Get Bitcoin Address TX List
         public static List<BitcoinTransaction> GetTXs(string address)
         {
@@ -93,13 +118,41 @@ namespace ReserveBlockCore.Bitcoin.Models
 
         }
         #endregion
+
+        #region Get Bitcoin TX
+        public static async Task<BitcoinTransaction?> GetTX(string txHash)
+        {
+            List<BitcoinTransaction> txList = new List<BitcoinTransaction>();
+            var bitcoin = GetBitcoinTX();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetTX() returned a null value.", "BitcoinTransaction.GetTX()");
+            }
+            else
+            {
+                var tx = bitcoin.FindOne(x => x.Hash == txHash);
+                if (tx != null)
+                {
+                    return tx;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return null;
+
+        }
+        #endregion
     }
 
     #region Enum
     public enum BTCTransactionType
     {
         Send,
-        Receive
+        Receive,
+        Replaced
     }
     #endregion
 }
