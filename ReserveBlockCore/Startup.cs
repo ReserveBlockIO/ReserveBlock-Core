@@ -39,6 +39,8 @@ namespace ReserveBlockCore
             //});
 
             services.AddSwaggerGen(c => {
+                c.CustomSchemaIds(type => type.ToString());
+                c.CustomSchemaIds(type => $"{type.Name}_{System.Guid.NewGuid().ToString().Replace("-", "")}");
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ReserveBlock CLI API", Version = "v1" });
                 c.DocumentFilter<SwaggerDocumentFilter<Account>>();
                 c.DocumentFilter<SwaggerDocumentFilter<AccountKeystore>>();
