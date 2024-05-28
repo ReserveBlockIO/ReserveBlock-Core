@@ -561,6 +561,29 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Rebroadcast transaction
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Rebroadcast/{txid}")]
+        public async Task<string> Rebroadcast(string txid)
+        {
+            if (string.IsNullOrEmpty(txid))
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Incorrect URL parameters" });
+
+            var btcTransaction = await BitcoinTransaction.GetTX(txid);
+
+            if(btcTransaction == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find transaction locally." });
+
+            if(btcTransaction.BTCTx == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Local TX found, but signed transaction missing." });
+
+            _ = BroadcastService.BroadcastTx(btcTransaction.BTCTx);
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = "Broadcasting Transaction Again.", btcTransaction.Hash });
+        }
+
+        /// <summary>
         /// Transfer amount to VFX
         /// </summary>
         /// <returns></returns>

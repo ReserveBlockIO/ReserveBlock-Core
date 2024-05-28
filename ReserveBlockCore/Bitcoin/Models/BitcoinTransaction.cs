@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using NBitcoin;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 using System.ComponentModel.DataAnnotations;
@@ -16,6 +17,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string Signature { get; set; }
+        public Transaction? BTCTx { get; set; }
         public BTCTransactionType TransactionType { get; set; }
         public long FeeRate { get; set; }
         public List<BitcoinUTXO> BitcoinUTXOs { get; set; }

@@ -122,6 +122,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                         Hash = signedTransaction.GetHash().ToString(),
                         Signature = hexTx,
                         Timestamp = TimeUtil.GetTime(),
+                        BTCTx = signedTransaction,
                         TransactionType = BTCTransactionType.Send,
                         BitcoinUTXOs = coinList.Item2,
                     };
