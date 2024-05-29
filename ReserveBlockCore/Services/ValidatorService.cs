@@ -348,6 +348,19 @@ namespace ReserveBlockCore.Services
             catch(Exception ex) { ErrorLogUtility.LogError($"Error: {ex}", "ValidatorService.UpdateBlockMemory()"); }
         }
 
+        public static async Task UpdateProofBlockHashDictionary(long currentHeight, string hash)
+        {
+            if(currentHeight % 7 == 0)
+            {
+                Globals.ProofBlockHashDict.TryAdd(currentHeight + 7, hash);
+                if (Globals.ProofBlockHashDict.Count() > 3)
+                {
+                    var oldestRecord = Globals.ProofBlockHashDict.OrderBy(kv => kv.Key).FirstOrDefault();
+                    Globals.ProofBlockHashDict.TryRemove(oldestRecord.Key, out _);
+                }
+            }
+        }
+
         public static async Task PerformErrorCountCheck()
         {
             if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))

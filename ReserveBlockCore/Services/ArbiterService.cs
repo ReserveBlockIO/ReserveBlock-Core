@@ -114,6 +114,7 @@ namespace ReserveBlockCore.Services
 
         private static string CreateDepositAddress(List<PubKey> shares)
         {
+            //ORDER IS IMPORTANT HERE!
             shares = shares.OrderBy(x => x.ScriptPubKey.ToString()).ToList();
             PubKey[] aggregatedPubKey = AggregatePublicKeys(shares);
             Script multiSigScript = CreateMultiSigScript(Globals.TotalArbiterThreshold, aggregatedPubKey);

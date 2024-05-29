@@ -50,6 +50,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
         public static ConcurrentDictionary<string, string> SeedDict = new ConcurrentDictionary<string, string>();
         public static ConcurrentDictionary<string, TokenDetails> Tokens = new ConcurrentDictionary<string, TokenDetails>();
+        public static ConcurrentDictionary<long, string> ProofBlockHashDict = new ConcurrentDictionary<long, string>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();

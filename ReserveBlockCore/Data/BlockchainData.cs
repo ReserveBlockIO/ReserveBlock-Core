@@ -456,7 +456,13 @@ namespace ReserveBlockCore.Data
 
                     _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                     _ = ValidatorService.UpdateActiveValidators(block);
-                    _ = ValidatorService.UpdateBlockMemory(block.Height);
+
+                    if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                    {
+                        _ = ValidatorService.UpdateBlockMemory(block.Height);
+                        _ = ValidatorService.UpdateProofBlockHashDictionary(block.Height, block.Hash);
+                    }
+                    
 
                     //insert block to db
                     blocks.InsertSafe(block);
