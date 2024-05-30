@@ -2,6 +2,7 @@
 using NBitcoin;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Security.Principal;
 
@@ -9,9 +10,9 @@ namespace ReserveBlockCore.Services
 {
     public class ArbiterService
     {
-        public static async Task<(string, string)> GetTokenizationDetails(string accountAddress)
+        public static async Task<(string, string)> GetTokenizationDetails(string accountAddress, string scUID)
         {
-            var myList = Globals.Arbiters;
+            var myList = Globals.Arbiters.Where(x => x.EndOfService == null && x.StartOfService <= TimeUtil.GetTime()).ToList();
             var rnd = new Random();
             myList = myList.OrderBy(x => rnd.Next()).ToList();
 
@@ -26,7 +27,7 @@ namespace ReserveBlockCore.Services
                 {
                     try
                     {
-                        string url = $"http://{arbiter.IPAddress}:{Globals.ArbiterPort}/depositaddress/{accountAddress}";
+                        string url = $"http://{arbiter.IPAddress}:{Globals.ArbiterPort}/depositaddress/{accountAddress}/{scUID}";
 
                         var response = await client.GetAsync(url);
                         if (response == null)
@@ -43,7 +44,9 @@ namespace ReserveBlockCore.Services
                         if (arbResponse == null)
                             return ("FAIL", "Arbiter response was null");
 
-                        var sigValid = SignatureService.VerifySignature(arbiter.SigningAddress, arbResponse.PublicKey, arbResponse.Signature);
+                        var message = arbResponse.PublicKey + scUID;
+
+                        var sigValid = SignatureService.VerifySignature(arbiter.SigningAddress, message, arbResponse.Signature);
 
                         if(!sigValid)
                             return ("FAIL", "Invalid Signature Proof from Arbiter.");

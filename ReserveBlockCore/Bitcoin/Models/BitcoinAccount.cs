@@ -150,9 +150,9 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Create Bitcoin Address For Arbiter
-        public static string CreatePublicKeyForArbiter(string signingPrivateKey, int count)
+        public static string CreatePublicKeyForArbiter(string signingPrivateKey, string scUID)
         {
-            byte[] hash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(signingPrivateKey + count.ToString()));
+            byte[] hash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(signingPrivateKey + scUID));
             // Generate a random private key
             Key privateKey = new Key(hash);
 

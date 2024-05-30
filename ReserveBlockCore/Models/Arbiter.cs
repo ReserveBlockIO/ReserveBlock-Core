@@ -7,6 +7,7 @@
         public string Title { get; set; }
         public int Generation { get; set; }
         public string IPAddress { get; set; }
-        public long StartOfService { get; set; } 
+        public long StartOfService { get; set; }
+        public long? EndOfService { get; set;}
     }
 }

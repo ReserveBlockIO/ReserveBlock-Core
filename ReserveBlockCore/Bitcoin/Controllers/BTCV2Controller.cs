@@ -504,7 +504,9 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if(payload == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
 
-                var tokenizationDetails = await ArbiterService.GetTokenizationDetails(payload.RBXAddress);
+                var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+                var tokenizationDetails = await ArbiterService.GetTokenizationDetails(payload.RBXAddress, scUID);
 
                 if(tokenizationDetails.Item1 == "FAIL")
                     return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item2 });
@@ -514,6 +516,8 @@ namespace ReserveBlockCore.Bitcoin.Controllers
 
                 if (scMain == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to generate vBTC token. Please check logs for more." });
+
+                scMain.SmartContractUID = scUID; //premade scuid
 
                 var createSC = await TokenizationService.CreateTokenizationSmartContract(scMain);
 

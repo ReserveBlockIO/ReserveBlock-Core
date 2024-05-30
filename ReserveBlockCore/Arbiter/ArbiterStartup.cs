@@ -8,6 +8,7 @@ using ReserveBlockCore.SecretSharing.Cryptography;
 using ReserveBlockCore.SecretSharing.Math;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Numerics;
 
 namespace ReserveBlockCore.Arbiter
@@ -63,35 +64,40 @@ namespace ReserveBlockCore.Arbiter
                     }
                 });
 
-                endpoints.MapGet("/depositaddress/{address}", async context =>
+                endpoints.MapGet("/depositaddress/{address}/{**scUID}", async context =>
                  {
-                    var address = context.Request.RouteValues["address"] as string;
 
-                    if (string.IsNullOrEmpty(address))
-                    {
-                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Address" }, Formatting.Indented);
-                        await context.Response.WriteAsync(response);
-                        return;
-                    }
+                     var address = context.Request.RouteValues["address"] as string;
+                     var scUID = context.Request.RouteValues["scUID"] as string;
 
-                    //TODO MAKE THIS WORK!
-                    var publicKey = BitcoinAccount.CreatePublicKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, 0);
+                     if (string.IsNullOrEmpty(address))
+                     {
+                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                         var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Address" }, Formatting.Indented);
+                         await context.Response.WriteAsync(response);
+                         return;
+                     }
 
-                    var signature = SignatureService.CreateSignature(publicKey, Globals.ArbiterSigningAddress.GetPrivKey, Globals.ArbiterSigningAddress.PublicKey);
+                     var publicKey = BitcoinAccount.CreatePublicKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, scUID);
 
-                    if(signature == "F")
-                    {
+                     var message = publicKey + scUID;
+                    
+                     var signature = SignatureService.CreateSignature(message, Globals.ArbiterSigningAddress.GetPrivKey, Globals.ArbiterSigningAddress.PublicKey);
+
+                     if(signature == "F")
+                    
+                     {
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
                         var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Signature Failed." }, Formatting.Indented);
                         await context.Response.WriteAsync(response);
                         return;
-                    }
+                    
+                     }
 
-                    context.Response.StatusCode = StatusCodes.Status200OK;
-                    var requestorResponseJson = JsonConvert.SerializeObject(new { Success = true, Message = $"PubKey created", PublicKey = publicKey, Signature = signature }, Formatting.Indented);
-                    await context.Response.WriteAsync(requestorResponseJson);
-                    return;
+                     context.Response.StatusCode = StatusCodes.Status200OK;
+                     var requestorResponseJson = JsonConvert.SerializeObject(new { Success = true, Message = $"PubKey created", PublicKey = publicKey, Signature = signature }, Formatting.Indented);
+                     await context.Response.WriteAsync(requestorResponseJson);
+                     return;
                     
                 });
             });
