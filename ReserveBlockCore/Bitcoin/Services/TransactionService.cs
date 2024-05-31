@@ -194,6 +194,118 @@ namespace ReserveBlockCore.Bitcoin.Services
             
         }
 
+        public static async Task<(bool, string)> CalcuateFee(string sender, string receiver, decimal sendAmount, long chosenFeeRate, bool overrideInternalSend = false)
+        {
+            try
+            {
+                receiver = receiver.ToBTCAddressNormalize();
+
+                var btcAccount = BitcoinAccount.GetBitcoinAccount(sender);
+                var receiverAccount = BitcoinAccount.GetBitcoinAccount(receiver);
+                if (btcAccount == null)
+                    return (false, $"Could not find a bitcoin account for the following address: {sender}");
+
+                if (btcAccount.Balance <= sendAmount)
+                    return (false, $"Insufficient Balance: {btcAccount.Balance}");
+
+                if (receiverAccount != null && !overrideInternalSend)
+                    return (false, $"This is an internal send. Please use the override if you wish to do this.");
+
+                if (sendAmount < Globals.BTCMinimumAmount)
+                    return (false, $"This wallet does not support sends smaller than {Globals.BTCMinimumAmount} BTC.");
+
+                Console.WriteLine($"Account Checks Passed.");
+
+                string senderPrivateKeyHex = btcAccount.PrivateKey;
+
+                BitcoinAddress senderAddress = BitcoinAddress.Create(sender, Globals.BTCNetwork);
+                BitcoinAddress recipientAddress = BitcoinAddress.Create(receiver, Globals.BTCNetwork);
+
+                ulong amountToSend = Convert.ToUInt32(sendAmount * BTCMultiplier);
+                ulong feeEstimate = 0;
+                bool sufficientInputsFound = false;
+                List<Coin> unspentCoins = new List<Coin>();
+                List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
+
+                List<Coin> previousUnspentCoins = null;
+                while (!sufficientInputsFound)
+                {
+                    var coinList = GetUnspentCoins(sender, senderAddress, sendAmount + feeEstimate);
+                    unspentCoins = coinList.Item1;
+                    // Check if the coin list has changed
+                    if (previousUnspentCoins != null && unspentCoins.SequenceEqual(previousUnspentCoins))
+                    {
+                        // If coin list is unchanged, no more UTXOs are available
+                        return (false, "Not enough UTXOs to cover the amount and fees.");
+                    }
+
+                    previousUnspentCoins = new List<Coin>(unspentCoins);
+
+                    if (!unspentCoins.Any())
+                        return (false, "Could not find any UTXOs for inputs.");
+
+                    int inputCount = unspentCoins.Count();
+                    int outputCount = 2; // one for recipient, one for change
+
+                    FeeRate feeRateCalc = new FeeRate(chosenFeeRate * 1000);
+
+                    // Estimate the transaction size
+                    int transactionSize = FeeCalcService.EstimateTransactionSize(inputCount, outputCount);
+
+                    // Calculate the fee (in satoshis)
+                    feeEstimate = feeRateCalc.GetFee(transactionSize);
+
+                    ulong totalAmountRequired = amountToSend + feeEstimate;
+
+                    // Check if total UTXO value is enough to cover the amount and the fee
+                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
+
+                    if (totalInputAmount >= totalAmountRequired)
+                    {
+                        sufficientInputsFound = true;
+                        coinListBtcUTXOs = coinList.Item2;
+                    }
+                    else
+                    {
+                        // If inputs are not sufficient, try to get more or larger UTXOs
+                        sendAmount += (decimal)feeEstimate / BTCMultiplier; // Increment the amount to cover fee in next iteration
+                    }
+
+                }
+
+                var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
+
+                unspentCoins.ForEach(x => {
+                    txBuilder.AddCoin(x);
+                });
+
+                txBuilder
+                    .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
+                    .SetChange(senderAddress);
+
+                Console.WriteLine($"TX builder Done.");
+
+                // Get the count of inputs and outputs
+                int finalInputCount = unspentCoins.Count();
+                int finalOutputCount = 2; // one for recipient, one for change
+
+                FeeRate feeRate = new FeeRate(chosenFeeRate * 1000);
+
+                int finalTransactionSize = FeeCalcService.EstimateTransactionSize(finalInputCount, finalOutputCount);
+                ulong finalFee = feeRate.GetFee(finalTransactionSize);
+
+                decimal totalFee = finalFee * SatoshiMultiplier;
+
+                return (true, $"{totalFee}");
+
+
+            }
+            catch(Exception ex )
+            {
+                return (false, $"Error: {ex}");
+            }
+        }
+
         public static async Task<string> ReplaceByFeeTransaction(string txid, long nFeeRate)
         {
             try

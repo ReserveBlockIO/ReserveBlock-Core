@@ -253,6 +253,23 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Calcs fee for transaction
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <param name="feeRate"></param>
+        /// <param name="overrideInternalSend"></param>
+        /// <returns></returns>
+        [HttpGet("CalculateFee/{faddr}/{taddr}/{amt}/{feeRate}/{overrideInternalSend?}")]
+        public async Task<string> CalculateFee(string faddr, string taddr, decimal amt, int feeRate, bool overrideInternalSend = false)
+        {
+            var result = await TransactionService.CalcuateFee(faddr, taddr, amt, feeRate, overrideInternalSend);
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2, Fee = result.Item2 }); ;
+        }
+
+        /// <summary>
         /// Get Transaction Fee
         /// </summary>
         /// <param name="faddr"></param>
