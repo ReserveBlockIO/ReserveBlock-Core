@@ -259,37 +259,13 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// <param name="taddr"></param>
         /// <param name="amt"></param>
         /// <param name="feeRate"></param>
-        /// <param name="overrideInternalSend"></param>
         /// <returns></returns>
-        [HttpGet("CalculateFee/{faddr}/{taddr}/{amt}/{feeRate}/{overrideInternalSend?}")]
-        public async Task<string> CalculateFee(string faddr, string taddr, decimal amt, int feeRate, bool overrideInternalSend = false)
+        [HttpGet("CalculateFee/{faddr}/{taddr}/{amt}/{feeRate}")]
+        public async Task<string> CalculateFee(string faddr, string taddr, decimal amt, int feeRate)
         {
-            var result = await TransactionService.CalcuateFee(faddr, taddr, amt, feeRate, overrideInternalSend);
+            var result = await TransactionService.CalcuateFee(faddr, taddr, amt, feeRate);
 
-            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2, Fee = result.Item2 }); ;
-        }
-
-        /// <summary>
-        /// Get Transaction Fee
-        /// </summary>
-        /// <param name="faddr"></param>
-        /// <param name="taddr"></param>
-        /// <param name="amt"></param>
-        /// <param name="feeRate"></param>
-        /// <returns></returns>
-        [HttpGet("GetTransactionFee/{faddr}/{taddr}/{amt}/{feeRate}")]
-        public async Task<string> GetTransactionFee(string faddr, string taddr, decimal amt, int feeRate)
-        {
-            var result = await TransactionService.GetTransactionFee(faddr, taddr, amt, feeRate);
-
-            if(result.Item1)
-            {
-                var parseResult = decimal.TryParse(result.Item2, out var btcFee);
-                var satParseResult = ulong.TryParse(result.Item2, out var satFee);
-                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2, SatoshiFee = satParseResult ? satFee : 0, BitcoinFee = parseResult ? (btcFee * TransactionService.SatoshiMultiplier) : 0 });
-            }
-               
-            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
+            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = "Fee Calculated", Fee = result.Item2 }); ;
         }
 
         /// <summary>

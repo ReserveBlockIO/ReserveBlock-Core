@@ -194,7 +194,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             
         }
 
-        public static async Task<(bool, string)> CalcuateFee(string sender, string receiver, decimal sendAmount, long chosenFeeRate, bool overrideInternalSend = false)
+        public static async Task<(bool, string)> CalcuateFee(string sender, string receiver, decimal sendAmount, long chosenFeeRate)
         {
             try
             {
@@ -207,9 +207,6 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 if (btcAccount.Balance <= sendAmount)
                     return (false, $"Insufficient Balance: {btcAccount.Balance}");
-
-                if (receiverAccount != null && !overrideInternalSend)
-                    return (false, $"This is an internal send. Please use the override if you wish to do this.");
 
                 if (sendAmount < Globals.BTCMinimumAmount)
                     return (false, $"This wallet does not support sends smaller than {Globals.BTCMinimumAmount} BTC.");
@@ -436,54 +433,6 @@ namespace ReserveBlockCore.Bitcoin.Services
                 return JsonConvert.SerializeObject(new { Success = true, Message = $"TX not verified. ERROR: {ex}" });
             }
             
-        }
-
-        public static async Task<(bool, string)> GetTransactionFee(string sender, string receiver, decimal sendAmount, long chosenFeeRate)
-        {
-            var btcAccount = BitcoinAccount.GetBitcoinAccount(sender);
-            var receiverAccount = BitcoinAccount.GetBitcoinAccount(receiver);
-            if (btcAccount == null)
-                return (false, $"Could not find a bitcoin account for the following address: {sender}");
-
-            if (btcAccount.Balance <= sendAmount)
-                return (false, $"Insufficient Balance: {btcAccount.Balance}");
-
-            string senderPrivateKeyHex = btcAccount.PrivateKey;
-
-            BitcoinAddress senderAddress = BitcoinAddress.Create(sender, Globals.BTCNetwork);
-            BitcoinAddress recipientAddress = BitcoinAddress.Create(receiver, Globals.BTCNetwork);
-
-            ulong amountToSend = Convert.ToUInt32(sendAmount * BTCMultiplier);
-
-            // Get the unspent output(s) (UTXOs) associated with the sender's address
-            var coinList = GetUnspentCoins(sender, senderAddress, sendAmount);
-            List<Coin> unspentCoins = coinList.Item1;
-
-            if (!unspentCoins.Any())
-                return (false, $"Could not find any UTXOs for inputs.");
-
-            var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
-
-            unspentCoins.ForEach(x => {
-                txBuilder.AddCoin(x);
-            });
-
-            txBuilder
-                .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
-                .SetChange(senderAddress);
-
-            // Get the count of inputs and outputs
-            int inputCount = unspentCoins.Count();
-            int outputCount = 2; // one for recipient, one for change
-
-            FeeRate feeRate = new FeeRate(chosenFeeRate * 1000);
-
-            int transactionSize = FeeCalcService.EstimateTransactionSize(inputCount, outputCount); // 1 input, 2 outputs
-
-            // Calculate the fee (in satoshis)
-            ulong fee = feeRate.GetFee(transactionSize);
-
-            return (true, $"{fee}");
         }
 
         private static (List<Coin>, List<BitcoinUTXO>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent)
