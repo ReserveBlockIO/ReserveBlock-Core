@@ -49,22 +49,27 @@ namespace ReserveBlockCore.Bitcoin.Services
                 List<Coin> unspentCoins = new List<Coin>();
                 List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
 
-                List<Coin> previousUnspentCoins = null;
+                ulong previousTotalInputAmount = 0;
+
                 while (!sufficientInputsFound)
                 {
                     var coinList = GetUnspentCoins(sender, senderAddress, sendAmount + feeEstimate);
                     unspentCoins = coinList.Item1;
-                    // Check if the coin list has changed
-                    if (previousUnspentCoins != null && unspentCoins.SequenceEqual(previousUnspentCoins))
-                    {
-                        // If coin list is unchanged, no more UTXOs are available
-                        return (false, "Not enough UTXOs to cover the amount and fees.");
-                    }
-
-                    previousUnspentCoins = new List<Coin>(unspentCoins);
 
                     if (!unspentCoins.Any())
                         return (false, "Could not find any UTXOs for inputs.");
+
+                    // Check if the coin list has changed
+                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
+
+                    // Check if the total input amount is unchanged
+                    if (totalInputAmount == previousTotalInputAmount)
+                    {
+                        // If total input amount is unchanged, no more UTXOs are available
+                        return (false, $"Not enough UTXOs to cover the amount and fees. Fee: {feeEstimate} Sats");
+                    }
+
+                    previousTotalInputAmount = totalInputAmount;
 
                     int inputCount = unspentCoins.Count();
                     int outputCount = 2; // one for recipient, one for change
@@ -78,9 +83,6 @@ namespace ReserveBlockCore.Bitcoin.Services
                     feeEstimate = feeRateCalc.GetFee(transactionSize);
 
                     ulong totalAmountRequired = amountToSend + feeEstimate;
-
-                    // Check if total UTXO value is enough to cover the amount and the fee
-                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
 
                     if (totalInputAmount >= totalAmountRequired)
                     {
@@ -224,22 +226,26 @@ namespace ReserveBlockCore.Bitcoin.Services
                 List<Coin> unspentCoins = new List<Coin>();
                 List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
 
-                List<Coin> previousUnspentCoins = null;
+                ulong previousTotalInputAmount = 0;
                 while (!sufficientInputsFound)
                 {
                     var coinList = GetUnspentCoins(sender, senderAddress, sendAmount + feeEstimate);
                     unspentCoins = coinList.Item1;
-                    // Check if the coin list has changed
-                    if (previousUnspentCoins != null && unspentCoins.SequenceEqual(previousUnspentCoins))
-                    {
-                        // If coin list is unchanged, no more UTXOs are available
-                        return (false, "Not enough UTXOs to cover the amount and fees.");
-                    }
-
-                    previousUnspentCoins = new List<Coin>(unspentCoins);
 
                     if (!unspentCoins.Any())
                         return (false, "Could not find any UTXOs for inputs.");
+
+                    // Check if the coin list has changed
+                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
+
+                    // Check if the total input amount is unchanged
+                    if (totalInputAmount == previousTotalInputAmount)
+                    {
+                        // If total input amount is unchanged, no more UTXOs are available
+                        return (false, $"Not enough UTXOs to cover the amount and fees. Fee: {feeEstimate} Sats");
+                    }
+
+                    previousTotalInputAmount = totalInputAmount;
 
                     int inputCount = unspentCoins.Count();
                     int outputCount = 2; // one for recipient, one for change
@@ -253,9 +259,6 @@ namespace ReserveBlockCore.Bitcoin.Services
                     feeEstimate = feeRateCalc.GetFee(transactionSize);
 
                     ulong totalAmountRequired = amountToSend + feeEstimate;
-
-                    // Check if total UTXO value is enough to cover the amount and the fee
-                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
 
                     if (totalInputAmount >= totalAmountRequired)
                     {
