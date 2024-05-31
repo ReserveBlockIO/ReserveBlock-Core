@@ -45,13 +45,14 @@ namespace ReserveBlockCore.Bitcoin.Models
             else
             {
                 var utxo = bitcoin.FindOne(x => x.TxId == btcUTXO.TxId && x.Address == btcUTXO.Address);
-                if (utxo != null)
+                if (utxo != null && unspend)
                 {
                     utxo.Address = btcUTXO.Address;
                     utxo.Value = btcUTXO.Value;
                     utxo.Vout = btcUTXO.Vout;
                     utxo.IsUsed = unspend ? false : true;
-                    return false;
+                    bitcoin.UpdateSafe(utxo);
+                    return true;
                 }
                 else
                 {
