@@ -265,7 +265,10 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         {
             var result = await TransactionService.CalcuateFee(faddr, taddr, amt, feeRate);
 
-            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = "Fee Calculated", Fee = result.Item2 }); ;
+            if (!result.Item1)
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"{result.Item2}", Fee = "0.0" }); 
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = "Fee Calculated", Fee = result.Item2 });
         }
 
         /// <summary>
