@@ -575,10 +575,15 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             if(btcTransaction == null)
                 return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find transaction locally." });
 
-            if(btcTransaction.BTCTx == null)
+            if(btcTransaction.Signature == null)
                 return JsonConvert.SerializeObject(new { Success = false, Message = "Local TX found, but signed transaction missing." });
 
-            _ = BroadcastService.BroadcastTx(btcTransaction.BTCTx);
+            var btcTran = NBitcoin.Transaction.Parse(btcTransaction.Signature, Globals.BTCNetwork);
+
+            if(btcTran == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Local TX found, but failed to parse tx from hex signature." });
+
+            _ = BroadcastService.BroadcastTx(btcTran);
 
             return JsonConvert.SerializeObject(new { Success = true, Message = "Broadcasting Transaction Again.", btcTransaction.Hash });
         }

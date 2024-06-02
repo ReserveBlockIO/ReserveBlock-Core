@@ -165,7 +165,6 @@ namespace ReserveBlockCore.Bitcoin.Services
                         Hash = signedTransaction.GetHash().ToString(),
                         Signature = hexTx,
                         Timestamp = TimeUtil.GetTime(),
-                        BTCTx = signedTransaction,
                         TransactionType = BTCTransactionType.Send,
                         BitcoinUTXOs = coinListBtcUTXOs,
                     };
@@ -332,18 +331,63 @@ namespace ReserveBlockCore.Bitcoin.Services
                 BitcoinAddress recipientAddress = BitcoinAddress.Create(transaction.ToAddress, Globals.BTCNetwork);
 
                 ulong amountToSend = Convert.ToUInt32(transaction.Amount * BTCMultiplier);
+                ulong feeEstimate = 0;
+                bool sufficientInputsFound = false;
+                List<Coin> unspentCoins = new List<Coin>();
+                List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
+                ulong previousTotalInputAmount = 0;
+                decimal sendAmount = transaction.Amount;
+                string sender = transaction.FromAddress;
 
-                // Get the unspent output(s) (UTXOs) associated with the sender's address
-                var coinList = GetUnspentCoins(transaction.FromAddress, senderAddress, transaction.Amount, transaction.BitcoinUTXOs);
-                List<Coin> unspentCoins = coinList.Item1;
+                while (!sufficientInputsFound)
+                {
+                    var coinList = GetUnspentCoins(sender, senderAddress, sendAmount + feeEstimate);
+                    unspentCoins = coinList.Item1;
 
-                if (!unspentCoins.Any())
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find any UTXOs for inputs." });
+                    if (!unspentCoins.Any())
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find any UTXOs for inputs." });
+
+                    // Check if the coin list has changed
+                    ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
+
+                    // Check if the total input amount is unchanged
+                    if (totalInputAmount == previousTotalInputAmount)
+                    {
+                        // If total input amount is unchanged, no more UTXOs are available
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough UTXOs to cover the amount and fees. Fee: {feeEstimate} Sats" });
+                    }
+
+                    previousTotalInputAmount = totalInputAmount;
+
+                    int inputCount = unspentCoins.Count();
+                    int outputCount = 2; // one for recipient, one for change
+
+                    FeeRate feeRateCalc = new FeeRate(nFeeRate * 1000);
+
+                    // Estimate the transaction size
+                    int transactionSize = FeeCalcService.EstimateTransactionSize(inputCount, outputCount);
+
+                    // Calculate the fee (in satoshis)
+                    feeEstimate = feeRateCalc.GetFee(transactionSize);
+
+                    ulong totalAmountRequired = amountToSend + feeEstimate;
+
+                    if (totalInputAmount >= totalAmountRequired)
+                    {
+                        sufficientInputsFound = true;
+                        coinListBtcUTXOs = coinList.Item2;
+                    }
+                    else
+                    {
+                        // If inputs are not sufficient, try to get more or larger UTXOs
+                        sendAmount += (decimal)feeEstimate / BTCMultiplier; // Increment the amount to cover fee in next iteration
+                    }
+
+                }
 
                 var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
 
-                unspentCoins.ForEach(x =>
-                {
+                unspentCoins.ForEach(x => {
                     txBuilder.AddCoin(x);
                 });
 
@@ -354,17 +398,15 @@ namespace ReserveBlockCore.Bitcoin.Services
                 Console.WriteLine($"TX builder Done.");
 
                 // Get the count of inputs and outputs
-                int inputCount = unspentCoins.Count();
-                int outputCount = 2; // one for recipient, one for change
+                int finalInputCount = unspentCoins.Count();
+                int finalOutputCount = 2; // one for recipient, one for change
 
                 FeeRate feeRate = new FeeRate(nFeeRate * 1000);
 
-                int transactionSize = FeeCalcService.EstimateTransactionSize(inputCount, outputCount); // 1 input, 2 outputs
+                int finalTransactionSize = FeeCalcService.EstimateTransactionSize(finalInputCount, finalOutputCount);
+                ulong finalFee = feeRate.GetFee(finalTransactionSize);
 
-                // Calculate the fee (in satoshis)
-                ulong fee = feeRate.GetFee(transactionSize);
-
-                decimal totalAmountSpent = (amountToSend + fee) * SatoshiMultiplier;
+                decimal totalAmountSpent = (amountToSend + finalFee) * SatoshiMultiplier;
                 decimal originalAmountSpent = (transaction.Amount + transaction.Fee);
 
                 byte[] privateKeyBytes = senderPrivateKeyHex.HexToByteArray();
@@ -374,7 +416,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 var signedTransaction = txBuilder
                     .AddKeys(senderKey)
-                    .SendFees(new Money(fee, MoneyUnit.Satoshi))
+                    .SendFees(new Money(finalFee, MoneyUnit.Satoshi))
                     .SetOptInRBF(true)
                     .BuildTransaction(true);
 
@@ -394,9 +436,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                     transaction.TransactionType = BTCTransactionType.Replaced;
                     BitcoinTransaction.UpdateBitcoinTX(transaction);
 
-                    if (coinList.Item2.Any())
+                    if (coinListBtcUTXOs.Any())
                     {
-                        coinList.Item2.ForEach(x =>
+                        coinListBtcUTXOs.ForEach(x =>
                         {
                             BitcoinUTXO.SpendUTXO(x.TxId, x.Address);
                         });
@@ -406,7 +448,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                     var tx = new BitcoinTransaction
                     {
-                        Fee = (fee * SatoshiMultiplier),
+                        Fee = (finalFee * SatoshiMultiplier),
                         Amount = transaction.Amount,
                         FromAddress = transaction.FromAddress,
                         ToAddress = transaction.ToAddress,
@@ -415,7 +457,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                         Signature = hexTx,
                         Timestamp = TimeUtil.GetTime(),
                         TransactionType = BTCTransactionType.Send,
-                        BitcoinUTXOs = coinList.Item2,
+                        BitcoinUTXOs = coinListBtcUTXOs
                     };
 
                     BitcoinTransaction.SaveBitcoinTX(tx);
