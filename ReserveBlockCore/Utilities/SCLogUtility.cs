@@ -1,11 +1,68 @@
-﻿using System.Diagnostics;
+﻿using Newtonsoft.Json;
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ReserveBlockCore.Utilities
 {
-    public class NFTLogUtility
+    public class SCLogUtility
     {
+        public static async Task<string> LogAndReturn(string message, string location, bool success)
+        {
+            try
+            {
+                bool writeLog = true;
+                var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+                var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
+                string path = "";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    if (Debugger.IsAttached)
+                    {
+                        path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
+                    else
+                    {
+                        path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(Globals.CustomPath))
+                {
+                    path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                if (File.Exists(path + "sclog.txt"))
+                {
+                    var bytes = File.ReadAllBytes(path + "sclog.txt").Length;
+                    var totalMB = bytes / 1024 / 1024;
+                    if (totalMB > 100)
+                        writeLog = false;
+                    else
+                        writeLog = true;
+                }
+
+                if (writeLog)
+                    await File.AppendAllTextAsync(path + "sclog.txt", Environment.NewLine + text);
+            }
+            catch (Exception ex)
+            {
+            }
+
+            return JsonConvert.SerializeObject(new { Success = success, Message = message });
+        }
         public static async void Log(string message, string location, bool firstEntry = false)
         {
             try
@@ -43,12 +100,12 @@ namespace ReserveBlockCore.Utilities
                 }
                 if (firstEntry == true)
                 {
-                    await File.AppendAllTextAsync(path + "nftlog.txt", Environment.NewLine + " ");
+                    await File.AppendAllTextAsync(path + "sclog.txt", Environment.NewLine + " ");
                 }
 
-                if (File.Exists(path + "nftlog.txt"))
+                if (File.Exists(path + "sclog.txt"))
                 {
-                    var bytes = File.ReadAllBytes(path + "nftlog.txt").Length;
+                    var bytes = File.ReadAllBytes(path + "sclog.txt").Length;
                     var totalMB = bytes / 1024 / 1024;
                     if (totalMB > 100)
                         writeLog = false;
@@ -57,7 +114,7 @@ namespace ReserveBlockCore.Utilities
                 }
 
                 if(writeLog)
-                    await File.AppendAllTextAsync(path + "nftlog.txt", Environment.NewLine + text);
+                    await File.AppendAllTextAsync(path + "sclog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {
@@ -92,7 +149,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            await File.WriteAllTextAsync(path + "nftlog.txt", "");
+            await File.WriteAllTextAsync(path + "sclog.txt", "");
         }
 
         public static async Task<string> ReadLog()
@@ -122,7 +179,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            var result = await File.ReadAllLinesAsync(path + "nftlog.txt");
+            var result = await File.ReadAllLinesAsync(path + "sclog.txt");
 
             StringBuilder strBld = new StringBuilder();
 

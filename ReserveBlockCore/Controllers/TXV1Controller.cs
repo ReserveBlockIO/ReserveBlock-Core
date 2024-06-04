@@ -521,7 +521,7 @@ namespace ReserveBlockCore.Controllers
                             if (!beaconConnectionResult)
                             {
                                 output = JsonConvert.SerializeObject(new { Success = false, Message = "You are not connected to any beacons."});
-                                NFTLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                SCLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
                         }
@@ -531,7 +531,7 @@ namespace ReserveBlockCore.Controllers
                             if (connectedBeacon == null)
                             {
                                 output = JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
-                                NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                SCLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
 

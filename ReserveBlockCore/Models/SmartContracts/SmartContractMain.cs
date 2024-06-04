@@ -60,7 +60,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 if(scMain != null)
                 {
                     scMain.IsPublished = true;
-                    NFTLogUtility.Log($"Smart Contract Has Been Minted to Network : {scMain.SmartContractUID}", "SmartContractMain.SetSmartContractIsPublished(string scUID)");
+                    SCLogUtility.Log($"Smart Contract Has Been Minted to Network : {scMain.SmartContractUID}", "SmartContractMain.SetSmartContractIsPublished(string scUID)");
                     scs.UpdateSafe(scMain);
                 }              
             }
@@ -189,7 +189,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
+                    SCLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
                     "SmartContractMain.SaveSCLocally(SmartContractMain scMain, string scText)");
                 }
             }

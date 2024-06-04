@@ -319,11 +319,11 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetNFTAssets/{scUID}")]
         public async Task<bool> GetNFTAssets(string scUID)
         {
-            NFTLogUtility.Log($"Asset Download Started for: {scUID}", "DSTV1Controller.GetNFTAssets()");
+            SCLogUtility.Log($"Asset Download Started for: {scUID}", "DSTV1Controller.GetNFTAssets()");
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
             {
-                NFTLogUtility.Log($"Connected to shop, attempting download  for: {scUID}", "DSTV1Controller.GetNFTAssets()");
+                SCLogUtility.Log($"Connected to shop, attempting download  for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                 Message message = new Message
                 {
                     Address = ConnectingAddress,
@@ -335,7 +335,7 @@ namespace ReserveBlockCore.Controllers
                 if (!Globals.AssetDownloadLock)
                 {
                     Globals.AssetDownloadLock = true;
-                    NFTLogUtility.Log($"Asset download unlocked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
+                    SCLogUtility.Log($"Asset download unlocked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                     await DSTClient.DisconnectFromAsset();
                     var connected = await DSTClient.ConnectToShopForAssets();
                     if (connected)
@@ -347,7 +347,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
-                    NFTLogUtility.Log($"Asset download locked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
+                    SCLogUtility.Log($"Asset download locked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                 }
             }
 

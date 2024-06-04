@@ -886,7 +886,7 @@ namespace ReserveBlockCore.Services
                                         signatureVerify = true;
 
                                     if(!signatureVerify)
-                                        NFTLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
+                                        SCLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
 
                                     if (!signatureVerify)
                                         return (txResult, "Bid signature did not verify.");

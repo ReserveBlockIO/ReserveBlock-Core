@@ -829,7 +829,7 @@ namespace ReserveBlockCore.DST
                 var shopMessage = MessageService.GenerateMessage(message, false);
                 var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
                 
-                NFTLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
+                SCLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
                 while (!stopProcess)
                 {
                     try
@@ -871,9 +871,9 @@ namespace ReserveBlockCore.DST
                             int byteSize = 0;
                             char delim = ',';
                             var assetListDelim = String.Join(delim, assetList);
-                            NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
+                            SCLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
                             await Task.Delay(20);
-                            NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
+                            SCLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
 
                             var assetCount = assetList.Count;
                             var assetSuccessCount = 0;
@@ -920,7 +920,7 @@ namespace ReserveBlockCore.DST
                                     using (var fileStream = File.Create(path))
                                     {
 
-                                        NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
+                                        SCLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
                                         int expectedSequenceNumber = 0;
                                         byte[]? imageData = null;
                                         int timeouts = 0;
@@ -943,7 +943,7 @@ namespace ReserveBlockCore.DST
                                                 var packetData = response.Buffer;
                                                 stopWatch.Stop();
                                                 latencyWait = (int)stopWatch.ElapsedMilliseconds  == 0 ? 500 : (int)stopWatch.ElapsedMilliseconds;
-                                                //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
+                                                //SCLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
                                                 if (Globals.ShowSTUNMessagesInConsole)
                                                     Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms / Latency: {latencyWait} ms");
                                                 //await Task.Delay(300);// adding delay to avoid massive overhead on the UDP port. 
@@ -981,7 +981,7 @@ namespace ReserveBlockCore.DST
 
                                                 if (Globals.ShowSTUNMessagesInConsole)
                                                     Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
-                                                //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
+                                                //SCLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
                                                 if (sequenceNumber != expectedSequenceNumber)
                                                 {
                                                     // If not, discard the packet and request a retransmission
@@ -1012,11 +1012,11 @@ namespace ReserveBlockCore.DST
                                                 if (imageData == null)
                                                 {
                                                     imageData = new byte[dataLength];
-                                                    NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
+                                                    SCLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
                                                 }
                                                 else
                                                 {
-                                                    //NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
+                                                    //SCLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
                                                     Array.Resize(ref imageData, imageData.Length + dataLength);
                                                 }
                                                 Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
@@ -1027,7 +1027,7 @@ namespace ReserveBlockCore.DST
 
                                                 if (isLastPacket)
                                                 {
-                                                    NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
+                                                    SCLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
                                                     // If this is the last   packet, save the image to disk and exit the loop
                                                     await fileStream.WriteAsync(imageData, 0, imageData.Length);
                                                     stopAssetBuild = true;
@@ -1048,7 +1048,7 @@ namespace ReserveBlockCore.DST
                                             catch (Exception ex)
                                             {
                                                 timeouts += 1;
-                                                NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
+                                                SCLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
                                                 
                                                 stopAssetBuild = true;
                                                 var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
@@ -1100,14 +1100,14 @@ namespace ReserveBlockCore.DST
                     {
                         stopProcess = true;
                         AssetConnectionId = "";
-                        NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR1");
+                        SCLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR1");
                         //Globals.AssetDownloadLock = false;
                     }
                 }
 
                 Globals.AssetDownloadLock = false;
 
-                NFTLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
+                SCLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
                 Globals.AssetDownloadLock = false;
             }
             finally
@@ -1510,7 +1510,7 @@ namespace ReserveBlockCore.DST
                                             if (!Globals.AssetDownloadLock)
                                             {
                                                 Globals.AssetDownloadLock = true;
-                                                //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                //SCLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
                                                 if (_assetConnectionId != AssetConnectionId)
                                                 {
                                                     AssetConnectionId = _assetConnectionId;
@@ -1545,7 +1545,7 @@ namespace ReserveBlockCore.DST
                                                 if (!Globals.AssetDownloadLock)
                                                 {
                                                     Globals.AssetDownloadLock = true;
-                                                    //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                    //SCLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
                                                     if (_assetConnectionId != AssetConnectionId)
                                                     {
                                                         AssetConnectionId = _assetConnectionId;

@@ -92,7 +92,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            await File.WriteAllTextAsync(path + "nftlog.txt", "");
+            await File.WriteAllTextAsync(path + "sclog.txt", "");
         }
 
         public static async Task<string> ReadLog()
@@ -122,7 +122,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            var result = await File.ReadAllLinesAsync(path + "nftlog.txt");
+            var result = await File.ReadAllLinesAsync(path + "sclog.txt");
 
             StringBuilder strBld = new StringBuilder();
 

@@ -145,7 +145,7 @@ namespace ReserveBlockCore.DST
                                         var shopServer = client.IPAddress; //this also has port
                                         var shopEndPoint = IPEndPoint.Parse(shopServer);
 
-                                        NFTLogUtility.Log($"Disconnected from shop: {shopServer}", "KeepAliveService.KeepAlive()");
+                                        SCLogUtility.Log($"Disconnected from shop: {shopServer}", "KeepAliveService.KeepAlive()");
                                         await DSTClient.DisconnectFromShop(true);
                                         _ = DSTClient.ConnectToShop(shopEndPoint, shopServer, "NA", client != null ? client.ShopURL : "NA");
                                     }

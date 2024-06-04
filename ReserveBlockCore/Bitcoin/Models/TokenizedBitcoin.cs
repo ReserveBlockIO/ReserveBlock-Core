@@ -163,17 +163,17 @@ namespace ReserveBlockCore.Bitcoin.Models
                         }
                         else
                         {
-                            NFTLogUtility.Log("Failed to read tokenization feature, but it was found", "TokenizedBitcoin.SaveSmartContract()");
+                            SCLogUtility.Log("Failed to read tokenization feature, but it was found", "TokenizedBitcoin.SaveSmartContract()");
                         }
                     }
                     else
                     {
-                        NFTLogUtility.Log("No tokenization features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                        SCLogUtility.Log("No tokenization features found on SC", "TokenizedBitcoin.SaveSmartContract()");
                     }
                 }
                 else
                 {
-                    NFTLogUtility.Log("No features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                    SCLogUtility.Log("No features found on SC", "TokenizedBitcoin.SaveSmartContract()");
                 }
             }
             if (scText != null)
@@ -230,7 +230,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
             catch (Exception ex)
             {
-                NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
+                SCLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
                 "TokenizedBitcoin.SaveSCLocally(SmartContractMain scMain, string scText)");
             }
         }

@@ -17,6 +17,8 @@ using System.Net;
 using System.Xml.Linq;
 using NBitcoin;
 using System.Security.Principal;
+using NBitcoin.Protocol;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -81,7 +83,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
             catch (Exception ex)
             {
-                NFTLogUtility.Log($"Error creating Tokenization Main. Error: {ex}", "TokenizationService.CreateTokenizationScMain()");
+                SCLogUtility.Log($"Error creating Tokenization Main. Error: {ex}", "TokenizationService.CreateTokenizationScMain()");
             }
 
             return null;
@@ -95,11 +97,11 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 if(scMain == null)
                 {
-                    NFTLogUtility.Log($"scMain is null", "TokenizationService.CreateTokenizationSmartContract()");
+                    SCLogUtility.Log($"scMain is null", "TokenizationService.CreateTokenizationSmartContract()");
                     return (false, "");
                 }
                 
-                NFTLogUtility.Log($"Creating Smart Contract: {scMain.SmartContractUID}", "TokenizationService.CreateTokenizationSmartContract()");
+                SCLogUtility.Log($"Creating Smart Contract: {scMain.SmartContractUID}", "TokenizationService.CreateTokenizationSmartContract()");
                 
                 try
                 {
@@ -134,19 +136,19 @@ namespace ReserveBlockCore.Bitcoin.Services
                     SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);
                     await TokenizedBitcoin.SaveSmartContract(result.Item2, result.Item1);
 
-                    NFTLogUtility.Log($"Smart Contract Creation Success: {scMain.SmartContractUID}", "TokenizationService.CreateTokenizationSmartContract()");
+                    SCLogUtility.Log($"Smart Contract Creation Success: {scMain.SmartContractUID}", "TokenizationService.CreateTokenizationSmartContract()");
                     return (true, result.Item2.SmartContractUID);
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.ToString()}", "TokenizationService.CreateTokenizationSmartContract()");
+                    SCLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.ToString()}", "TokenizationService.CreateTokenizationSmartContract()");
                     return (false, "");
                 }
 
             }
             catch (Exception ex)
             {
-                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.ToString()}", "TokenizationService.CreateTokenizationSmartContract()");
+                SCLogUtility.Log($"Failed to create smart contract. Error Message: {ex.ToString()}", "TokenizationService.CreateTokenizationSmartContract()");
                 return (false, "");
             }
         }
@@ -159,13 +161,13 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 if (scMain == null)
                 {
-                    NFTLogUtility.Log($"This vBTC Token does not exist.", "TokenizationService.MintSmartContract(string id)");
+                    SCLogUtility.Log($"This vBTC Token does not exist.", "TokenizationService.MintSmartContract(string id)");
                     return (false, "This vBTC Token does not exist.");
                 }
 
                 if (scMain.IsPublished == true)
                 {
-                    NFTLogUtility.Log($"This vBTC Token has already been published", "TokenizationService.MintSmartContract(string id)");
+                    SCLogUtility.Log($"This vBTC Token has already been published", "TokenizationService.MintSmartContract(string id)");
                     return (false, "This vBTC Token has already been published");
                 }
                 else
@@ -173,13 +175,13 @@ namespace ReserveBlockCore.Bitcoin.Services
                     var scTx = await SmartContractService.MintSmartContractTx(scMain, txType);
                     if (scTx == null)
                     {
-                        NFTLogUtility.Log($"Failed to publish smart contract: {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
+                        SCLogUtility.Log($"Failed to publish smart contract: {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
                         return (false, "Failed to publish smart contract: " + scMain.Name + ". Id: " + id);
                     }
                     else
                     {
                         await TokenizedBitcoin.SetTokenContractIsPublished(scMain.SmartContractUID);
-                        NFTLogUtility.Log($"Smart contract has been published to mempool : {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
+                        SCLogUtility.Log($"Smart contract has been published to mempool : {scMain.SmartContractUID}", "TokenizationService.MintSmartContract(string id)");
 
                         if (returnTx)
                             return (true, scTx.Hash);
@@ -194,53 +196,150 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
         }
 
+        public static async Task<string> TransferOwnership(string scUID, string toAddress, string? backupURL = "")
+        {
+            var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
+
+            if (btcTkn == null)
+                return await SCLogUtility.LogAndReturn($"Failed to find BTC Token: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+            if (sc == null)
+                return await SCLogUtility.LogAndReturn($"Failed to find Smart Contract Data: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            if (sc.Features == null)
+                return await SCLogUtility.LogAndReturn($"Contract has no features: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+            if (tknzFeature == null)
+                return await SCLogUtility.LogAndReturn($"Contract missing a tokenization feature: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            var tknz = (TokenizationFeature)tknzFeature;
+
+            if (tknz == null)
+                return await SCLogUtility.LogAndReturn($"Token feature error: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            var scState = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+
+            if (scState == null)
+                return await SCLogUtility.LogAndReturn($"SC State Missing: {scUID}", "TokenizationService.TransferOwnership()", false);
+
+            //Checking to see if owner account is present.
+            var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+            if (account == null)
+                return await SCLogUtility.LogAndReturn($"Owner address account not found.", "TokenizationService.TransferOwnership()", false);
+
+            if (!Globals.Beacons.Any())
+                return await SCLogUtility.LogAndReturn("Error - You do not have any beacons stored.", "TokenizationService.TransferOwnership()", false);
+
+            if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
+            {
+                var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                if (!beaconConnectionResult)
+                {
+                    return await SCLogUtility.LogAndReturn("Error - You failed to connect to any beacons.", "TokenizationService.TransferOwnership()", false);
+                }
+            }
+
+            var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+            if (connectedBeacon == null)
+                return await SCLogUtility.LogAndReturn("Error - You have lost connection to beacons. Please attempt to resend.", "TokenizationService.TransferOwnership()", false);
+
+
+            toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
+            var localAddress = AccountData.GetSingleAccount(toAddress);
+
+            var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+            var md5List = await MD5Utility.GetMD5FromSmartContract(sc);
+
+            SCLogUtility.Log($"Sending the following assets for upload: {md5List}", "TokenizationService.TransferOwnership()");
+
+            bool result = false;
+            if (localAddress == null)
+            {
+                result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                SCLogUtility.Log($"SC Beacon Upload Request Completed. SCUID: {sc.SmartContractUID}", "TokenizationService.TransferOwnership()");
+            }
+            else
+            {
+                result = true;
+            }
+
+            if (result == true)
+            {
+                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
+                    AssetQueue.TransferType.Upload);
+                SCLogUtility.Log($"SC Asset Queue Items Completed. SCUID: {sc.SmartContractUID}", "TokenizationService.TransferOwnership()");
+
+                if (aqResult)
+                {
+                    _ = Task.Run(() => SmartContractService.TransferSmartContract(sc, toAddress, connectedBeacon, md5List, backupURL, false, null, 0, TransactionType.TKNZ_TX));
+                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "vBTC Token Transfer has been started." });
+                    SCLogUtility.Log($"SC Process Completed in CLI. SCUID: {sc.SmartContractUID}. Response: {success}", "TokenizationService.TransferOwnership()");
+                    return success;
+                }
+                else
+                {
+                    return await SCLogUtility.LogAndReturn($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "TokenizationService.TransferOwnership()", false);
+                }
+
+            }
+            else
+            {
+                return await SCLogUtility.LogAndReturn($"Beacon upload failed. Result was : {result}", "TokenizationService.TransferOwnership()", false);
+            }
+        }
+
         public static async Task<string> TransferCoin(object? jsonData)
         {
             try
             {
                 if (jsonData == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Payload body was null" });
+                    return await SCLogUtility.LogAndReturn($"Payload body was null", "TokenizationService.TransferCoin()", false);
 
                 var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
 
                 if (payload == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
+                    return await SCLogUtility.LogAndReturn($"Failed to deserialize payload", "TokenizationService.TransferCoin()", false);
 
                 if(payload.FromAddress == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"From address cannot be null." });
+                    return await SCLogUtility.LogAndReturn($"From address cannot be null.", "TokenizationService.TransferCoin()", false);
 
                 var account = AccountData.GetSingleAccount(payload.FromAddress);
 
                 if(account == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find account." });
+                    return await SCLogUtility.LogAndReturn($"Could not find account.", "TokenizationService.TransferCoin()", false);
 
                 var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(payload.SCUID);
 
                 if (btcTkn == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find BTC Token: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"Failed to find BTC Token: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 var sc = SmartContractMain.SmartContractData.GetSmartContract(btcTkn.SmartContractUID);
 
                 if (sc == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find Smart Contract Data: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"Failed to find Smart Contract Data: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 if (sc.Features == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has no features: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"Contract has no features: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
 
                 if (tknzFeature == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract missing a tokenization feature: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"Contract missing a tokenization feature: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 var tknz = (TokenizationFeature)tknzFeature;
 
                 if (tknz == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Token feature error: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"Token feature error: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 var scState = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
 
                 if (scState == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State Missing: {payload.SCUID}" });
+                    return await SCLogUtility.LogAndReturn($"SC State Missing: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
 
                 bool isOwner = false;
                 if (scState.OwnerAddress == account.Address)
@@ -257,14 +356,14 @@ namespace ReserveBlockCore.Bitcoin.Services
                         {
                             var finalBalance = btcTkn.Balance + balance;
                             if(finalBalance < payload.Amount)
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {finalBalance}" });
+                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
                             good = true;
                         }
                         else
                         {
                             var finalBalance = balance;
                             if (finalBalance < payload.Amount)
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {finalBalance}" });
+                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
                             good = true;
                         }
 
@@ -300,16 +399,14 @@ namespace ReserveBlockCore.Bitcoin.Services
                             {
                                 scTx.TransactionStatus = TransactionStatus.Failed;
                                 TransactionData.AddTxToWallet(scTx, true);
-                                NFTLogUtility.Log($"Balance insufficient. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Balance insufficient. SCUID: {payload.SCUID}" });
+                                return await SCLogUtility.LogAndReturn($"Balance insufficient. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
                             }
 
                             if (account.GetPrivKey == null)
                             {
                                 scTx.TransactionStatus = TransactionStatus.Failed;
                                 TransactionData.AddTxToWallet(scTx, true);
-                                NFTLogUtility.Log($"Private key was null for account {payload.FromAddress}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Private key was null for account {payload.FromAddress}" });
+                                return await SCLogUtility.LogAndReturn($"Private key was null for account {payload.FromAddress}", "TokenizationService.TransferCoin()", false);
                             }
                             var txHash = scTx.Hash;
                             var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
@@ -317,8 +414,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                             {
                                 scTx.TransactionStatus = TransactionStatus.Failed;
                                 TransactionData.AddTxToWallet(scTx, true);
-                                NFTLogUtility.Log($"TX Signature Failed. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"TX Signature Failed. SCUID: {payload.SCUID}" });
+                                return await SCLogUtility.LogAndReturn($"TX Signature Failed. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
                             }
 
                             scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
@@ -345,7 +441,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                                 //    await WalletService.SendReserveTransaction(scTx, rAccount, true);
                                 //}
 
-                                NFTLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                                SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
                                 return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = txHash });
                             }
                             else
@@ -353,8 +449,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                                 var output = "Fail! Transaction Verify has failed.";
                                 scTx.TransactionStatus = TransactionStatus.Failed;
                                 TransactionData.AddTxToWallet(scTx, true);
-                                NFTLogUtility.Log($"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", Hash = txHash });
+                                return await SCLogUtility.LogAndReturn($"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", "TokenizationService.TransferCoin()", false);
                             }
                         }
                     }
@@ -382,10 +477,105 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
             catch (Exception ex)
             {
-
+                return await SCLogUtility.LogAndReturn($"Unknown Error: {ex}", "TokenizationService.TransferCoin()", false);
             }
 
-            return "ERROR!";
+            return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.TransferCoin()", false);
+        }
+
+        public static async Task<string> WithdrawalCoin(object? jsonData)
+        {
+            try
+            {
+                if (jsonData == null)
+                    return await SCLogUtility.LogAndReturn($"Payload body was null", "TokenizationService.WithdrawalCoin()", false);
+
+                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
+
+                if (payload == null)
+                    return await SCLogUtility.LogAndReturn($"Failed to deserialize payload", "TokenizationService.WithdrawalCoin()", false);
+
+                if (payload.FromAddress == null)
+                    return await SCLogUtility.LogAndReturn($"From address cannot be null.", "TokenizationService.WithdrawalCoin()", false);
+
+                var account = AccountData.GetSingleAccount(payload.FromAddress);
+
+                if (account == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find account.", "TokenizationService.WithdrawalCoin()", false);
+
+                var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(payload.SCUID);
+
+                if (btcTkn == null)
+                    return await SCLogUtility.LogAndReturn($"Failed to find BTC Token: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(btcTkn.SmartContractUID);
+
+                if (sc == null)
+                    return await SCLogUtility.LogAndReturn($"Failed to find Smart Contract Data: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                if (sc.Features == null)
+                    return await SCLogUtility.LogAndReturn($"Contract has no features: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+                if (tknzFeature == null)
+                    return await SCLogUtility.LogAndReturn($"Contract missing a tokenization feature: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                var tknz = (TokenizationFeature)tknzFeature;
+
+                if (tknz == null)
+                    return await SCLogUtility.LogAndReturn($"Token feature error: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                var scState = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+
+                if (scState == null)
+                    return await SCLogUtility.LogAndReturn($"SC State Missing: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+
+                bool isOwner = false;
+                if (scState.OwnerAddress == account.Address)
+                    isOwner = true;
+                if (scState.SCStateTreiTokenizationTXes != null)
+                {
+                    var balances = scState.SCStateTreiTokenizationTXes.Where(x => x.FromAddress == account.Address || x.ToAddress == account.Address).ToList();
+                    if (balances.Any() || isOwner)
+                    {
+                        var balance = balances.Sum(x => x.Amount);
+                        bool good = false;
+                        if (isOwner)
+                        {
+                            var finalBalance = btcTkn.Balance + balance;
+                            if (finalBalance < payload.Amount)
+                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
+                            good = true;
+                        }
+                        else
+                        {
+                            var finalBalance = balance;
+                            if (finalBalance < payload.Amount)
+                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
+                            good = true;
+                        }
+
+                        if (good)
+                        {
+                            //withdrawal logic
+                        }
+
+
+                    }
+                }
+                else
+                {
+                    //allow max withdrawal as this is the owner most likely.
+                    //This will get checked at a state level too of course.
+                }
+            }
+            catch (Exception ex)
+            {
+                return await SCLogUtility.LogAndReturn($"Unknown Error: {ex}", "TokenizationService.WithdrawalCoin()", false);
+            }
+
+            return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.WithdrawalCoin()", false);
         }
     }
 }

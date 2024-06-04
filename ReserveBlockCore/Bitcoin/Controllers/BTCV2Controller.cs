@@ -10,7 +10,9 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using static ReserveBlockCore.Services.ArbiterService;
@@ -608,6 +610,30 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Transfers ownership of the vBTC token
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="backupURL"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("TransferOwnership/{scUID}/{toAddress}")]
+        [Route("TransferOwnership/{scUID}/{toAddress}/{**backupURL}")]
+        public async Task<string> TransferOwnership(string scUID, string toAddress, string? backupURL = "")
+        {
+            try
+            {
+                var result = await TokenizationService.TransferOwnership(scUID, toAddress, backupURL);
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
+
+        /// <summary>
         /// Withdrawal to BTC address
         /// </summary>
         /// <returns></returns>
@@ -616,19 +642,13 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         {
             try
             {
-                if (jsonData == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Payload body was null" });
-
-                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
-
-                if (payload == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
+                var result = await TokenizationService.WithdrawalCoin(jsonData);
+                return result;
             }
             catch (Exception ex)
             {
-
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
             }
-            return JsonConvert.SerializeObject(new { Success = true, Message = $"Coming Soon..." });
         }
 
     }

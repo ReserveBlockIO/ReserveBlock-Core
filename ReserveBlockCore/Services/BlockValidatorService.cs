@@ -355,7 +355,13 @@ namespace ReserveBlockCore.Services
                                                                     {
                                                                         if (otx.TransactionType == TransactionType.NFT_TX ||
                                                                             otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                            otx.TransactionType == TransactionType.NFT_MINT)
+                                                                            otx.TransactionType == TransactionType.NFT_MINT || 
+                                                                            otx.TransactionType == TransactionType.TKNZ_TX ||
+                                                                            otx.TransactionType == TransactionType.TKNZ_BURN ||
+                                                                            otx.TransactionType == TransactionType.TKNZ_MINT ||
+                                                                            otx.TransactionType == TransactionType.SC_TX ||
+                                                                            otx.TransactionType == TransactionType.SC_BURN ||
+                                                                            otx.TransactionType == TransactionType.SC_MINT)
                                                                         {
                                                                             scUID = (string?)scData["ContractUID"];
                                                                             if (otx.Data != null)
@@ -395,7 +401,13 @@ namespace ReserveBlockCore.Services
                                                                     {
                                                                         if (otx.TransactionType == TransactionType.NFT_TX ||
                                                                             otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                            otx.TransactionType == TransactionType.NFT_MINT)
+                                                                            otx.TransactionType == TransactionType.NFT_MINT ||
+                                                                            otx.TransactionType == TransactionType.TKNZ_TX ||
+                                                                            otx.TransactionType == TransactionType.TKNZ_BURN ||
+                                                                            otx.TransactionType == TransactionType.TKNZ_MINT ||
+                                                                            otx.TransactionType == TransactionType.SC_TX ||
+                                                                            otx.TransactionType == TransactionType.SC_BURN ||
+                                                                            otx.TransactionType == TransactionType.SC_MINT)
                                                                         {
                                                                             scUID = (string?)scData["ContractUID"];
                                                                             if (otx.Data != null)

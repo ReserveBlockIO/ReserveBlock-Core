@@ -27,7 +27,7 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        NFTLogUtility.Log($"Packet Ack Num too large. Asset: {asset} | AckNum: {ackNum} | Contract UID : {scUID} | IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
+                        SCLogUtility.Log($"Packet Ack Num too large. Asset: {asset} | AckNum: {ackNum} | Contract UID : {scUID} | IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
                     }
                 }
                 else
@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Services
                                 }
                                 else
                                 {
-                                    NFTLogUtility.Log($"Packet Ack Num too large. Asset: {asset} | AckNum: {ackNum} | Contract UID : {scUID} | IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
+                                    SCLogUtility.Log($"Packet Ack Num too large. Asset: {asset} | AckNum: {ackNum} | Contract UID : {scUID} | IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
                                 }
                             }
                         }
@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex) 
             {
-                NFTLogUtility.Log($"Unknown Error: {ex.ToString()} - Asset: {asset} - ACK Num: {ackNum} - SCUID: {scUID} - IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
+                SCLogUtility.Log($"Unknown Error: {ex.ToString()} - Asset: {asset} - ACK Num: {ackNum} - SCUID: {scUID} - IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
             }
         }
     }

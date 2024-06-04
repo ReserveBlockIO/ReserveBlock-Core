@@ -1234,11 +1234,11 @@ namespace ReserveBlockCore.P2P
                     //failed to connect. Cancel TX
                     if (beacon != null)
                     {
-                        NFTLogUtility.Log($"Failed to connect to beacon. Beacon Info: {beacon.Name} - {beacon.IPAddress}", "P2PClient.BeaconUploadRequest()");
+                        SCLogUtility.Log($"Failed to connect to beacon. Beacon Info: {beacon.Name} - {beacon.IPAddress}", "P2PClient.BeaconUploadRequest()");
                     }
                     else
                     {
-                        NFTLogUtility.Log($"Failed to connect to beacon. Beacon was null.", "P2PClient.BeaconUploadRequest()");
+                        SCLogUtility.Log($"Failed to connect to beacon. Beacon was null.", "P2PClient.BeaconUploadRequest()");
                     }
 
                     return result;
@@ -1513,7 +1513,7 @@ namespace ReserveBlockCore.P2P
                         if (!response)
                         {
                             var errorMsg = string.Format("Failed to talk to beacon.");
-                            NFTLogUtility.Log(errorMsg, "P2PClient.BeaconFileIsReady() - try");
+                            SCLogUtility.Log(errorMsg, "P2PClient.BeaconFileIsReady() - try");
                         }
                     }
                 }

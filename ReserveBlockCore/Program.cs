@@ -276,9 +276,9 @@ namespace ReserveBlockCore
             LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
 
-            NFTLogUtility.Log(logCLIVer, "Main", true);
+            SCLogUtility.Log(logCLIVer, "Main", true);
 
-            NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
+            SCLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
 
             APILogUtility.Log(logCLIVer, "Main", true);
 

@@ -332,7 +332,7 @@ namespace ReserveBlockCore.Controllers
             catch (Exception ex)
             {
                 output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error Occurred. Error: {ex.ToString()}" });
-                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.ToString()}", "SCV1Controller.TransferNFT()");
+                SCLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.ToString()}", "SCV1Controller.TransferNFT()");
             }
 
             return output;

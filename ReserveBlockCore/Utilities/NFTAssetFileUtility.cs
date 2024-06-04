@@ -163,7 +163,7 @@ namespace ReserveBlockCore.Utilities
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
-                NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                SCLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
                 return false;
             }
         }
@@ -254,7 +254,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch (Exception ex) 
             {
-                NFTLogUtility.Log($"Error Creating Thumbnail. Error: {ex.ToString()}", "NFTAssetFileUtility.CreateNFTAssetThumbnail()");
+                SCLogUtility.Log($"Error Creating Thumbnail. Error: {ex.ToString()}", "NFTAssetFileUtility.CreateNFTAssetThumbnail()");
             }
             
         }
@@ -335,7 +335,7 @@ namespace ReserveBlockCore.Utilities
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.NFTAssetPath()");
-                NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.NFTAssetPath()");
+                SCLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.NFTAssetPath()");
                 return "NA";
             }
 

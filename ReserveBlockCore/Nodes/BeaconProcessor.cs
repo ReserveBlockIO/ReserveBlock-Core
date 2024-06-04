@@ -44,19 +44,19 @@ namespace ReserveBlockCore.Nodes
                 //                    aqDb.UpdateSafe(aq);
                 //                }
 
-                //                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                //                SCLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
 
                 //                await P2PClient.BeaconFileIsReady(scUID, assetName);
                 //            }
                 //            else
                 //            {
-                //                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData() - send");
+                //                SCLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData() - send");
                 //            }
                 //        }
                 //    }
                 //    catch(Exception ex)
                 //    {
-                //        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}. Data: {data}", "BeaconProcessor.ProcessData() - send");
+                //        SCLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}. Data: {data}", "BeaconProcessor.ProcessData() - send");
                 //    }
 
                 //}
@@ -82,30 +82,30 @@ namespace ReserveBlockCore.Nodes
                 //                    if (rsp.Status == 1)
                 //                    {
                 //                        //success
-                //                        NFTLogUtility.Log($"File was received - {assetName}", "BeaconProcessor.ProcessData() - receive");
+                //                        SCLogUtility.Log($"File was received - {assetName}", "BeaconProcessor.ProcessData() - receive");
 
                 //                    }
                 //                    else
                 //                    {
                 //                        //failed
-                //                        NFTLogUtility.Log($"Failed to get rsp.Status = 1. Status was {rsp.Status}", "BeaconProcessor.ProcessData() - receive");
+                //                        SCLogUtility.Log($"Failed to get rsp.Status = 1. Status was {rsp.Status}", "BeaconProcessor.ProcessData() - receive");
                 //                    }
                 //                }
                 //                else
                 //                {
-                //                    NFTLogUtility.Log($"Beacon was null.", "BeaconProcessor.ProcessData() - receive");
+                //                    SCLogUtility.Log($"Beacon was null.", "BeaconProcessor.ProcessData() - receive");
                 //                }
 
                 //            }
                 //            else
                 //            {
-                //                NFTLogUtility.Log($"Payload was null.", "BeaconProcessor.ProcessData() - receive");
+                //                SCLogUtility.Log($"Payload was null.", "BeaconProcessor.ProcessData() - receive");
                 //            }
                 //        }
                 //    }
                 //    catch(Exception ex)
                 //    {
-                //        NFTLogUtility.Log($"Error Receiving File. Error: {ex.ToString()}", "BeaconProcessor.ProcessData() - receive");
+                //        SCLogUtility.Log($"Error Receiving File. Error: {ex.ToString()}", "BeaconProcessor.ProcessData() - receive");
                 //    }
                 //}
 
