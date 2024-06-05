@@ -97,8 +97,8 @@ namespace ReserveBlockCore.Models
                         {
                             existingBeaconInfo.Name = beacon.Name;
                             existingBeaconInfo.Port = beacon.Port;
-                            existingBeaconInfo.SelfBeacon = beacon.SelfBeacon;
-                            existingBeaconInfo.SelfBeaconActive = beacon.SelfBeaconActive;
+                            //existingBeaconInfo.SelfBeacon = beacon.SelfBeacon;
+                            //existingBeaconInfo.SelfBeaconActive = beacon.SelfBeaconActive;
                             existingBeaconInfo.BeaconLocator = beacon.BeaconLocator;
                             existingBeaconInfo.AutoDeleteAfterDownload = beacon.AutoDeleteAfterDownload;
                             existingBeaconInfo.FileCachePeriodDays = beacon.FileCachePeriodDays;
