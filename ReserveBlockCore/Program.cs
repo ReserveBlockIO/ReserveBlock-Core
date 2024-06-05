@@ -582,8 +582,9 @@ namespace ReserveBlockCore
             _ = ValidatorService.GetActiveValidators();
             _ = ValidatorService.ValidatorCountRun();
             _ = DSTClient.Run();
+            _ = StartupService.UpdateSCOwnership();
 
-            if(startGUI)
+            if (startGUI)
             {
                 Process[] pname = Process.GetProcessesByName("RBXWallet");
 

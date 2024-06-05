@@ -27,6 +27,8 @@ using System.Diagnostics;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Arbiter;
+using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Bitcoin.Models;
 
 namespace ReserveBlockCore.Services
 {
@@ -1341,6 +1343,86 @@ namespace ReserveBlockCore.Services
                 //var messageSend = 
 
 
+            }
+        }
+
+        internal static async Task UpdateSCOwnership()
+        {
+            var scList = SmartContractMain.SmartContractData.GetSmartContractList();
+            var vBTCList = await TokenizedBitcoin.GetTokenizedList();
+            if(scList != null)
+            {
+                foreach(var sc in scList)
+                {
+                    var scUID = sc.SmartContractUID;
+                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if(scStateTreiRec != null)
+                    {
+                        var owner = scStateTreiRec.OwnerAddress;
+                        var account = AccountData.GetSingleAccount(owner);
+                        if(account == null)
+                        {
+                            //not owner
+                            if (sc.Features != null)
+                            {
+                                if (sc.Features.Exists(x => x.FeatureName == FeatureName.Evolving))
+                                {
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (scStateTreiRec.MinterAddress != null)
+                                        {
+                                            var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == scStateTreiRec.MinterAddress);
+                                            if (evoOwner == null)
+                                            {
+                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                            }
+                                        }
+                                        else
+                                        {
+                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                        }
+                                    }
+                                    else
+                                    {
+                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                    }
+                                }
+                                if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization && x.FeatureName != FeatureName.Evolving))
+                                {
+                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                    TokenizedBitcoin.DeleteSmartContract(scUID);
+                                }
+                                else
+                                {
+                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                }
+                            }
+                            else
+                            {
+                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(vBTCList != null)
+            {
+                foreach (var vBTC in vBTCList)
+                {
+                    var scUID = vBTC.SmartContractUID;
+                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if (scStateTreiRec != null)
+                    {
+                        var owner = scStateTreiRec.OwnerAddress;
+                        var account = AccountData.GetSingleAccount(owner);
+                        if (account == null)
+                        {
+                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                            TokenizedBitcoin.DeleteSmartContract(scUID);
+                        }
+                    }
+                }
             }
         }
 

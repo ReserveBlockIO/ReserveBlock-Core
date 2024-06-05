@@ -590,9 +590,10 @@ namespace ReserveBlockCore.Services
                                                 SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                             }
                                         }
-                                        else if(scs.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                        if (scs.Features.Exists(x => x.FeatureName == FeatureName.Tokenization && x.FeatureName != FeatureName.Evolving))
                                         {
-
+                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                            TokenizedBitcoin.DeleteSmartContract(scUID);
                                         }
                                         else
                                         {

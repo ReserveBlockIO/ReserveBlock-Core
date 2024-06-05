@@ -36,6 +36,20 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var scs = DbContext.DB_Assets.GetCollection<SmartContractMain>(DbContext.RSRV_ASSETS);
                 return scs;
             }
+            public static List<SmartContractMain>? GetSmartContractList()
+            {
+                var scs = GetSCs();
+                if (scs != null)
+                {
+                    var sc = scs.FindAll().ToList();
+                    if (sc != null)
+                    {
+                        return sc;
+                    }
+                }
+
+                return null;
+            }
 
             public static SmartContractMain? GetSmartContract(string smartContractUID)
             {
