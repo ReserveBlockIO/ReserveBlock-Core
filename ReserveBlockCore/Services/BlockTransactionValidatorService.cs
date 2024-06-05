@@ -299,7 +299,7 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     if(sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
                                                     {
-                                                        await TokenizedBitcoin.SaveSmartContract(sc, null);
+                                                        await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
                                                     }
                                                 }
                                                 //download files here.
