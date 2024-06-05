@@ -293,6 +293,15 @@ namespace ReserveBlockCore.Services
                                             }
                                             else
                                             {
+
+                                                sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                if(sc?.Features != null)
+                                                {
+                                                    if(sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                                    {
+                                                        await TokenizedBitcoin.SaveSmartContract(sc, null);
+                                                    }
+                                                }
                                                 //download files here.
                                                 if (localFromAddress == null)
                                                 {

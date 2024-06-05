@@ -388,9 +388,12 @@ namespace ReserveBlockCore.Services
             StringBuilder strRoyaltyBld = new StringBuilder();
             StringBuilder strEvolveBld = new StringBuilder();
             StringBuilder strMultiAssetBld = new StringBuilder();
+            StringBuilder strTokenBld = new StringBuilder();
+            StringBuilder strTokenizationBld = new StringBuilder();
 
             scMain.IsMinter = false;
             scMain.IsPublished = true;
+            var isToken = false;
 
             var appendChar = "\"|->\"";
 
@@ -444,9 +447,37 @@ namespace ReserveBlockCore.Services
                             strMultiAssetBld = multiAssetSource.Item2;
                         }
                     }
-                    else if (feature.FeatureName == FeatureName.Ticket)
+                    else if (feature.FeatureName == FeatureName.Token)
                     {
+                        var token = ((JObject)feature.FeatureFeatures).ToObject<TokenFeature>();
+                        if (token != null)
+                        {
+                            feature.FeatureFeatures = token;
 
+                            var imageBase = token.TokenImageURL == null && token.TokenImageBase == null ? TokenSourceGenerator.DefaultImageBase64 : token.TokenImageBase;
+                            token.TokenImageBase = imageBase;
+
+                            var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                            strBuild = tokenSource.Item1;
+                            strTokenBld = tokenSource.Item2;
+                            isToken = true;
+                            scMain.IsToken = true;
+                        }
+                    }
+                    else if (feature.FeatureName == FeatureName.Tokenization)
+                    {
+                        var tokenization = ((JObject)feature.FeatureFeatures).ToObject<TokenizationFeature>();
+                        if (tokenization != null)
+                        {
+                            feature.FeatureFeatures = tokenization;
+                            var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                            strBuild = tokenizationSource.Item1;
+                            strTokenizationBld = tokenizationSource.Item2;
+                        }
+                    }
+                    else
+                    {
+                        //do nothing
                     }
 
                 }
@@ -515,6 +546,32 @@ namespace ReserveBlockCore.Services
                                 var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scMain.SmartContractUID);
                                 strBuild = multiAssetSource.Item1;
                                 strMultiAssetBld = multiAssetSource.Item2;
+                            }
+                        }
+
+                        if (x.FeatureName == FeatureName.Token)
+                        {
+                            var token = ((JObject)x.FeatureFeatures).ToObject<TokenFeature>();
+                            if (token != null)
+                            {
+                                x.FeatureFeatures = token;
+                                var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                                strBuild = tokenSource.Item1;
+                                strTokenBld = tokenSource.Item2;
+                                isToken = true;
+                                scMain.IsToken = true;
+                            }
+                        }
+
+                        if (x.FeatureName == FeatureName.Tokenization)
+                        {
+                            var tokenization = ((JObject)x.FeatureFeatures).ToObject<TokenizationFeature>();
+                            if (tokenization != null)
+                            {
+                                x.FeatureFeatures = tokenization;
+                                var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
+                                strBuild = tokenizationSource.Item1;
+                                strTokenizationBld = tokenizationSource.Item2;
                             }
                         }
 
@@ -609,6 +666,14 @@ namespace ReserveBlockCore.Services
                 if (featuresList.Exists(x => x.FeatureName == FeatureName.MultiAsset))
                 {
                     strBuild.Append(strMultiAssetBld);
+                }
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.Token))
+                {
+                    strBuild.Append(strTokenBld);
+                }
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                {
+                    strBuild.Append(strTokenizationBld);
                 }
             }
 
