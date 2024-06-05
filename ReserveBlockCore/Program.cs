@@ -775,12 +775,12 @@ namespace ReserveBlockCore
         private static void CommandLoop2(string url)
         {
             //Console.ReadKey();
+            _ = StartupService.StartArbiter();
         }
 
         private static void CommandLoop3()
         {
             _ = StartupService.StartBeacon();
-            _ = StartupService.StartArbiter();
         }
 
         #endregion
