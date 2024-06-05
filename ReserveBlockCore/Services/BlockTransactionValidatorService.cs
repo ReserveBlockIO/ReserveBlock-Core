@@ -590,6 +590,10 @@ namespace ReserveBlockCore.Services
                                                 SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                             }
                                         }
+                                        else if(scs.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                        {
+
+                                        }
                                         else
                                         {
                                             SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.

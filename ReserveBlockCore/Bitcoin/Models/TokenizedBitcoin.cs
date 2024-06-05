@@ -182,7 +182,19 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
 
         }
+        public static void DeleteSmartContract(string scUID)
+        {
+            try
+            {
+                var scs = GetDb();
 
+                scs.DeleteManySafe(x => x.SmartContractUID == scUID);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "TokenizedBitcoin.DeleteSmartContract()");
+            }
+        }
         public static async Task SetTokenContractIsPublished(string scUID)
         {
             var scs = GetDb();
