@@ -133,7 +133,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             return null;
         }
 
-        public static async Task SaveSmartContract(SmartContractMain scMain, string? scText)
+        public static async Task SaveSmartContract(SmartContractMain scMain, string? scText = null, string? rbxAddress = null)
         {
             var scs = GetDb();
 
@@ -153,7 +153,7 @@ namespace ReserveBlockCore.Bitcoin.Models
                             {
                                 DepositAddress = tknz.DepositAddress,
                                 IsPublished = false,
-                                RBXAddress = scMain.MinterAddress,
+                                RBXAddress = rbxAddress == null ? scMain.MinterAddress : rbxAddress,
                                 SmartContractMainId = scMain.Id,
                                 SmartContractUID = scMain.SmartContractUID,
                                 TokenDescription = scMain.Description,

@@ -449,7 +449,7 @@ namespace ReserveBlockCore.Services
                     }
                     else if (feature.FeatureName == FeatureName.Token)
                     {
-                        var token = ((JObject)feature.FeatureFeatures).ToObject<TokenFeature>();
+                        var token = (TokenFeature)feature.FeatureFeatures; ;
                         if (token != null)
                         {
                             feature.FeatureFeatures = token;
@@ -466,7 +466,7 @@ namespace ReserveBlockCore.Services
                     }
                     else if (feature.FeatureName == FeatureName.Tokenization)
                     {
-                        var tokenization = ((JObject)feature.FeatureFeatures).ToObject<TokenizationFeature>();
+                        var tokenization = (TokenizationFeature)feature.FeatureFeatures;//((JObject)feature.FeatureFeatures).ToObject<TokenizationFeature>();
                         if (tokenization != null)
                         {
                             feature.FeatureFeatures = tokenization;
@@ -551,10 +551,11 @@ namespace ReserveBlockCore.Services
 
                         if (x.FeatureName == FeatureName.Token)
                         {
-                            var token = ((JObject)x.FeatureFeatures).ToObject<TokenFeature>();
+                            var token = (TokenFeature)x.FeatureFeatures;
                             if (token != null)
                             {
                                 x.FeatureFeatures = token;
+                                Flist.Add(x);
                                 var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
                                 strBuild = tokenSource.Item1;
                                 strTokenBld = tokenSource.Item2;
@@ -565,10 +566,12 @@ namespace ReserveBlockCore.Services
 
                         if (x.FeatureName == FeatureName.Tokenization)
                         {
-                            var tokenization = ((JObject)x.FeatureFeatures).ToObject<TokenizationFeature>();
+                            var tokenization = (TokenizationFeature)x.FeatureFeatures;
                             if (tokenization != null)
                             {
                                 x.FeatureFeatures = tokenization;
+                                Flist.Add(x);
+
                                 var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
                                 strBuild = tokenizationSource.Item1;
                                 strTokenizationBld = tokenizationSource.Item2;
