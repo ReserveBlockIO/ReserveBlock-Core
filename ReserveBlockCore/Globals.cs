@@ -31,6 +31,12 @@ namespace ReserveBlockCore
             public int Exceptions { get; set; }
         }
 
+        public class SwaggerResponse
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; }
+        }
+
 
         #region Timers
         public static bool IsTestNet = false;

@@ -16,6 +16,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public string RBXAddress { get; set; }
         public string? DepositAddress { get; set; }
         public decimal Balance { get; set; }
+        public decimal MyBalance { get { return GetMyBalance(RBXAddress, SmartContractUID); } }
         public string TokenName { get; set; }
         public string TokenDescription { get; set; }
         public long SmartContractMainId { get; set; }
@@ -247,5 +248,37 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
         }
 
+        private decimal GetMyBalance(string vfxAddress, string scUID)
+        {
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (scStateTreiRec == null)
+                return 0.0M;
+
+            var balances = scStateTreiRec.SCStateTreiTokenizationTXes?.Where(x => x.FromAddress == vfxAddress || x.ToAddress == vfxAddress).ToList();
+
+            if (scStateTreiRec.OwnerAddress == vfxAddress)
+            {
+                if(balances != null)
+                {
+                    var balance = balances.Sum(x => x.Amount);
+                    var finalBalance = Balance - balance;
+
+                    return finalBalance;
+                }
+
+                return Balance;
+            }
+            else
+            {
+                if(balances != null)
+                {
+                    var balance = balances.Sum(x => x.Amount);
+                    return balance;
+                }
+
+                return 0.0M;
+            }
+        }
     }
 }

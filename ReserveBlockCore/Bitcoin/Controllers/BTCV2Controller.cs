@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
+using static ReserveBlockCore.Globals;
 using static ReserveBlockCore.Services.ArbiterService;
 
 namespace ReserveBlockCore.Bitcoin.Controllers
@@ -75,8 +76,8 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Incorrect key format. Please try again." }); ;
             }
 
-            ScriptPubKeyType scriptPubKeyType = addressFormat == Bitcoin.BitcoinAddressFormat.SegwitP2SH ? ScriptPubKeyType.SegwitP2SH :
-                addressFormat == Bitcoin.BitcoinAddressFormat.Segwit ? ScriptPubKeyType.Segwit : ScriptPubKeyType.TaprootBIP86;
+            ScriptPubKeyType scriptPubKeyType = addressFormat == Bitcoin.BitcoinAddressFormat.SegwitP2SH ? NBitcoin.ScriptPubKeyType.SegwitP2SH :
+                addressFormat == Bitcoin.BitcoinAddressFormat.Segwit ? NBitcoin.ScriptPubKeyType.Segwit : NBitcoin.ScriptPubKeyType.TaprootBIP86;
 
             //hex key
             if (privateKey?.Length > 58)
@@ -490,14 +491,15 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("TokenizeBitcoin")]
-        public async Task<string> TokenizeBitcoin([FromBody] object jsonData)
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
+        public async Task<string> TokenizeBitcoin([FromBody] BTCTokenizePayload jsonData)
         {
             try
             {
                 if (jsonData == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Payload body was null" });
 
-                var payload = JsonConvert.DeserializeObject<BTCTokenizePayload>(jsonData.ToString());
+                var payload = jsonData;
 
                 if(payload == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize payload" });
@@ -595,7 +597,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("TransferCoin")]
-        public async Task<string> TransferCoin([FromBody] object jsonData)
+        public async Task<string> TransferCoin([FromBody] BTCTokenizeTransaction jsonData)
         {
             try
             {
@@ -638,7 +640,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("WithdrawalCoin")]
-        public async Task<string> WithdrawalCoin([FromBody] object jsonData)
+        public async Task<string> WithdrawalCoin([FromBody] BTCTokenizeTransaction jsonData)
         {
             try
             {

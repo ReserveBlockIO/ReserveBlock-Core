@@ -293,14 +293,14 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
         }
 
-        public static async Task<string> TransferCoin(object? jsonData)
+        public static async Task<string> TransferCoin(BTCTokenizeTransaction? jsonData)
         {
             try
             {
                 if (jsonData == null)
                     return await SCLogUtility.LogAndReturn($"Payload body was null", "TokenizationService.TransferCoin()", false);
 
-                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
+                var payload = jsonData;
 
                 if (payload == null)
                     return await SCLogUtility.LogAndReturn($"Failed to deserialize payload", "TokenizationService.TransferCoin()", false);
@@ -483,14 +483,14 @@ namespace ReserveBlockCore.Bitcoin.Services
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.TransferCoin()", false);
         }
 
-        public static async Task<string> WithdrawalCoin(object? jsonData)
+        public static async Task<string> WithdrawalCoin(BTCTokenizeTransaction? jsonData)
         {
             try
             {
                 if (jsonData == null)
                     return await SCLogUtility.LogAndReturn($"Payload body was null", "TokenizationService.WithdrawalCoin()", false);
 
-                var payload = JsonConvert.DeserializeObject<BTCTokenizeTransaction>(jsonData.ToString());
+                var payload = jsonData;
 
                 if (payload == null)
                     return await SCLogUtility.LogAndReturn($"Failed to deserialize payload", "TokenizationService.WithdrawalCoin()", false);
