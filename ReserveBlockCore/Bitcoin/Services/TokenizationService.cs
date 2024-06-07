@@ -551,6 +551,11 @@ namespace ReserveBlockCore.Bitcoin.Services
                 {
                     //allow max withdrawal as this is the owner most likely.
                     //This will get checked at a state level too of course.
+                    if (btcTkn.MyBalance < payload.Amount)
+                        return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {btcTkn.MyBalance}", "TokenizationService.TransferCoin()", false);
+
+                    SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = payload.SCUID });
                 }
             }
             catch (Exception ex)
