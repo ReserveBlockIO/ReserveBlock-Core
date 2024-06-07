@@ -597,6 +597,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("TransferCoin")]
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
         public async Task<string> TransferCoin([FromBody] BTCTokenizeTransaction jsonData)
         {
             try
@@ -621,6 +622,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         [HttpGet]
         [Route("TransferOwnership/{scUID}/{toAddress}")]
         [Route("TransferOwnership/{scUID}/{toAddress}/{**backupURL}")]
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
         public async Task<string> TransferOwnership(string scUID, string toAddress, string? backupURL = "")
         {
             try
@@ -640,6 +642,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("WithdrawalCoin")]
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
         public async Task<string> WithdrawalCoin([FromBody] BTCTokenizeTransaction jsonData)
         {
             try

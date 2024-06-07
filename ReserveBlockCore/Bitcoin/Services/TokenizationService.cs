@@ -369,62 +369,12 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                         if(good)
                         {
-                            var scTx = new ReserveBlockCore.Models.Transaction();
-                            var newSCInfo = new[]
-                            {
-                                new { Function = "TransferCoin()" }
-                            };
+                            var scTxResult = await CreateVFXTokenizedTransaction(payload.FromAddress, payload.ToAddress, account, payload.Amount, payload.SCUID);
 
-                            var txData = JsonConvert.SerializeObject(newSCInfo);
+                            if(scTxResult.Item1 == null)
+                                return await SCLogUtility.LogAndReturn(scTxResult.Item2, "TokenizationService.TransferCoin()", false);
 
-                            scTx = new ReserveBlockCore.Models.Transaction
-                            {
-                                Timestamp = TimeUtil.GetTime(),
-                                FromAddress = payload.FromAddress,
-                                ToAddress = payload.ToAddress,
-                                Amount = 0.0M,
-                                Fee = 0,
-                                Nonce = AccountStateTrei.GetNextNonce(payload.FromAddress),
-                                TransactionType = TransactionType.TKNZ_TX,
-                                Data = txData,
-                                UnlockTime = null //TODO: need to make compatible with reserve.
-                            };
-
-                            scTx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(scTx);
-
-                            scTx.Build();
-
-                            var senderBalance = AccountStateTrei.GetAccountBalance(payload.FromAddress);
-                            if ((scTx.Amount + scTx.Fee) > senderBalance)
-                            {
-                                scTx.TransactionStatus = TransactionStatus.Failed;
-                                TransactionData.AddTxToWallet(scTx, true);
-                                return await SCLogUtility.LogAndReturn($"Balance insufficient. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
-                            }
-
-                            if (account.GetPrivKey == null)
-                            {
-                                scTx.TransactionStatus = TransactionStatus.Failed;
-                                TransactionData.AddTxToWallet(scTx, true);
-                                return await SCLogUtility.LogAndReturn($"Private key was null for account {payload.FromAddress}", "TokenizationService.TransferCoin()", false);
-                            }
-                            var txHash = scTx.Hash;
-                            var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
-                            if (signature == "ERROR")
-                            {
-                                scTx.TransactionStatus = TransactionStatus.Failed;
-                                TransactionData.AddTxToWallet(scTx, true);
-                                return await SCLogUtility.LogAndReturn($"TX Signature Failed. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()", false);
-                            }
-
-                            scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
-
-
-                            if (scTx.TransactionRating == null)
-                            {
-                                var rating = await TransactionRatingService.GetTransactionRating(scTx);
-                                scTx.TransactionRating = rating;
-                            }
+                            var scTx = scTxResult.Item1;
 
                             var result = await TransactionValidatorService.VerifyTX(scTx);
 
@@ -434,7 +384,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                                 if (account != null)
                                 {
-                                    await WalletService.SendTransaction(scTx, account);
+                                    //await WalletService.SendTransaction(scTx, account);
                                 }
                                 //if (rAccount != null)
                                 //{
@@ -442,7 +392,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                                 //}
 
                                 SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
-                                return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = txHash });
+                                return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = scTx.Hash });
                             }
                             else
                             {
@@ -456,8 +406,41 @@ namespace ReserveBlockCore.Bitcoin.Services
                 }
                 else
                 {
-                    //just send it
-                    //check balance against amount and send.
+                    if (btcTkn.MyBalance < payload.Amount)
+                        return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {btcTkn.MyBalance}", "TokenizationService.TransferCoin()", false);
+
+                    var scTxResult = await CreateVFXTokenizedTransaction(payload.FromAddress, payload.ToAddress, account, payload.Amount, payload.SCUID);
+
+                    if (scTxResult.Item1 == null)
+                        return await SCLogUtility.LogAndReturn(scTxResult.Item2, "TokenizationService.TransferCoin()", false);
+
+                    var scTx = scTxResult.Item1;
+
+                    var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                    if (result.Item1 == true)
+                    {
+                        scTx.TransactionStatus = TransactionStatus.Pending;
+
+                        if (account != null)
+                        {
+                            //await WalletService.SendTransaction(scTx, account);
+                        }
+                        //if (rAccount != null)
+                        //{
+                        //    await WalletService.SendReserveTransaction(scTx, rAccount, true);
+                        //}
+
+                        SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                        return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = scTx.Hash });
+                    }
+                    else
+                    {
+                        var output = "Fail! Transaction Verify has failed.";
+                        scTx.TransactionStatus = TransactionStatus.Failed;
+                        TransactionData.AddTxToWallet(scTx, true);
+                        return await SCLogUtility.LogAndReturn($"Error Transfer Failed TX Verify: {payload.SCUID}. Result: {result.Item2}", "TokenizationService.TransferCoin()", false);
+                    }
                 }
 
                 //if(string.IsNullOrEmpty(tknz.PublicKeyProofs))
@@ -576,6 +559,68 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
 
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.WithdrawalCoin()", false);
+        }
+
+        private static async Task<(ReserveBlockCore.Models.Transaction?, string)> CreateVFXTokenizedTransaction(string fromAddress, string toAddress, Account account, decimal amount, string scUID)
+        {
+            var scTx = new ReserveBlockCore.Models.Transaction();
+            var newSCInfo = new[]
+            {
+                                new { Function = "TransferCoin()", ContractUID = scUID, Amount = amount,  }
+                            };
+
+            var txData = JsonConvert.SerializeObject(newSCInfo);
+
+            scTx = new ReserveBlockCore.Models.Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = TransactionType.TKNZ_TX,
+                Data = txData,
+                UnlockTime = null //TODO: need to make compatible with reserve.
+            };
+
+            scTx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(fromAddress);
+            if ((scTx.Amount + scTx.Fee) > senderBalance)
+            {
+                scTx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(scTx, true);
+                return (null, $"Balance insufficient. SCUID: {scUID}");
+            }
+
+            if (account.GetPrivKey == null)
+            {
+                scTx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(scTx, true);
+                return (null, $"Private key was null for account {fromAddress}");
+            }
+            var txHash = scTx.Hash;
+            var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
+            if (signature == "ERROR")
+            {
+                scTx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(scTx, true);
+                return (null, $"TX Signature Failed. SCUID: {scUID}");
+            }
+
+            scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+
+            if (scTx.TransactionRating == null)
+            {
+                var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                scTx.TransactionRating = rating;
+            }
+
+            return (scTx, "");
         }
     }
 }

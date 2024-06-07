@@ -718,6 +718,61 @@ namespace ReserveBlockCore.Services
                                             break;
                                         }
 
+                                    case "TransferCoin()":
+                                        {
+                                            var amountVal = (decimal?)scData["Amount"];
+                                            if(!amountVal.HasValue)
+                                                return (txResult, "No amount specified.");
+
+                                            var amount = amountVal.Value;
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                bool isOwner = false;
+                                                if (txRequest.FromAddress == scStateTreiRec.OwnerAddress)
+                                                {
+                                                    isOwner = true;
+                                                    if (scStateTreiRec.IsLocked)
+                                                        return (txResult, "You cannot perform any actions on a Smart contract that is locked.");
+
+                                                }
+
+                                                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                                                if (sc == null)
+                                                    return (txResult, $"Failed to find Smart Contract Data: {scUID}");
+
+                                                if (sc.Features == null)
+                                                    return (txResult, $"Contract has no features: {scUID}");
+
+                                                var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+                                                if (tknzFeature == null)
+                                                    return (txResult, $"Contract missing a tokenization feature: {scUID}");
+
+                                                var tknz = (TokenizationFeature)tknzFeature;
+
+                                                if (tknz == null)
+                                                    return (txResult, $"Token feature error: {scUID}");
+
+                                                if (scStateTreiRec.SCStateTreiTokenizationTXes != null)
+                                                {
+                                                    var balances = scStateTreiRec.SCStateTreiTokenizationTXes.Where(x => x.FromAddress == txRequest.FromAddress || x.ToAddress == txRequest.FromAddress).ToList();
+
+                                                    if (balances.Any() && !isOwner)
+                                                    {
+                                                        var balance = balances.Sum(x => x.Amount);
+
+                                                        if (balance < amount)
+                                                            return (txResult, $"Insufficient Balance. Current Balance: {balance}");
+                                                    }
+                                                }
+                                            }
+
+                                            break;
+                                        }
+
                                     default:
                                         break;
                                 }

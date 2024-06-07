@@ -266,6 +266,9 @@ namespace ReserveBlockCore.Data
                                     case "TokenVoteTopicCast()":
                                         TokenVoteTopicCast(tx);
                                         break;
+                                    case "TransferCoin()":
+                                        TransferCoin(tx);
+                                        break;
                                     default:
                                         break;
                                 }
@@ -1976,6 +1979,49 @@ namespace ReserveBlockCore.Data
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
 
+        }
+
+        private static void TransferCoin(Transaction tx)
+        {
+            var jobj = JObject.Parse(tx.Data);
+
+            var amountVal = jobj["Amount"]?.ToObject<decimal?>();
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+            if (amountVal.HasValue)
+            {
+                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                if(scStateTreiRec != null)
+                {
+                    List<SmartContractStateTreiTokenizationTX> tknTxList = new List<SmartContractStateTreiTokenizationTX>
+                    {
+                        new SmartContractStateTreiTokenizationTX
+                        {
+                            Amount = amountVal.Value,
+                            FromAddress = "+",
+                            ToAddress = tx.ToAddress
+                        },
+                        new SmartContractStateTreiTokenizationTX
+                        {
+                            Amount = amountVal.Value * -1.0M,
+                            FromAddress = tx.FromAddress,
+                            ToAddress = "-"
+                        }
+                    };
+
+                    if(scStateTreiRec.SCStateTreiTokenizationTXes?.Count() > 0)
+                    {
+                        scStateTreiRec.SCStateTreiTokenizationTXes.AddRange(tknTxList);
+                    }
+                    else
+                    {
+                        scStateTreiRec.SCStateTreiTokenizationTXes = tknTxList;
+                    }
+
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
         }
 
     }

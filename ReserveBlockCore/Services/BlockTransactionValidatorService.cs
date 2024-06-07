@@ -394,6 +394,40 @@ namespace ReserveBlockCore.Services
                                         }
                                         break;
                                     }
+                                case "TransferCoin()":
+                                    {
+                                        var jobj = JObject.Parse(tx.Data);
+                                        var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+                                        var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                        if(scState != null)
+                                        {
+                                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scState.ContractData); });
+                                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                            //testing
+                                            //bool isCompletedSuccessfully = true;
+                                            //transferTask.Wait();
+                                            if (!isCompletedSuccessfully)
+                                            {
+                                                SCLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                            }
+                                            else
+                                            {
+                                                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                if (sc?.Features != null)
+                                                {
+                                                    if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                                    {
+                                                        await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        
+                                        break;
+                                    }
                                 default:
                                     break;
                             }
