@@ -2,8 +2,12 @@
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Commands;
+using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using Spectre.Console;
+using System;
+using System.Net;
 
 namespace ReserveBlockCore.Bitcoin
 {
@@ -131,6 +135,26 @@ namespace ReserveBlockCore.Bitcoin
                             if(address.DepositAddress != null)
                             {
                                 await Explorers.GetAddressInfo(address.DepositAddress, true);
+                                var scState = SmartContractStateTrei.GetSmartContractState(address.SmartContractUID);
+                                var postAuditTknz = await TokenizedBitcoin.GetTokenizedBitcoin(address.SmartContractUID);
+                                if(scState != null && postAuditTknz != null)
+                                {
+                                    if (scState.SCStateTreiTokenizationTXes != null && scState.SCStateTreiTokenizationTXes.Any())
+                                    {
+                                        var balanceList = scState.SCStateTreiTokenizationTXes.ToList();
+                                        if (balanceList.Any())
+                                        {
+                                            var stateBalance = balanceList.Sum(x => x.Amount);
+                                            var totalBalance = postAuditTknz.Balance;
+                                            if (stateBalance > totalBalance)
+                                            {
+                                                if(postAuditTknz.DepositAddress != null)
+                                                    await TokenizedBitcoin.FlagInsolvent(postAuditTknz.DepositAddress);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 await Task.Delay(5000);
                             }
                             
@@ -149,6 +173,17 @@ namespace ReserveBlockCore.Bitcoin
                 await delay;
             }
             
+        }
+
+        public static async Task TransferCoinAudit(string scUID)
+        {
+            var tknzBtc = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
+
+            if (tknzBtc?.DepositAddress != null)
+            {
+                await Explorers.GetAddressInfo(tknzBtc.DepositAddress, true);
+                await Task.Delay(5000);
+            }
         }
 
         public static async Task BitcoinMenu()

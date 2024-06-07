@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         public string TokenDescription { get; set; }
         public long SmartContractMainId { get; set; }
         public bool IsPublished { get; set; }
+        public bool TokenHasBecomeInsolvent { get; set; }
 
         #endregion
 
@@ -53,6 +54,20 @@ namespace ReserveBlockCore.Bitcoin.Models
                 if (sc != null)
                 {
                     sc.Balance = balance;
+                    scs.UpdateSafe(sc);
+                }
+            }
+        }
+
+        public static async Task FlagInsolvent(string address)
+        {
+            var scs = GetDb();
+            if (scs != null)
+            {
+                var sc = scs.FindOne(x => x.DepositAddress == address);
+                if (sc != null)
+                {
+                    sc.TokenHasBecomeInsolvent = !sc.TokenHasBecomeInsolvent;
                     scs.UpdateSafe(sc);
                 }
             }

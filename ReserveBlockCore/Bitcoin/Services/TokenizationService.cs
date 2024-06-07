@@ -384,7 +384,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                                 if (account != null)
                                 {
-                                    //await WalletService.SendTransaction(scTx, account);
+                                    await WalletService.SendTransaction(scTx, account);
                                 }
                                 //if (rAccount != null)
                                 //{
@@ -424,7 +424,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                         if (account != null)
                         {
-                            //await WalletService.SendTransaction(scTx, account);
+                            await WalletService.SendTransaction(scTx, account);
                         }
                         //if (rAccount != null)
                         //{

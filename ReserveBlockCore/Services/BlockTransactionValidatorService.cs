@@ -82,6 +82,12 @@ namespace ReserveBlockCore.Services
                                 tx.TransactionStatus = TransactionStatus.Success;
                                 txdata.InsertSafe(tx);
                             }
+                            if (function == "TransferCoin()")
+                            {
+                                var txdata = TransactionData.GetAll();
+                                tx.TransactionStatus = TransactionStatus.Success;
+                                txdata.InsertSafe(tx);
+                            }
                         }
                     }
                 }
@@ -401,7 +407,7 @@ namespace ReserveBlockCore.Services
 
                                         var scState = SmartContractStateTrei.GetSmartContractState(scUID);
 
-                                        if(scState != null)
+                                        if (scState != null)
                                         {
                                             var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scState.ContractData); });
                                             bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
@@ -420,6 +426,29 @@ namespace ReserveBlockCore.Services
                                                     if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
                                                     {
                                                         await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
+
+                                                        await Bitcoin.Bitcoin.TransferCoinAudit(scUID);
+
+                                                        var postAuditTknz = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
+
+                                                        if(scState.SCStateTreiTokenizationTXes != null && scState.SCStateTreiTokenizationTXes.Any())
+                                                        {
+                                                            var balanceList = scState.SCStateTreiTokenizationTXes.ToList();
+                                                            if(balanceList.Any())
+                                                            {
+                                                                var stateBalance = balanceList.Sum(x => x.Amount);
+                                                                var totalBalance = postAuditTknz.Balance;
+                                                                if(stateBalance > totalBalance)
+                                                                {
+                                                                    var txdata = TransactionData.GetAll();
+                                                                    tx.TransactionStatus = TransactionStatus.Invalid;
+                                                                    txdata.UpdateSafe(tx);
+
+                                                                    //Delete because its invalid.
+                                                                    TokenizedBitcoin.DeleteSmartContract(scUID);
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
