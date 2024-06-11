@@ -15,7 +15,7 @@ namespace ReserveBlockCore.Services
         #region Write Smart Contract for new creation
         public static async Task<(string, SmartContractMain, bool)> WriteSmartContract(SmartContractMain scMain)
         {
-            var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+            var scUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString() : scMain.SmartContractUID;
             var features = "";
             var featuresList = scMain.Features;
             var hash = ""; //create hash
