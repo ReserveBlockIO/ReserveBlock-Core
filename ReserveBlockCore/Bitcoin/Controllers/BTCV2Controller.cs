@@ -517,6 +517,16 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if (scMain == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to generate vBTC token. Please check logs for more." });
 
+                var featureList = payload.Features;
+                if (featureList?.Count() > 0)
+                {
+                    var nonMultiAssetFeatures = featureList.Where(x => x.FeatureName != FeatureName.MultiAsset).ToList();
+                    if (nonMultiAssetFeatures.Any())
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "vBTC Tokens may only contain multi-asset features." });
+
+                    scMain.Features = payload.Features;
+                }
+
                 scMain.SmartContractUID = scUID; //premade scuid
 
                 var createSC = await TokenizationService.CreateTokenizationSmartContract(scMain);

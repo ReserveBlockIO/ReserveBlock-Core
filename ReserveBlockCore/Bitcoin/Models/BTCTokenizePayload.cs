@@ -1,4 +1,6 @@
-﻿namespace ReserveBlockCore.Bitcoin.Models
+﻿using ReserveBlockCore.Models;
+
+namespace ReserveBlockCore.Bitcoin.Models
 {
     public class BTCTokenizePayload
     {
@@ -22,5 +24,11 @@
         /// </summary>
         /// <example>Image Asset File Location</example>
         public string FileLocation { get; set; }
+
+        /// <summary>
+        /// May only contain Multi-Asset at this point and time.
+        /// </summary>
+        /// <example>ListOfThings</example>
+        public List<SmartContractFeatures>? Features { get; set; }
     }
 }
