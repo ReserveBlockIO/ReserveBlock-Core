@@ -230,7 +230,7 @@ namespace ReserveBlockCore.Services
 
                             if (x.FeatureName == FeatureName.Token)
                             {
-                                var token = ((JObject)x.FeatureFeatures).ToObject<TokenFeature>();
+                                var token = ((TokenFeature)x.FeatureFeatures);// ((JObject)x.FeatureFeatures).ToObject<TokenFeature>();
                                 if (token != null)
                                 {
                                     x.FeatureFeatures = token;
@@ -248,8 +248,8 @@ namespace ReserveBlockCore.Services
 
                             if(x.FeatureName == FeatureName.Tokenization)
                             {
-                                var tokenization = ((JObject)x.FeatureFeatures).ToObject<TokenizationFeature>();
-                                if(tokenization != null)
+                                var tokenization = ((TokenizationFeature)x.FeatureFeatures);//((JObject)x.FeatureFeatures).ToObject<TokenizationFeature>();
+                                if (tokenization != null)
                                 {
                                     x.FeatureFeatures = tokenization;
                                     var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);

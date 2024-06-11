@@ -524,7 +524,11 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                     if (nonMultiAssetFeatures.Any())
                         return JsonConvert.SerializeObject(new { Success = false, Message = "vBTC Tokens may only contain multi-asset features." });
 
-                    scMain.Features = payload.Features;
+                    if(scMain.Features != null)
+                    {
+                        scMain.Features.AddRange(payload.Features);
+                    }
+                    
                 }
 
                 scMain.SmartContractUID = scUID; //premade scuid
