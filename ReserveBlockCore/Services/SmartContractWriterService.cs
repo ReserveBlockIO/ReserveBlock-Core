@@ -234,6 +234,7 @@ namespace ReserveBlockCore.Services
                                 if (token != null)
                                 {
                                     x.FeatureFeatures = token;
+                                    Flist.Add(x);
                                     var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
                                     strBuild = tokenSource.Item1;
                                     strTokenBld = tokenSource.Item2;
@@ -252,6 +253,7 @@ namespace ReserveBlockCore.Services
                                 if (tokenization != null)
                                 {
                                     x.FeatureFeatures = tokenization;
+                                    Flist.Add(x);
                                     var tokenizationSource = await TokenizationSourceGenerator.Build(tokenization, strBuild);
                                     strBuild = tokenizationSource.Item1;
                                     strTokenizationBld = tokenizationSource.Item2;
