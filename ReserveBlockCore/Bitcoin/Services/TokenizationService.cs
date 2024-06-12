@@ -192,6 +192,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             }
             catch (Exception ex)
             {
+                SCLogUtility.Log($"Fatal Error: {ex}", "TokenizationService.MintSmartContract(string id)");
                 return (false, $"Fatal Error: {ex}");
             }
         }

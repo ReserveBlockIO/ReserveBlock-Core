@@ -177,7 +177,7 @@ namespace ReserveBlockCore.Services
                     IsOutgoing = true,
                     PeerIP = "162.248.14.123",
                     FailCount = 0,
-                    IsValidator = true
+                    IsValidator = false
                 };
 
                 Peers n2Peer = new Peers
@@ -189,8 +189,18 @@ namespace ReserveBlockCore.Services
                     IsValidator = true
                 };
 
+                Peers n3Peer = new Peers
+                {
+                    IsIncoming = false,
+                    IsOutgoing = true,
+                    PeerIP = "144.126.156.101",
+                    FailCount = 0,
+                    IsValidator = true
+                };
+
                 peerList.Add(nPeer);
                 peerList.Add(n2Peer);
+                peerList.Add(n3Peer);
 
                 var dbPeers = Peers.GetAll();
 

@@ -438,7 +438,7 @@ namespace ReserveBlockCore.Services
                         Address = "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC",
                         SigningAddress = "xPqVbS8X6X9ofeD5F2VsEV4KHBeMZoVawa",
                         Generation = 0,
-                        IPAddress = "162.248.14.123",
+                        IPAddress = "144.126.156.101",
                         StartOfService = 1715745443,
                         Title = "Arbiter1"
                     },
