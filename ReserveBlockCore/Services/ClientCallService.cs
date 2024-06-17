@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Services
                     if(aqDB != null)
                     {
                         var aqList = aqDB.Find(x => x.NextAttempt != null && x.NextAttempt <= currentDate && x.IsComplete != true && 
-                            x.AssetTransferType == AssetQueue.TransferType.Download).ToList();
+                            x.AssetTransferType == AssetQueue.TransferType.Download && x.Attempts < 4).ToList();
 
                         if(aqList.Count() > 0)
                         {

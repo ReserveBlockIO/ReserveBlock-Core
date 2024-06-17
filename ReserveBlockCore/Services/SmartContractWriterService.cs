@@ -30,7 +30,7 @@ namespace ReserveBlockCore.Services
             StringBuilder strTokenBld = new StringBuilder();
             StringBuilder strTokenizationBld = new StringBuilder();
 
-            scMain.SmartContractUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? scUID : scMain.SmartContractUID;
+            scMain.SmartContractUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? scUID : scMain.SmartContractUID == "00000000-0000-0000-0000-000000000000" ? scUID : scMain.SmartContractUID;
             scMain.IsMinter = true;
             scMain.MinterAddress = scMain.MinterAddress;
             scMain.IsPublished = false;
