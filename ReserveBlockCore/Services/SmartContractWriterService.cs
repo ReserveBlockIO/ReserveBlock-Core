@@ -15,7 +15,11 @@ namespace ReserveBlockCore.Services
         #region Write Smart Contract for new creation
         public static async Task<(string, SmartContractMain, bool)> WriteSmartContract(SmartContractMain scMain)
         {
-            var scUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString() : scMain.SmartContractUID;
+
+            var scUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString() :
+                scMain.SmartContractUID == "00000000-0000-0000-0000-000000000000" ? Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString() :
+                scMain.SmartContractUID;
+
             var features = "";
             var featuresList = scMain.Features;
             var hash = ""; //create hash
@@ -30,9 +34,7 @@ namespace ReserveBlockCore.Services
             StringBuilder strTokenBld = new StringBuilder();
             StringBuilder strTokenizationBld = new StringBuilder();
 
-            scMain.SmartContractUID = string.IsNullOrEmpty(scMain.SmartContractUID) ? scUID : 
-                scMain.SmartContractUID == "00000000-0000-0000-0000-000000000000" ? scUID : 
-                scMain.SmartContractUID;
+            scMain.SmartContractUID = scUID;
 
             scMain.IsMinter = true;
             scMain.MinterAddress = scMain.MinterAddress;
