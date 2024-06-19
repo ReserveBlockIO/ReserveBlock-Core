@@ -526,7 +526,10 @@ namespace ReserveBlockCore.Data
                             }
                         }
                     }
-                    if(rtx.TransactionType == TransactionType.NFT_TX)
+                    if (rtx.TransactionType == TransactionType.NFT_TX ||
+                        rtx.TransactionType == TransactionType.FTKN_TX ||
+                        rtx.TransactionType == TransactionType.TKNZ_TX ||
+                        rtx.TransactionType == TransactionType.SC_TX)
                     {
                         var scDataArray = JsonConvert.DeserializeObject<JArray>(rtx.Data);
                         var scData = scDataArray[0];
@@ -535,15 +538,32 @@ namespace ReserveBlockCore.Data
 
                         if(function != null)
                         {
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
                             if (function == "Transfer()")
                             {
-                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
                                 {
                                     
                                     scStateTreiRec.OwnerAddress = rtx.ToAddress;
                                     scStateTreiRec.NextOwner = null;
                                     scStateTreiRec.IsLocked = false;
+
+                                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                                }
+                            }
+
+                            if(function == "TokenContractOwnerChange()")
+                            {
+                                if (scStateTreiRec != null)
+                                {
+                                    scStateTreiRec.OwnerAddress = rtx.ToAddress;
+                                    scStateTreiRec.NextOwner = null;
+                                    scStateTreiRec.IsLocked = false;
+                                    if (scStateTreiRec.TokenDetails != null)
+                                    {
+                                        scStateTreiRec.TokenDetails.ContractOwner = rtx.ToAddress;
+                                    }
 
                                     SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
                                 }
@@ -1415,9 +1435,20 @@ namespace ReserveBlockCore.Data
             {
                 if (scStateTreiRec.TokenDetails != null)
                 {
-                    scStateTreiRec.TokenDetails.ContractOwner = toAddress;
-                    scStateTreiRec.OwnerAddress = toAddress;
-                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                    if (tx.FromAddress.StartsWith("xRBX"))
+                    {
+                        scStateTreiRec.NextOwner = tx.ToAddress;
+                        scStateTreiRec.IsLocked = true;
+                        scStateTreiRec.Nonce += 1;
+                        SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                    }
+                    else
+                    {
+                        scStateTreiRec.TokenDetails.ContractOwner = toAddress;
+                        scStateTreiRec.OwnerAddress = toAddress;
+                        SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                    }
+                    
                 }
             }
         }

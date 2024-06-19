@@ -34,6 +34,7 @@ namespace ReserveBlockCore.Models
         public bool IsNetworkProtected { get; set; } // this is set once 4 RBX has been sent.
         public string GetKey { get { return GetPrivateKey(PrivateKey, Address, EncryptedDecryptKey); } }
         public decimal TotalBalance { get { return AvailableBalance + LockedBalance; } }
+        public PrivateKey? GetPrivKey { get { return GetClassPrivateKey(GetKey); } }
 
         public class ReserveAccountInfo
         {
@@ -176,6 +177,22 @@ namespace ReserveBlockCore.Models
             return null;
         }
 
+        #endregion
+
+        #region Get Private key Class
+        private PrivateKey? GetClassPrivateKey(string privkey)
+        {
+            try
+            {
+                BigInteger b1 = BigInteger.Parse(privkey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                return privateKey;
+            }
+            catch { }
+
+            return null;
+        }
         #endregion
 
         #region Get Reserve Accounts Db

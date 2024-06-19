@@ -428,13 +428,26 @@ namespace ReserveBlockCore.Controllers
                 if (sc.TokenDetails == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Token details are null." });
 
-                var account = AccountData.GetSingleAccount(fromAddress);
+                if(!fromAddress.StartsWith("xRBX"))
+                {
+                    var account = AccountData.GetSingleAccount(fromAddress);
 
-                if (account == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+                    if (account == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
 
-                if (account.Address != sc.TokenDetails.ContractOwner)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+                    if (account.Address != sc.TokenDetails.ContractOwner)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+                }
+                else
+                {
+                    var rAccount = ReserveAccount.GetReserveAccountSingle(fromAddress);
+
+                    if (rAccount == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Reserve Account does not exist locally." });
+
+                    if (rAccount.Address != sc.TokenDetails.ContractOwner)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Reserve Account does not own this token contract." });
+                }
 
                 toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
 

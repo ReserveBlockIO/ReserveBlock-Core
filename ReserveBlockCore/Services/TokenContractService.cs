@@ -166,7 +166,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TokenMint()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -174,7 +174,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TokenMint()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -184,7 +184,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TokenMint()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -207,7 +207,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendTransaction(tokenTx, account);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TokenMint()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -215,7 +215,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TokenMint()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
 
@@ -269,7 +269,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.BurnToken()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -277,7 +277,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.BurnToken()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -287,7 +287,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.BurnToken()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -314,7 +314,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendReserveTransaction(tokenTx, rAccount, true);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.BurnToken()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -322,7 +322,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.BurnToken()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
             }
@@ -371,7 +371,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.BanAddress()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -379,7 +379,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.BanAddress()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -389,7 +389,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.BanAddress()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -412,7 +412,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendTransaction(tokenTx, account);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.BanAddress()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -420,7 +420,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.BanAddress()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
 
@@ -438,12 +438,15 @@ namespace ReserveBlockCore.Services
             try
             {
                 var account = AccountData.GetSingleAccount(fromAddress);
-                if (account == null)
+                var rAccount = ReserveAccount.GetReserveAccountSingle(fromAddress);
+
+                if (account == null && rAccount == null)
                 {
                     return (false, "Failed to located account");
                 }
-                var publicKey = account?.PublicKey;
-                var privateKey = account?.GetPrivKey;
+
+                var publicKey = rAccount == null ? account?.PublicKey : rAccount?.PublicKey;
+                var privateKey = rAccount == null ? account?.GetPrivKey : rAccount?.GetPrivKey;
 
                 var txData = JsonConvert.SerializeObject(new { Function = "TokenContractOwnerChange()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress });
 
@@ -470,7 +473,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.ChangeTokenContractOwnership()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -478,7 +481,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.ChangeTokenContractOwnership()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -488,7 +491,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.ChangeTokenContractOwnership()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -511,7 +514,12 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendTransaction(tokenTx, account);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    if(rAccount != null)
+                    {
+                        await WalletService.SendReserveTransaction(tokenTx, rAccount, true);
+                    }
+
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.ChangeTokenContractOwnership()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -519,7 +527,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.ChangeTokenContractOwnership()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
 
@@ -569,7 +577,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.PauseTokenContract()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -577,7 +585,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.PauseTokenContract()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -587,7 +595,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.PauseTokenContract()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -610,7 +618,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendTransaction(tokenTx, account);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.PauseTokenContract()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -618,7 +626,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.PauseTokenContract()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
             }
@@ -667,7 +675,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.CreateTokenVoteTopic()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -675,7 +683,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.CreateTokenVoteTopic()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -685,7 +693,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.CreateTokenVoteTopic()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -708,7 +716,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendTransaction(tokenTx, account);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.CreateTokenVoteTopic()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -716,7 +724,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.CreateTokenVoteTopic()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
 
@@ -770,7 +778,7 @@ namespace ReserveBlockCore.Services
 
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Balance insufficient. SCUID: {sc.SmartContractUID}", "TokenContractService.CastTokenVoteTopic()");
                     return (false, $"Balance insufficient. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -778,7 +786,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Private key was null for account {fromAddress}", "TokenContractService.CastTokenVoteTopic()");
                     return (false, $"Private key was null for account {fromAddress}");
                 }
 
@@ -788,7 +796,7 @@ namespace ReserveBlockCore.Services
                 {
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Signature Failed. SCUID: {sc.SmartContractUID}", "TokenContractService.CastTokenVoteTopic()");
                     return (false, $"TX Signature Failed. SCUID: {sc.SmartContractUID}");
                 }
 
@@ -815,7 +823,7 @@ namespace ReserveBlockCore.Services
                         await WalletService.SendReserveTransaction(tokenTx, rAccount, true);
                     }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"TX Success. SCUID: {sc.SmartContractUID}", "TokenContractService.CastTokenVoteTopic()");
                     return (true, $"TX Success. SCUID: {sc.SmartContractUID}");
                 }
                 else
@@ -823,7 +831,7 @@ namespace ReserveBlockCore.Services
                     var output = "Fail! Transaction Verify has failed.";
                     tokenTx.TransactionStatus = TransactionStatus.Failed;
                     TransactionData.AddTxToWallet(tokenTx, true);
-                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.TransferToken()");
+                    SCLogUtility.Log($"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Result: {result.Item2}", "TokenContractService.CastTokenVoteTopic()");
                     return (false, $"Error Transfer Failed TX Verify: {sc.SmartContractUID}. Reason: {result.Item2}");
                 }
             }

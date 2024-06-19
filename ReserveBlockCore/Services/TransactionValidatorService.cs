@@ -353,6 +353,12 @@ namespace ReserveBlockCore.Services
                                             if (scStateTreiRec.TokenDetails.IsPaused)
                                                 return (txResult, "Contract is paused. NO TXs may go through.");
 
+                                            if (scStateTreiRec.IsLocked)
+                                                return (txResult, "You are attempting to transfer a Smart contract that is locked.");
+
+                                            if (scStateTreiRec.NextOwner != null)
+                                                return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+
                                             break;
                                         }
 
