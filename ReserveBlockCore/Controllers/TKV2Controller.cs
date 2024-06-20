@@ -173,10 +173,21 @@ namespace ReserveBlockCore.Controllers
 
                 toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
 
-                var account = AccountData.GetSingleAccount(fromAddress);
+                if (!fromAddress.StartsWith("xRBX"))
+                {
+                    var account = AccountData.GetSingleAccount(fromAddress);
 
-                if (account == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+                    if (account == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+
+                }
+                else
+                {
+                    var rAccount = ReserveAccount.GetReserveAccountSingle(fromAddress);
+
+                    if (rAccount == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Reserve Account does not exist locally." });
+                }
 
                 var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
 

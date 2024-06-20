@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
-                var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
+                var privateKey = !isReserveAccount ? account?.GetPrivKey : rAccount?.GetPrivKey;
 
                 var txData = JsonConvert.SerializeObject(new { Function = "TokenTransfer()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress, Amount = amount, TokenTicker = tokenAccount.TokenTicker, TokenName = tokenAccount.TokenName });
                 
