@@ -20,6 +20,11 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                 await Blockstream.GetAddressBalance(address, isTokenAddress);
                 ExplorerDictionary.TryUpdate(explorer.Key, (explorer.Value + 1), explorer.Value);
             }
+            else if (explorer.Key == ExplorersEnum.MempoolSpaceTestnet4)
+            {
+                await MempoolSpaceTestnet4.GetAddressBalance(address, isTokenAddress);
+                ExplorerDictionary.TryUpdate(explorer.Key, (explorer.Value + 1), explorer.Value);
+            }
             else
             {
                 //no explorers are available, log error.
@@ -39,6 +44,11 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                     await Blockstream.GetAddressUTXO(address);
                     ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
                 }
+                else if (explorerUTXO.Key == ExplorersEnum.MempoolSpaceTestnet4)
+                {
+                    await MempoolSpaceTestnet4.GetAddressUTXO(address);
+                    ExplorerDictionary.TryUpdate(explorerUTXO.Key, (explorerUTXO.Value + 1), explorerUTXO.Value);
+                }
                 else
                 {
                     //no explorers are available, log error.
@@ -49,7 +59,8 @@ namespace ReserveBlockCore.Bitcoin.Integrations
         public enum ExplorersEnum
         {
             Blockstream,
-            MempoolSpace
+            MempoolSpace,
+            MempoolSpaceTestnet4
         }
 
         public static void PopulateExplorerDictionary()
@@ -63,8 +74,16 @@ namespace ReserveBlockCore.Bitcoin.Integrations
             }
             else
             {
-                ExplorerDictionary.TryAdd(ExplorersEnum.Blockstream, 0);
-                ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpace, 0);
+                if (Globals.BTCNetwork == NBitcoin.Network.TestNet4)
+                {
+                    ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpaceTestnet4, 0);
+                }
+                else
+                {
+                    ExplorerDictionary.TryAdd(ExplorersEnum.Blockstream, 0);
+                    ExplorerDictionary.TryAdd(ExplorersEnum.MempoolSpace, 0);
+                }
+                
             }
             
         }

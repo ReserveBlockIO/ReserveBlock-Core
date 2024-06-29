@@ -25,6 +25,11 @@ namespace ReserveBlockCore.Bitcoin.Utilities
             "seed.testnet.bitcoin.sprovoost.nl",
             "testnet-seed.bluematt.me"
         };
+        public static string[] Testnet4DnsSeeds = new string[]
+        {
+            "seed.testnet4.bitcoin.sprovoost.nl",
+            "seed.testnet4.wiz.biz",
+        };
 
         public static string Node = "NA";
 
@@ -45,6 +50,24 @@ namespace ReserveBlockCore.Bitcoin.Utilities
                     else
                     {
                         nodeIp = await GetMainnetNode();
+                    }
+                }
+                Node = nodeIp;
+            }
+            else if(Globals.BTCNetwork == NBitcoin.Network.TestNet4)
+            {
+                if (Node == "NA")
+                    nodeIp = await GetTestnetNode();
+                else
+                {
+                    var testNode = PortUtility.IsPortOpen(Node, 48333);
+                    if (testNode)
+                    {
+                        nodeIp = Node;
+                    }
+                    else
+                    {
+                        nodeIp = await GetTestnetNode();
                     }
                 }
                 Node = nodeIp;
@@ -121,15 +144,15 @@ namespace ReserveBlockCore.Bitcoin.Utilities
         private static async Task<string> GetTestnetNode()
         {
             string nodeIp = "NA";
-            int portNumber = 18333;
+            int portNumber = 48333;
             bool nodeFound = false;
 
             while(!nodeFound)
             {
                 Random rand = new Random();
-                int randomIndex = rand.Next(0, TestnetDnsSeeds.Length);
+                int randomIndex = rand.Next(0, Testnet4DnsSeeds.Length);
 
-                string randomSeed = TestnetDnsSeeds[randomIndex];
+                string randomSeed = Testnet4DnsSeeds[randomIndex];
 
                 try
                 {
@@ -165,9 +188,9 @@ namespace ReserveBlockCore.Bitcoin.Utilities
             return nodeIp;
         }
 
-        public static async Task<IPAddress[]> GetNodeList()
+        public static async Task<List<IPAddress>> GetNodeList()
         {
-            IPAddress[] nodeIps = new IPAddress[] { };
+            List<IPAddress> nodeIps = new List<IPAddress>();
             if (Globals.BTCNetwork == NBitcoin.Network.Main)
             {
                 nodeIps = await GetMainnetNodes();   
@@ -180,67 +203,51 @@ namespace ReserveBlockCore.Bitcoin.Utilities
             return nodeIps;
         }
 
-        private static async Task<IPAddress[]> GetMainnetNodes()
+        private static async Task<List<IPAddress>> GetMainnetNodes()
         {
-            IPAddress[] nodeIp = new IPAddress[] { };
-            int portNumber = 8333;
-            bool nodeFound = false;
+            List<IPAddress> nodeIp = new List<IPAddress>();
 
-            while (!nodeFound)
+            foreach (var seed in MainnetDnsSeeds)
             {
-                Random rand = new Random();
-                int randomIndex = rand.Next(0, MainnetDnsSeeds.Length);
-
-                string randomSeed = MainnetDnsSeeds[randomIndex];
-
                 try
                 {
                     // Perform the DNS query
-                    IPAddress[] addresses = Dns.GetHostAddresses(randomSeed);
+                    IPAddress[] addresses = Dns.GetHostAddresses(seed);
 
                     if (addresses.Any())
                     {
-                        return addresses;
+                        nodeIp.AddRange(addresses);
                     }
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error occurred while resolving {randomSeed}: {ex.Message}", "NodeFinder.GetTestnetNode()");
+                    ErrorLogUtility.LogError($"Error occurred while resolving {seed}: {ex.Message}", "NodeFinder.GetTestnetNode()");
                 }
             }
-
             return nodeIp;
         }
 
-        private static async Task<IPAddress[]> GetTestnetNodes()
+        private static async Task<List<IPAddress>> GetTestnetNodes()
         {
-            IPAddress[] nodeIp = new IPAddress[] { };
-            int portNumber = 18333;
-            bool nodeFound = false;
+            List<IPAddress> nodeIp = new List<IPAddress>();
 
-            while (!nodeFound)
+            foreach(var seed in Testnet4DnsSeeds)
             {
-                Random rand = new Random();
-                int randomIndex = rand.Next(0, TestnetDnsSeeds.Length);
-
-                string randomSeed = TestnetDnsSeeds[randomIndex];
-
                 try
                 {
                     // Perform the DNS query
-                    IPAddress[] addresses = Dns.GetHostAddresses(randomSeed);
+                    IPAddress[] addresses = Dns.GetHostAddresses(seed);
 
                     if (addresses.Any())
                     {
-                        return addresses;
+                        nodeIp.AddRange(addresses);
                     }
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error occurred while resolving {randomSeed}: {ex.Message}", "NodeFinder.GetTestnetNode()");
+                    ErrorLogUtility.LogError($"Error occurred while resolving {seed}: {ex.Message}", "NodeFinder.GetTestnetNode()");
                 }
             }
-
             return nodeIp;
         }
     }

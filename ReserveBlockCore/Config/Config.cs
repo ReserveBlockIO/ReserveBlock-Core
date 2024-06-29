@@ -246,7 +246,7 @@ namespace ReserveBlockCore.Config
 				Globals.TXHeightRule2 = 200;
 				Globals.DSTClientPort = 13341;
                 Globals.SelfSTUNPort = 13340;
-				Globals.BTCNetwork = NBitcoin.Network.TestNet;
+				Globals.BTCNetwork = NBitcoin.Network.TestNet4;
                 Globals.SegwitP2SHStartPrefix = "2";
                 Globals.SegwitTaprootStartPrefix = "tb1";
                 Globals.ArbiterEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
