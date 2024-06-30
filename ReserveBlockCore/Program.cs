@@ -177,8 +177,6 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
-                        Explorers.PopulateExplorerDictionary();
-                        _ = NodeFinder.GetNode();
                     }
                     if(argC == "blockv2")
                     {
@@ -341,6 +339,8 @@ namespace ReserveBlockCore
                     }
                     if (argC == "gui")
                     {
+                        Explorers.PopulateExplorerDictionary();
+                        _ = NodeFinder.GetNode();
                         _ = Bitcoin.Bitcoin.AccountCheck();
                     }
                     if (argC.Contains("privkey"))
