@@ -989,11 +989,33 @@ namespace ReserveBlockCore.Services
                         tx.TransactionType == TransactionType.SC_TX)
                     {
                         SCLogUtility.Log($"NFT TX Detected (TX): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingReserveTransactions()");
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                        var scData = scDataArray[0];
+                        string function = "";
+                        bool skip = false;
+                        string data = "";
+                        JToken? scData = null;
+                        JArray? scDataArray = null;
+                        try
+                        {
+                            scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            function = (string?)scData["Function"];
+                            scData = scDataArray[0];
+                            data = (string?)scData["Data"];
+                            skip = true;
+                        }
+                        catch { }
 
-                        var data = (string?)scData["Data"];
-                        var function = (string?)scData["Function"];
+                        try
+                        {
+                            if (!skip)
+                            {
+                                var jobj = JObject.Parse(tx.Data);
+                                function = jobj["Function"]?.ToObject<string?>();
+                            }
+                        }
+                        catch { }
+
+                        
+
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
