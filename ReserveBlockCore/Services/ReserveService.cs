@@ -6,13 +6,14 @@ namespace ReserveBlockCore.Services
 {
     public class ReserveService
     {
-        static SemaphoreSlim ReserveServiceLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim RunLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim RunUnlockWipeLock = new SemaphoreSlim(1, 1);
 
         public static async Task Run()
         {
-            await ReserveServiceLock.WaitAsync();
             try
             {
+                await RunLock.WaitAsync();
                 var latestBlockTime = Globals.LastBlock.Timestamp;
                 var rTXDb = ReserveTransactions.GetReserveTransactionsDb();
                 if (rTXDb != null)
@@ -26,8 +27,34 @@ namespace ReserveBlockCore.Services
             }
             finally
             {
-                ReserveServiceLock.Release();
+                RunLock.Release();
             }
+        }
+
+        public static async Task RunUnlockWipe()
+        {
+            try
+            {
+                await RunUnlockWipeLock.WaitAsync();
+
+                var delay = Task.Delay(new TimeSpan(0, 1, 0));
+
+                if(Globals.ReserveAccountUnlockKeys.Any())
+                {
+                    foreach(var rAUK in  Globals.ReserveAccountUnlockKeys)
+                    {
+                        if(rAUK.Value.DeleteAfterTime < TimeUtil.GetTime())
+                        {
+                            Globals.ReserveAccountUnlockKeys.TryRemove(rAUK.Key, out _);
+                        }
+                    }
+                }
+
+                await delay;
+            }
+            catch { }
+            finally { RunUnlockWipeLock.Release(); }
+            
         }
 
     }

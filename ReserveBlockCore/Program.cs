@@ -583,6 +583,7 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatorCountRun();
             _ = DSTClient.Run();
             _ = StartupService.UpdateSCOwnership();
+            _ = ReserveService.RunUnlockWipe();
 
             if (startGUI)
             {

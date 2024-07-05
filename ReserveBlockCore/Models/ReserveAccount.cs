@@ -334,16 +334,16 @@ namespace ReserveBlockCore.Models
         private string GetPrivateKey(string privkey, string address, string decryptKey)
         {
             //decrypt private key for send
-            if (Globals.DecryptPassword.Length == 0)
+            if (Globals.ReserveAccountUnlockKeys.TryGetValue(address, out var _address))
             {
-                return "0";
+                return GetPrivateKey(address, _address.Password.ToUnsecureString());
             }
             else
             {
                 try
                 {
 
-                    return privkey;
+                    return "0";
                 }
                 catch (Exception ex)
                 {
@@ -355,7 +355,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Create New Reserve Account
-        public static ReserveAccountInfo CreateNewReserveAccount(string encryptionPassword, bool storeRecoveryKey = false)
+        public static ReserveAccountInfo CreateNewReserveAccount(string encryptionPassword, bool storeRecoveryKey = false, bool skipSave = false, string privKey = "")
         {
             ReserveAccount rAccount = new ReserveAccount();
             Account account = new Account();
@@ -377,6 +377,12 @@ namespace ReserveBlockCore.Models
                     rAccountInfo = new ReserveAccountInfo();
 
                     PrivateKey privateKey = new PrivateKey();
+                    if(!string.IsNullOrEmpty(privKey) )
+                    {
+                        var privateKeyMod = privKey.Replace(" ", ""); //remove any accidental spaces
+                        BigInteger b1 = BigInteger.Parse(privateKeyMod, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        privateKey = new PrivateKey("secp256k1", b1);
+                    }
                     var privKeySecretHex = privateKey.secret.ToString("x");
                     var pubKey = privateKey.publicKey();
 
@@ -411,11 +417,15 @@ namespace ReserveBlockCore.Models
                     var sigScriptRecoAccount = SignatureService.CreateSignature("test", account.GetPrivKey, account.PublicKey);
                     var verifyRecoAccount = SignatureService.VerifySignature(account.Address, "test", sigScriptRecoAccount);
 
-                    if (verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX"))
+                    if (verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX") && !skipSave)
                     {
                         accountMade = true;
                         //save account here!
                         SaveReserveAccount(rAccount);
+                    }
+                    if(verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX") && skipSave)
+                    {
+                        accountMade = true;
                     }
                 }
                 catch (Exception ex)

@@ -434,6 +434,7 @@ namespace ReserveBlockCore.Services
         public static async Task<(bool, string)> ChangeTokenContractOwnership(SmartContractStateTrei sc, string fromAddress, string toAddress)
         {
             var tokenTx = new Transaction();
+            long? unlockTime = null;
 
             try
             {
@@ -448,6 +449,19 @@ namespace ReserveBlockCore.Services
                 var publicKey = rAccount == null ? account?.PublicKey : rAccount?.PublicKey;
                 var privateKey = rAccount == null ? account?.GetPrivKey : rAccount?.GetPrivKey;
 
+                if(rAccount != null)
+                {
+                    if(Globals.ReserveAccountUnlockKeys.TryGetValue(fromAddress, out var rAUK)) 
+                    {
+                        unlockTime = TimeUtil.GetReserveTime(rAUK.UnlockTimeHours);
+                    }
+                    else
+                    {
+                        return (false, "Reserve account is no longer unlocked. Please unlock again.");
+                    }
+                    
+                }
+
                 var txData = JsonConvert.SerializeObject(new { Function = "TokenContractOwnerChange()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress });
 
                 tokenTx = new Transaction
@@ -460,7 +474,7 @@ namespace ReserveBlockCore.Services
                     Nonce = AccountStateTrei.GetNextNonce(fromAddress),
                     TransactionType = TransactionType.FTKN_TX,
                     Data = txData,
-                    UnlockTime = null
+                    UnlockTime = unlockTime
                 };
 
                 tokenTx.Fee = FeeCalcService.CalculateTXFee(tokenTx);

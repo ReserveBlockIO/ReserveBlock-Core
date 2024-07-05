@@ -506,5 +506,49 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        /// <summary>
+        /// Unlocks a reserve account.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="unlockTime"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("UnlockReserveAccount/{address}/{unlockTime}/{**password}")]
+        public async Task<string> UnlockReserveAccount(string address, int unlockTime, string password)
+        {
+            if (Globals.ReserveAccountUnlockKeys.ContainsKey(address))
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Reserve Account is already unlocked", AlreadyUnlocked = true });
+
+            var key = ReserveAccount.GetPrivateKey(address, password);
+
+            if(unlockTime < 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Unlock time cannot be less than zero.", AlreadyUnlocked = false });
+
+            if (key == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Key could not be created from password.", AlreadyUnlocked = false });
+
+            var rAccount = ReserveAccount.CreateNewReserveAccount(password, false, true, key);
+
+            if (rAccount.Address != address)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Provided details were not correct. Please try a different password or address.", AlreadyUnlocked = false });
+
+            var rAUK = new ReserveAccountUnlockKey {
+                DeleteAfterTime = TimeUtil.GetTime(0, Globals.WalletUnlockTime, 0, 0),
+                Password = password.ToSecureString(),
+                UnlockTimeHours = unlockTime
+            };
+
+            if(Globals.ReserveAccountUnlockKeys.ContainsKey(address))
+            {
+                Globals.ReserveAccountUnlockKeys[address] = rAUK;
+            }
+            else
+            {
+                Globals.ReserveAccountUnlockKeys.TryAdd(address, rAUK);
+            }
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Reserve Account has been unlocked for {Globals.WalletUnlockTime} minutes.", AlreadyUnlocked = false });
+        }
     }
 }

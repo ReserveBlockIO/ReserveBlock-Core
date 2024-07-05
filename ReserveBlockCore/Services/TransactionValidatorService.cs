@@ -1874,7 +1874,12 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
             {
-                if (txRequest.TransactionType != TransactionType.TX && txRequest.TransactionType != TransactionType.RESERVE && txRequest.TransactionType != TransactionType.NFT_TX)
+                if (txRequest.TransactionType != TransactionType.TX && 
+                    txRequest.TransactionType != TransactionType.RESERVE && 
+                    txRequest.TransactionType != TransactionType.NFT_TX &&
+                    txRequest.TransactionType != TransactionType.FTKN_TX &&
+                    txRequest.TransactionType != TransactionType.TKNZ_TX &&
+                    txRequest.TransactionType != TransactionType.SC_TX)
                     return (txResult, "Invalid Transaction Type was selected.");
 
                 var balanceTooLow = from.Balance - (txRequest.Fee + txRequest.Amount) < 0.5M ? true : false;
