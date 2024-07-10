@@ -450,6 +450,22 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
 
+            if(!newPeers.Any())
+            {
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
+                .Union(Globals.BannedIPs.Keys));
+
+                newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
+                .Where(x => !SkipIPs.Contains(x.PeerIP))
+                .ToArray()
+                .OrderBy(x => rnd.Next())
+                .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
+                .Where(x => !SkipIPs.Contains(x.PeerIP))
+                .ToArray()
+                .OrderBy(x => rnd.Next()))
+                .ToArray();
+            }
+
             var Diff = Globals.MaxPeers - Globals.Nodes.Count;
             newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
             {

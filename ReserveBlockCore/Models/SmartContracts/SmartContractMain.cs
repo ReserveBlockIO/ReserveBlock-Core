@@ -604,6 +604,25 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     }
                                     break;
                                 }
+                            case FeatureName.Tokenization:
+                                {
+                                    var assetName = repl.Run(@"AssetName").Value != null ? (string)repl.Run(@"AssetName").Value : "vBTC Token";
+                                    var assetTicket = repl.Run(@"AssetTicker").Value != null ? (string)repl.Run(@"AssetTicker").Value : "BTC";
+                                    var depositAddress = repl.Run(@"DepositAddress").Value != null ? (string)repl.Run(@"DepositAddress").Value : "ERROR";
+                                    var proofs =  repl.Run(@"GetPublicKeyProofs()").Value.ToString();
+
+                                    var tokenizationFeature = new TokenizationFeature { 
+                                        AssetName = assetName,
+                                        AssetTicker = assetTicket,
+                                        DepositAddress = depositAddress,
+                                        PublicKeyProofs = proofs
+                                    };
+
+                                    scFeature.FeatureName = FeatureName.Tokenization;
+                                    scFeature.FeatureFeatures = tokenizationFeature;
+                                    featuresList.Add(scFeature);
+                                    break;
+                                }
                             case FeatureName.MultiAsset:
                                 var multiAssetList = new List<string>();
                                 var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -707,6 +726,26 @@ namespace ReserveBlockCore.Models.SmartContracts
                                         smartContractMain.IsToken = true;
                                     }
                                 }
+                                break;
+                            }
+                        case FeatureName.Tokenization:
+                            {
+                                var assetName = repl.Run(@"AssetName").Value != null ? (string)repl.Run(@"AssetName").Value : "vBTC Token";
+                                var assetTicket = repl.Run(@"AssetTicker").Value != null ? (string)repl.Run(@"AssetTicker").Value : "BTC";
+                                var depositAddress = repl.Run(@"DepositAddress").Value != null ? (string)repl.Run(@"DepositAddress").Value : "ERROR";
+                                var proofs = repl.Run(@"GetPublicKeyProofs()").Value.ToString();
+
+                                var tokenizationFeature = new TokenizationFeature
+                                {
+                                    AssetName = assetName,
+                                    AssetTicker = assetTicket,
+                                    DepositAddress = depositAddress,
+                                    PublicKeyProofs = proofs
+                                };
+
+                                scFeature.FeatureName = FeatureName.Tokenization;
+                                scFeature.FeatureFeatures = tokenizationFeature;
+                                featuresList.Add(scFeature);
                                 break;
                             }
                         case FeatureName.MultiAsset:

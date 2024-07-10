@@ -744,7 +744,19 @@ namespace ReserveBlockCore.Services
 
                                                 }
 
+                                                
+
                                                 var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                                                if(sc == null)
+                                                {
+                                                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTreiRec.ContractData);
+
+                                                    if (scMain == null)
+                                                        return (txResult, $"Failed to generate Smart Contract Data: {scUID}");
+
+                                                    sc = scMain;
+                                                }
 
                                                 if (sc == null)
                                                     return (txResult, $"Failed to find Smart Contract Data: {scUID}");

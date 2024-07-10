@@ -129,6 +129,11 @@ namespace ReserveBlockCore.Commands
                     Console.WriteLine("Printing Mempool Results: ");
                     TransactionData.PrintMemPool();
                     break;
+                case "/clearmempool":
+                    Console.WriteLine("Clearing Mempool...");
+                    await TransactionData.ClearMempool();
+                    Console.WriteLine("Mempool Cleared");
+                    break;
                 case "/resblocks":
                     Globals.StopConsoleOutput = true;
                     await BaseCommandServices.ResyncBlocks();

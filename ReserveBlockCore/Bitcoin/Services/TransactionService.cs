@@ -480,6 +480,11 @@ namespace ReserveBlockCore.Bitcoin.Services
             
         }
 
+        public static async Task CreatePSBT()
+        {
+            //TODO:
+        }
+
         private static (List<Coin>, List<BitcoinUTXO>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent)
         {
             var coinList = new List<Coin>();

@@ -327,6 +327,13 @@ namespace ReserveBlockCore.Data
             }
             
         }
+
+        public static async Task ClearMempool()
+        {
+            var pool = GetPool();
+
+            pool.DeleteAllSafe();
+        }
         public static void PrintMemPool()
         {
             var pool = GetPool();
