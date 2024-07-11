@@ -12,6 +12,7 @@ using System.Net;
 using System.Security.Principal;
 using ReserveBlockCore.Bitcoin.Models;
 using NBitcoin.JsonConverters;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Data
 {
@@ -2014,10 +2015,35 @@ namespace ReserveBlockCore.Data
 
         private static void TransferCoin(Transaction tx)
         {
-            var jobj = JObject.Parse(tx.Data);
+            string scUID = "";
+            string function = "";
+            bool skip = false;
+            JToken? scData = null;
+            decimal? amountVal = null;
 
-            var amountVal = jobj["Amount"]?.ToObject<decimal?>();
-            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            try
+            {
+                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                scData = scDataArray[0];
+
+                function = (string?)scData["Function"];
+                scUID = (string?)scData["ContractUID"];
+                amountVal = (decimal?)scData["Amount"];
+                skip = true;
+            }
+            catch { }
+
+            try
+            {
+                if (!skip)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    scUID = jobj["ContractUID"]?.ToObject<string?>();
+                    function = jobj["Function"]?.ToObject<string?>();
+                    amountVal = jobj["Amount"]?.ToObject<decimal?>();
+                }
+            }
+            catch { }
 
             if (amountVal.HasValue)
             {

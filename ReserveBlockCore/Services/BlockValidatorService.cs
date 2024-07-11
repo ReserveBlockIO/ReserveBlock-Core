@@ -532,6 +532,12 @@ namespace ReserveBlockCore.Services
                         if (validateOnly)
                             return result;
 
+                        //For testing purposes
+                        //if (block.Height == 272333)
+                        //{
+                        //    Console.WriteLine("Block Height Reached for debugging...");
+                        //}
+
                         await BlockchainData.AddBlock(block, updateCLI);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                         UpdateMemBlocksHashes(block);
