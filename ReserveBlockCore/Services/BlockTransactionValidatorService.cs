@@ -402,8 +402,25 @@ namespace ReserveBlockCore.Services
                                     }
                                 case "TransferCoin()":
                                     {
-                                        var jobj = JObject.Parse(tx.Data);
-                                        var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                        string scUID = "";
+                                        try
+                                        {
+                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                                            scData = scDataArray[0];
+                                            scUID = (string?)scData["ContractUID"];
+                                            skip = true;
+                                        }
+                                        catch { }
+
+                                        try
+                                        {
+                                            if (!skip)
+                                            {
+                                                var jobjTC = JObject.Parse(tx.Data);
+                                                scUID = jobjTC["ContractUID"]?.ToObject<string?>();
+                                            }
+                                        }
+                                        catch { }
 
                                         var scState = SmartContractStateTrei.GetSmartContractState(scUID);
 
