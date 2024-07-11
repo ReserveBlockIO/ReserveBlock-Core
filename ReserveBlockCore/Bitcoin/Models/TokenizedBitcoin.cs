@@ -277,7 +277,7 @@ namespace ReserveBlockCore.Bitcoin.Models
                 if(balances != null)
                 {
                     var balance = balances.Sum(x => x.Amount);
-                    var finalBalance = Balance - balance;
+                    var finalBalance = Balance + balance;
 
                     return finalBalance;
                 }
