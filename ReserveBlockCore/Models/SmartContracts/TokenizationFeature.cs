@@ -6,5 +6,6 @@
         public string AssetTicker { get; set; }
         public string DepositAddress { get; set; }
         public string PublicKeyProofs { get; set; }
+        public string? ImageBase { get; set; }
     }
 }

@@ -19,7 +19,13 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             strTknzBld.AppendLine("   var proof =  \"" + tknz.PublicKeyProofs + "\"");
             strTknzBld.AppendLine("   return (proof)");
             strTknzBld.AppendLine("}");
-            
+
+            strTknzBld.AppendLine("function GetImageBase() : string");
+            strTknzBld.AppendLine("{");
+            strTknzBld.AppendLine("   var imageBase =  \"" + tknz.ImageBase + "\"");
+            strTknzBld.AppendLine("   return (imageBase)");
+            strTknzBld.AppendLine("}");
+
             return (strBuild, strTknzBld);
         }
     }

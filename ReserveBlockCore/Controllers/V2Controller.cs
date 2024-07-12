@@ -273,5 +273,52 @@ namespace ReserveBlockCore.Controllers
             return JsonConvert.SerializeObject(new { Success = true, Message = $"No Blocks found" });
         }
 
+
+        /// <summary>
+        /// Takes compressed base 64 image and decompresses it and returns byte array.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("GetImageUncompressedByte")]
+        public async Task<string> GetUncompressedByte([FromBody] string jsonData)
+        {
+            try
+            {
+                var compressedBase64 = jsonData;
+
+                byte[] compressedBytes = compressedBase64.FromBase64ToByteArray();
+
+                byte[] decompressedBytes = compressedBytes.ToDecompress();
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Success", ImageByteArray = decompressedBytes });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
+
+        /// <summary>
+        /// Takes compressed base 64 image and decompresses it and returns base64 string.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("GetImageUncompressedBase")]
+        public async Task<string> GetImageUncompressedBase([FromBody] string jsonData)
+        {
+            try
+            {
+                var compressedBase64 = jsonData;
+
+                byte[] compressedBytes = compressedBase64.FromBase64ToByteArray();
+
+                string decompressedBase64 = compressedBytes.ToDecompress().ToBase64();
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Success", ImageBase64 = decompressedBase64 });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
+
     }
 }

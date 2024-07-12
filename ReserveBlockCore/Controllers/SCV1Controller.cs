@@ -743,7 +743,6 @@ namespace ReserveBlockCore.Controllers
                     scReturnData.Success = true;
                     scReturnData.SmartContractCode = result.Item1;
                     scReturnData.SmartContractMain = result.Item2;
-                    SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);
 
                     var txData = "";
 
@@ -777,8 +776,12 @@ namespace ReserveBlockCore.Controllers
 
                     nTx.Build();
 
-
                     var checkSize = await TransactionValidatorService.VerifyTXSize(nTx);
+
+                    if(!checkSize)
+                        throw new Exception("Image is too large for token image. Must be 25kb or less.");
+
+                    SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);
 
                     var scInfo = new[]
                     {

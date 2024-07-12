@@ -121,7 +121,7 @@ namespace ReserveBlockCore.Services
 
             var checkSize = await VerifyTXSize(txRequest);
 
-            if (checkSize == false)
+            if (!checkSize)
             {
                 return (txResult, $"This transactions is too large. Max size allowed is 30 kb.");
             }
@@ -1965,6 +1965,7 @@ namespace ReserveBlockCore.Services
             var txJsonSize = JsonConvert.SerializeObject(txRequest);
             var size = txJsonSize.Length;
 
+            //30720 bytes
             if (size > (1024 * 30))
             {
                 return false;

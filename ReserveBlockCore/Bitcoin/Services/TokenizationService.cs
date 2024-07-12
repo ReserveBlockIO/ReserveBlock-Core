@@ -31,6 +31,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 string fileName = "";
                 string fileExtension = "";
                 long fileSizeInBytes = 0;
+                string imageBase64 = "default";
                 if (fileLocation != "default")
                 {
                     if (!File.Exists(fileLocation))
@@ -41,6 +42,11 @@ namespace ReserveBlockCore.Bitcoin.Services
                     fileName = fileInfo.Name;
                     fileExtension = fileInfo.Extension;
                     fileSizeInBytes = fileInfo.Length;
+
+                    byte[] imageBytes = File.ReadAllBytes(fileLocation);
+                    var imageCompressBase64 = imageBytes.ToCompress().ToBase64();
+
+                    imageBase64 = imageCompressBase64;
                 }
                 else
                 {
@@ -49,7 +55,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     fileSizeInBytes = 46056;
                     fileLocation = NFTAssetFileUtility.GetvBTCDefaultLogoLocation();
                 }
-                
+
                 var scMain = new SmartContractMain
                 {
                     MinterAddress = address,
@@ -61,7 +67,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                     Features = new List<SmartContractFeatures> {
                     new SmartContractFeatures {
                         FeatureName = FeatureName.Tokenization,
-                        FeatureFeatures = new TokenizationFeature { AssetName = "Bitcoin", AssetTicker = "BTC", DepositAddress = depositAddress, PublicKeyProofs = proofJson.ToBase64() }
+                        FeatureFeatures = new TokenizationFeature { 
+                            AssetName = "Bitcoin", AssetTicker = "BTC", DepositAddress = depositAddress, PublicKeyProofs = proofJson.ToBase64(), ImageBase = imageBase64
+                        }
                     }
                 },
                     IsMinter = true,
@@ -78,6 +86,57 @@ namespace ReserveBlockCore.Bitcoin.Services
                         FileSize = fileSizeInBytes
                     },
                 };
+
+                SmartContractReturnData scReturnData = new SmartContractReturnData();
+                var result = await SmartContractReaderService.ReadSmartContract(scMain);
+                scReturnData.Success = true;
+                scReturnData.SmartContractCode = result.Item1;
+                scReturnData.SmartContractMain = result.Item2;
+                var txData = "";
+
+                //var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
+
+                if (!string.IsNullOrWhiteSpace(result.Item1))
+                {
+                    var bytes = Encoding.Unicode.GetBytes(result.Item1);
+                    var scBase64 = bytes.ToCompress().ToBase64();
+                    string function = result.Item3 ? "TokenDeploy()" : "Mint()";
+                    var newSCInfo = new[]
+                    {
+                        new { Function = function, ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = "ASSUME SOMETHING HERE"}
+                    };
+
+                    txData = JsonConvert.SerializeObject(newSCInfo);
+                }
+                else
+                {
+                    return null;
+                }
+
+                var nTx = new ReserveBlockCore.Models.Transaction
+                {
+                    Timestamp = TimeUtil.GetTime(),
+                    FromAddress = scReturnData.SmartContractMain.MinterAddress,
+                    ToAddress = scReturnData.SmartContractMain.MinterAddress,
+                    Amount = 0.0M,
+                    Fee = 0,
+                    Nonce = AccountStateTrei.GetNextNonce(scMain.MinterAddress),
+                    TransactionType = !result.Item3 ? TransactionType.NFT_MINT : TransactionType.FTKN_MINT,
+                    Data = txData
+                };
+
+                //Calculate fee for tx.
+                nTx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(nTx);
+
+                nTx.Build();
+
+                var checkSize = await TransactionValidatorService.VerifyTXSize(nTx);
+
+                if(!checkSize)
+                {
+                    SCLogUtility.Log($"Transaction was too large. Most likely due to image being too large. TX size must be below 30kb.", "TokenizationService.CreateTokenizationScMain()");
+                    return null;
+                }
 
                 return scMain;
             }

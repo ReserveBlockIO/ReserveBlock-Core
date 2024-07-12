@@ -670,5 +670,40 @@ namespace ReserveBlockCore.Bitcoin.Controllers
             }
         }
 
+        /// <summary>
+        /// Get base vBTC image
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDefaultImageBase")]
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
+        public async Task<string> GetDefaultImageBase()
+        {
+            try
+            {
+                var defaultImageLocation = NFTAssetFileUtility.GetvBTCDefaultLogoLocation();
+
+                if(System.IO.File.Exists(defaultImageLocation))
+                {
+                    byte[] imageBytes = System.IO.File.ReadAllBytes(defaultImageLocation);
+                    var imageBase = imageBytes.ToBase64();
+
+                    return JsonConvert.SerializeObject(new { Success = true, 
+                        Message = $"Success", 
+                        EncodingFormat = "base64", 
+                        ImageExtension = "png", 
+                        ImageName = "defaultvBTC.png",
+                        ImageBase = imageBase });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find file in: {defaultImageLocation}" });
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
     }
 }

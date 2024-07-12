@@ -305,8 +305,9 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             var assetTicker = repl.Run(@"AssetTicker").Value;
                                             var depositAddress = repl.Run(@"DepositAddress").Value;
                                             var pubKeyProofs = repl.Run(@"GetPublicKeyProofs()").Value;
+                                            var imageBase = repl.Run(@"GetImageBase()").Value != null ? repl.Run(@"GetImageBase()").Value.ToString() : "default";
 
-                                            if(assetName != null && assetTicker != null && depositAddress != null && pubKeyProofs != null)
+                                            if (assetName != null && assetTicker != null && depositAddress != null && pubKeyProofs != null)
                                             {
                                                 TokenizationFeature tokenizationFeature = new TokenizationFeature
                                                 {
@@ -314,6 +315,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                                     AssetTicker = assetTicker.ToString(),
                                                     PublicKeyProofs = pubKeyProofs.ToString(),
                                                     DepositAddress = depositAddress.ToString(),
+                                                    ImageBase = imageBase
                                                     
                                                 };
 
@@ -422,6 +424,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                         var assetTicker = repl.Run(@"AssetTicker").Value;
                                         var depositAddress = repl.Run(@"DepositAddress").Value;
                                         var pubKeyProofs = repl.Run(@"GetPublicKeyProofs()").Value;
+                                        var imageBase = repl.Run(@"GetImageBase()").Value != null ? repl.Run(@"GetImageBase()").Value.ToString() : "default";
 
                                         if (assetName != null && assetTicker != null && depositAddress != null && pubKeyProofs != null)
                                         {
@@ -431,6 +434,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                                 AssetTicker = assetTicker.ToString(),
                                                 PublicKeyProofs = pubKeyProofs.ToString(),
                                                 DepositAddress = depositAddress.ToString(),
+                                                ImageBase = imageBase
                                             };
 
                                             scFeature.FeatureName = FeatureName.Tokenization;
@@ -609,13 +613,15 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     var assetName = repl.Run(@"AssetName").Value != null ? (string)repl.Run(@"AssetName").Value : "vBTC Token";
                                     var assetTicket = repl.Run(@"AssetTicker").Value != null ? (string)repl.Run(@"AssetTicker").Value : "BTC";
                                     var depositAddress = repl.Run(@"DepositAddress").Value != null ? (string)repl.Run(@"DepositAddress").Value : "ERROR";
-                                    var proofs =  repl.Run(@"GetPublicKeyProofs()").Value.ToString();
+                                    var proofs =  repl.Run(@"GetPublicKeyProofs()").Value != null ? repl.Run(@"GetPublicKeyProofs()").Value.ToString() : "ERROR";
+                                    var imageBase = repl.Run(@"GetImageBase()").Value != null ? repl.Run(@"GetImageBase()").Value.ToString() : "default";
 
                                     var tokenizationFeature = new TokenizationFeature { 
                                         AssetName = assetName,
                                         AssetTicker = assetTicket,
                                         DepositAddress = depositAddress,
-                                        PublicKeyProofs = proofs
+                                        PublicKeyProofs = proofs,
+                                        ImageBase = imageBase
                                     };
 
                                     scFeature.FeatureName = FeatureName.Tokenization;
@@ -734,13 +740,15 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 var assetTicket = repl.Run(@"AssetTicker").Value != null ? (string)repl.Run(@"AssetTicker").Value : "BTC";
                                 var depositAddress = repl.Run(@"DepositAddress").Value != null ? (string)repl.Run(@"DepositAddress").Value : "ERROR";
                                 var proofs = repl.Run(@"GetPublicKeyProofs()").Value.ToString();
+                                var imageBase = repl.Run(@"GetImageBase()").Value != null ? repl.Run(@"GetImageBase()").Value.ToString() : "default";
 
                                 var tokenizationFeature = new TokenizationFeature
                                 {
                                     AssetName = assetName,
                                     AssetTicker = assetTicket,
                                     DepositAddress = depositAddress,
-                                    PublicKeyProofs = proofs
+                                    PublicKeyProofs = proofs,
+                                    ImageBase = imageBase
                                 };
 
                                 scFeature.FeatureName = FeatureName.Tokenization;

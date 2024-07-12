@@ -539,6 +539,18 @@ namespace ReserveBlockCore.Extensions
                 return false;
             return true;
         }
+        public static byte[] ToDecompress(this byte[] data)
+        {
+            using (MemoryStream compressedStream = new MemoryStream(data))
+            using (MemoryStream decompressedStream = new MemoryStream())
+            {
+                using (GZipStream gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                {
+                    gzipStream.CopyTo(decompressedStream);
+                }
+                return decompressedStream.ToArray();
+            }
+        }
 
         public static string ToDecompress(this string s)
         {
