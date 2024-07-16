@@ -162,6 +162,17 @@ namespace ReserveBlockCore.Bitcoin.Models
         }
         #endregion
 
+        #region Create Bitcoin Address For Arbiter
+        public static Key CreatePrivateKeyForArbiter(string signingPrivateKey, string scUID)
+        {
+            byte[] hash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(signingPrivateKey + scUID));
+            // Generate a random private key
+            Key privateKey = new Key(hash);
+
+            return privateKey;
+        }
+        #endregion
+
         #region Import Private Key Hex
         public static void ImportPrivateKey(string privateKey, ScriptPubKeyType scriptPubKeyType)
         {

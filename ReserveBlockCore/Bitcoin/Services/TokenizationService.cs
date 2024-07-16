@@ -19,6 +19,8 @@ using NBitcoin;
 using System.Security.Principal;
 using NBitcoin.Protocol;
 using ReserveBlockCore.P2P;
+using static ReserveBlockCore.Services.ArbiterService;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -526,96 +528,86 @@ namespace ReserveBlockCore.Bitcoin.Services
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.TransferCoin()", false);
         }
 
-        public static async Task<string> WithdrawalCoin(BTCTokenizeTransaction? jsonData)
+        public static async Task<string> WithdrawalCoin(string address, string toAddress, string scUID, decimal amount, long chosenFeeRate)
         {
             try
             {
-                if (jsonData == null)
-                    return await SCLogUtility.LogAndReturn($"Payload body was null", "TokenizationService.WithdrawalCoin()", false);
+                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
 
-                var payload = jsonData;
+                if (scMain == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract.", "TokenizationService.WithdrawalCoin()", false);
 
-                if (payload == null)
-                    return await SCLogUtility.LogAndReturn($"Failed to deserialize payload", "TokenizationService.WithdrawalCoin()", false);
+                var scState = SmartContractStateTrei.GetSmartContractState(scUID);
 
-                if (payload.FromAddress == null)
-                    return await SCLogUtility.LogAndReturn($"From address cannot be null.", "TokenizationService.WithdrawalCoin()", false);
+                if (scState == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract state.", "TokenizationService.WithdrawalCoin()", false);
 
-                var account = AccountData.GetSingleAccount(payload.FromAddress);
-
-                if (account == null)
-                    return await SCLogUtility.LogAndReturn($"Could not find account.", "TokenizationService.WithdrawalCoin()", false);
-
-                var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(payload.SCUID);
+                var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
 
                 if (btcTkn == null)
-                    return await SCLogUtility.LogAndReturn($"Failed to find BTC Token: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+                    return await SCLogUtility.LogAndReturn($"Could not find vBTC Token.", "TokenizationService.WithdrawalCoin()", false);
 
-                var sc = SmartContractMain.SmartContractData.GetSmartContract(btcTkn.SmartContractUID);
+                if(btcTkn.DepositAddress == null)
+                    return await SCLogUtility.LogAndReturn($"Deposit Address cannot be null!", "TokenizationService.WithdrawalCoin()", false);
 
-                if (sc == null)
-                    return await SCLogUtility.LogAndReturn($"Failed to find Smart Contract Data: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+                if (scMain.Features == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract features", "TokenizationService.WithdrawalCoin()", false);
 
-                if (sc.Features == null)
-                    return await SCLogUtility.LogAndReturn($"Contract has no features: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
-
-                var tknzFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+                var tknzFeature = scMain.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
 
                 if (tknzFeature == null)
-                    return await SCLogUtility.LogAndReturn($"Contract missing a tokenization feature: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+                    return await SCLogUtility.LogAndReturn($"Found smart contract features, but not a vBTC token feature.", "TokenizationService.WithdrawalCoin()", false);
 
                 var tknz = (TokenizationFeature)tknzFeature;
 
                 if (tknz == null)
-                    return await SCLogUtility.LogAndReturn($"Token feature error: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+                    return await SCLogUtility.LogAndReturn($"Token feature was null.", "TokenizationService.WithdrawalCoin()", false);
 
-                var scState = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+                var isOwner = scState.OwnerAddress == address ? true : false;
 
-                if (scState == null)
-                    return await SCLogUtility.LogAndReturn($"SC State Missing: {payload.SCUID}", "TokenizationService.WithdrawalCoin()", false);
+                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == address && x.FromAddress == address).ToList();
 
-                bool isOwner = false;
-                if (scState.OwnerAddress == account.Address)
-                    isOwner = true;
-                if (scState.SCStateTreiTokenizationTXes != null)
+                if (vBTCBalances == null)
+                    return await SCLogUtility.LogAndReturn($"Balances were null.", "TokenizationService.WithdrawalCoin()", false);
+
+                if(amount >= btcTkn.Balance)
+                    return await SCLogUtility.LogAndReturn($"Withdrawal amount cannot exceed the total balance of the vBTC token.", "TokenizationService.WithdrawalCoin()", false);
+
+                if (vBTCBalances.Any() || isOwner)
                 {
-                    var balances = scState.SCStateTreiTokenizationTXes.Where(x => x.FromAddress == account.Address || x.ToAddress == account.Address).ToList();
-                    if (balances.Any() || isOwner)
+                    var balance = vBTCBalances.Sum(x => x.Amount);
+                    bool good = false;
+                    if (isOwner)
                     {
-                        var balance = balances.Sum(x => x.Amount);
-                        bool good = false;
-                        if (isOwner)
-                        {
-                            var finalBalance = btcTkn.Balance + balance;
-                            if (finalBalance < payload.Amount)
-                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
-                            good = true;
-                        }
-                        else
-                        {
-                            var finalBalance = balance;
-                            if (finalBalance < payload.Amount)
-                                return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {finalBalance}", "TokenizationService.TransferCoin()", false);
-                            good = true;
-                        }
+                        var finalBalance = btcTkn.Balance + balance;
+                        if (finalBalance < amount)
+                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for Owner", "TokenizationService.WithdrawalCoin()", false); ;
 
-                        if (good)
-                        {
-                            //withdrawal logic
-                        }
-
-
+                        good = true;
                     }
-                }
-                else
-                {
-                    //allow max withdrawal as this is the owner most likely.
-                    //This will get checked at a state level too of course.
-                    if (btcTkn.MyBalance < payload.Amount)
-                        return await SCLogUtility.LogAndReturn($"Insufficient Balance. Current Balance: {btcTkn.MyBalance}", "TokenizationService.TransferCoin()", false);
+                    else
+                    {
+                        var finalBalance = balance;
+                        if (finalBalance < amount)
+                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for sub Owner", "TokenizationService.WithdrawalCoin()", false); ;
+                        good = true;
+                    }
 
-                    SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
-                    return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = payload.SCUID });
+                    if (good)
+                    {
+                        //pass to transaction now.
+                        var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs);
+                        List<PubKey> pubKeys = new List<PubKey>();
+
+                        foreach(var proof in arbProofs)
+                        {
+                            PubKey pubKey = new PubKey(proof.PublicKey);
+                            pubKeys.Add(pubKey);
+                        }
+                        await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
+                    }
+
+
                 }
             }
             catch (Exception ex)

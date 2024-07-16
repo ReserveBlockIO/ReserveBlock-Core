@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Security.Principal;
+using static ReserveBlockCore.Models.Integrations;
 
 namespace ReserveBlockCore.Services
 {
@@ -117,11 +118,17 @@ namespace ReserveBlockCore.Services
 
         private static string CreateDepositAddress(List<PubKey> shares)
         {
+            //NEW STUFF
+            Script scriptPubKey = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(Globals.TotalArbiterThreshold,  shares.OrderBy(x => x.ScriptPubKey.ToString()).ToArray());
+            Script redeemScript = scriptPubKey.PaymentScript;
+            BitcoinAddress multiSigAddress = scriptPubKey.Hash.GetAddress(Globals.BTCNetwork);
+
+            ///////
             //ORDER IS IMPORTANT HERE!
-            shares = shares.OrderBy(x => x.ScriptPubKey.ToString()).ToList();
-            PubKey[] aggregatedPubKey = AggregatePublicKeys(shares);
-            Script multiSigScript = CreateMultiSigScript(Globals.TotalArbiterThreshold, aggregatedPubKey);
-            BitcoinAddress multiSigAddress = GetMultiSigAddress(multiSigScript);
+            //shares = shares.OrderBy(x => x.ScriptPubKey.ToString()).ToList();
+            //PubKey[] aggregatedPubKey = AggregatePublicKeys(shares);
+            //Script multiSigScript = CreateMultiSigScript(Globals.TotalArbiterThreshold, aggregatedPubKey);
+            //BitcoinAddress multiSigAddress = GetMultiSigAddress(multiSigScript);
 
             return multiSigAddress.ToString();
         }

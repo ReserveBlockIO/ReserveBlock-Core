@@ -1,6 +1,7 @@
 ﻿using ImageMagick;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
+using NBitcoin;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Models;
@@ -10,6 +11,8 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Numerics;
+using System.Text.Json;
+using static ReserveBlockCore.Models.Integrations;
 
 namespace ReserveBlockCore.Arbiter
 {
@@ -65,7 +68,7 @@ namespace ReserveBlockCore.Arbiter
                 });
 
                 endpoints.MapGet("/depositaddress/{address}/{**scUID}", async context =>
-                 {
+                {
 
                      var address = context.Request.RouteValues["address"] as string;
                      var scUID = context.Request.RouteValues["scUID"] as string;
@@ -100,6 +103,80 @@ namespace ReserveBlockCore.Arbiter
                      return;
                     
                 });
+
+                endpoints.MapPost("/getsignedmultisig",  async context =>
+                {
+                    // Handle the GET request
+                    try
+                    {
+                        using (var reader = new StreamReader(context.Request.Body))
+                        {
+                            var body = await reader.ReadToEndAsync();
+                            var postData = JsonConvert.DeserializeObject<PostData.MultiSigSigningPostData>(body);
+
+                            if (postData != null)
+                            {
+                                var result = new
+                                {
+                                    Transaction = postData.TransactionData,
+                                    ScriptCoinList = postData.ScriptCoinListData,
+                                    SCUID = postData.SCUID
+                                };
+
+                                var coinsToSpend = result.ScriptCoinList;
+
+                                if (coinsToSpend == null && coinsToSpend?.Count() > 0)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Coins to Spend" }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                TransactionBuilder builder = Globals.BTCNetwork.CreateTransactionBuilder();
+                                var privateKey = BitcoinAccount.CreatePrivateKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, result.SCUID);
+
+                                NBitcoin.Transaction keySigned = builder.AddCoins(result.ScriptCoinList.ToArray()).AddKeys(privateKey) .SignTransaction(result.Transaction);
+
+                                var responseData = new ResponseData.MultiSigSigningResponse {
+                                    Success = true,
+                                    Message = "Transaction Signed",
+                                    SignedTransaction = keySigned
+                                };
+
+                                context.Response.StatusCode = StatusCodes.Status200OK;
+                                context.Response.ContentType = "application/json";
+                                var requestorResponseJson = JsonConvert.SerializeObject(responseData, Formatting.Indented);
+                                await context.Response.WriteAsync(requestorResponseJson);
+                                return;
+
+                            }
+                            else
+                            {
+                                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                context.Response.ContentType = "application/json";
+                                var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to deserialize json" }, Formatting.Indented);
+                                await context.Response.WriteAsync(response);
+                                return;
+                            }
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        context.Response.ContentType = "application/json";
+                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" }, Formatting.Indented);
+                        await context.Response.WriteAsync(response);
+                        return;
+                    }
+                    
+
+
+                    
+
+                });
+
             });
         }
     }

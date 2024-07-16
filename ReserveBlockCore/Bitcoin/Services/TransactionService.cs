@@ -1,13 +1,21 @@
 ﻿using ImageMagick;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using NBitcoin;
 using NBitcoin.Protocol;
 using Newtonsoft.Json;
+using ReserveBlockCore.Arbiter;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
+using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
+using System.Text;
 using static ReserveBlockCore.Models.Integrations;
 
 namespace ReserveBlockCore.Bitcoin.Services
@@ -99,9 +107,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
 
-                unspentCoins.ForEach(x => {
-                    txBuilder.AddCoin(x);
-                });
+                txBuilder.AddCoins(unspentCoins.ToArray());
 
                 txBuilder
                     .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
@@ -480,9 +486,159 @@ namespace ReserveBlockCore.Bitcoin.Services
             
         }
 
-        public static async Task CreatePSBT()
+        public static async Task SendMultiSigTransactions(List<PubKey> pubKeys, decimal sendAmount, string toAddress, string changeAddress, long chosenFeeRate, string scUID)
         {
-            //TODO:
+            Script scriptPubKey = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKeys.ToArray());
+            Script redeemScript = scriptPubKey.PaymentScript;
+
+            BitcoinAddress multiSigAddress = scriptPubKey.Hash.GetAddress(Globals.BTCNetwork);
+            var sender = multiSigAddress.ToString();
+
+            if (changeAddress != sender)
+                return;//bad
+
+            BitcoinAddress recipientAddress = BitcoinAddress.Create(toAddress, Globals.BTCNetwork);
+
+            //var sendAmount = new Money(amount, MoneyUnit.BTC);
+
+            ulong amountToSend = Convert.ToUInt32(sendAmount * BTCMultiplier);
+            ulong feeEstimate = 0;
+            bool sufficientInputsFound = false;
+            List<Coin> unspentCoins = new List<Coin>();
+            List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
+
+            ulong previousTotalInputAmount = 0;
+
+            while (!sufficientInputsFound)
+            {
+                var coinList = GetUnspentCoins(sender, multiSigAddress, sendAmount + feeEstimate);
+                unspentCoins = coinList.Item1;
+
+                if (!unspentCoins.Any())
+                    return;
+                    //return (false, "Could not find any UTXOs for inputs.");
+
+                // Check if the coin list has changed
+                ulong totalInputAmount = (ulong)unspentCoins.Sum(x => x.Amount.Satoshi);
+
+                // Check if the total input amount is unchanged
+                if (totalInputAmount == previousTotalInputAmount)
+                {
+                    // If total input amount is unchanged, no more UTXOs are available
+                    return;
+                }
+
+                previousTotalInputAmount = totalInputAmount;
+
+                int inputCount = unspentCoins.Count();
+                int outputCount = 2; // one for recipient, one for change
+
+                FeeRate feeRateCalc = new FeeRate(chosenFeeRate * 1000);
+
+                // Estimate the transaction size
+                int transactionSize = FeeCalcService.EstimateTransactionSize(inputCount, outputCount);
+
+                // Calculate the fee (in satoshis)
+                feeEstimate = feeRateCalc.GetFee(transactionSize);
+
+                ulong totalAmountRequired = amountToSend + feeEstimate;
+
+                if (totalInputAmount >= totalAmountRequired)
+                {
+                    sufficientInputsFound = true;
+                    coinListBtcUTXOs = coinList.Item2;
+                }
+                else
+                {
+                    // If inputs are not sufficient, try to get more or larger UTXOs
+                    sendAmount += (decimal)feeEstimate / BTCMultiplier; // Increment the amount to cover fee in next iteration
+                }
+
+            }
+
+            List<ScriptCoin> coinsToSpend = new List<ScriptCoin>();
+            foreach(var coin in unspentCoins)
+            {
+                ScriptCoin coinToSpend = new ScriptCoin(coin, scriptPubKey);
+                coinsToSpend.Add(coinToSpend);
+            }
+
+            var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
+
+            txBuilder.AddCoins(coinsToSpend.ToArray());
+
+            txBuilder
+                .Send(recipientAddress, new Money(amountToSend, MoneyUnit.Satoshi))
+                .SetChange(multiSigAddress);
+
+            // Get the count of inputs and outputs
+            int finalInputCount = unspentCoins.Count();
+            int finalOutputCount = 2; // one for recipient, one for change
+
+            FeeRate feeRate = new FeeRate(chosenFeeRate * 1000);
+
+            int finalTransactionSize = FeeCalcService.EstimateTransactionSize(finalInputCount, finalOutputCount);
+            ulong finalFee = feeRate.GetFee(finalTransactionSize);
+
+            decimal totalAmountSpent = (amountToSend + finalFee) * SatoshiMultiplier;
+
+            var unsigned = txBuilder
+                .SendFees(new Money(finalFee, MoneyUnit.Satoshi))
+                .SetOptInRBF(true)
+                .BuildTransaction(false);
+
+            List<NBitcoin.Transaction> signedTransactionList = new List<NBitcoin.Transaction>();
+
+            var postData = JsonConvert.SerializeObject(new PostData.MultiSigSigningPostData(unsigned, coinsToSpend, scUID));
+            var httpContent = new StringContent(postData, Encoding.UTF8, "application/json");
+
+            var myList = Globals.Arbiters.Where(x => x.EndOfService == null && x.StartOfService <= TimeUtil.GetTime()).ToList();
+            var rnd = new Random();
+            myList = myList.OrderBy(x => rnd.Next()).ToList();
+
+            List<ReserveBlockCore.Models.Arbiter> randomArbs = myList.Take(Globals.TotalArbiterParties).ToList();
+
+            foreach (var arbiter in randomArbs)
+            {
+                using (var client = Globals.HttpClientFactory.CreateClient())
+                {
+                    string url = $"http://{arbiter.IPAddress}:{Globals.ArbiterPort}/getsignedmultisig";
+
+                    var response = await client.PostAsync(url, httpContent);
+                    if(response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        var responseString = await response.Content.ReadAsStringAsync();
+                        if (string.IsNullOrEmpty(responseString))
+                            return;
+
+                        var responseData = JsonConvert.DeserializeObject<ResponseData.MultiSigSigningResponse>(responseString);
+                        if (responseData == null)
+                            return;
+
+                        if (!responseData.Success)
+                            return;
+
+                        signedTransactionList.Add(responseData.SignedTransaction);
+                    }
+                    else
+                    {
+                        //bad
+                        return;
+                    }
+                }
+            }
+
+            NBitcoin.Transaction fullySigned =
+            txBuilder
+            .AddCoins(coinsToSpend.ToArray())
+            .CombineSignatures(signedTransactionList.ToArray());
+
+            var txVerified = txBuilder.Verify(fullySigned);
+            var result = fullySigned.Check();
+
+            //do local stuff
+            //do utxo stuff
+            //broadcast
         }
 
         private static (List<Coin>, List<BitcoinUTXO>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent)

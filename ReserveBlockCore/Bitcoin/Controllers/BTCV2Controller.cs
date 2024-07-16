@@ -579,6 +579,23 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Broadcast transaction with hex
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Broadcast/{txHash}")]
+        public async Task<string> Broadcast(string txHash)
+        {
+            var btcTran = NBitcoin.Transaction.Parse(txHash, Globals.BTCNetwork);
+
+            if (btcTran == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "TX found, but failed to parse tx from hex signature." });
+
+            _ = BroadcastService.BroadcastTx(btcTran);
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = "Broadcasting Transaction Again."});
+        }
+
+        /// <summary>
         /// Rebroadcast transaction
         /// </summary>
         /// <returns></returns>
