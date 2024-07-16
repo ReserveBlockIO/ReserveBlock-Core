@@ -15,15 +15,21 @@
         public string? FromAddress { get; set; }
 
         /// <summary>
-        /// To VFX Address
+        /// To BTC Address
         /// </summary>
         /// <example>toVFX</example>
         public string ToAddress { get; set; }
 
         /// <summary>
-        /// Amount RBX Address
+        /// Amount BTC 
         /// </summary>
         /// <example>1.23</example>
         public decimal Amount { get; set; }
+
+        /// <summary>
+        /// chosen fee rate
+        /// </summary>
+        /// <example>10</example>
+        public long ChosenFeeRate { get; set; }
     }
 }

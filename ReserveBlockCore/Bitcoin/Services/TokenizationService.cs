@@ -589,7 +589,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     {
                         var finalBalance = balance;
                         if (finalBalance < amount)
-                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for sub Owner", "TokenizationService.WithdrawalCoin()", false); ;
+                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for sub Owner", "TokenizationService.WithdrawalCoin()", false);
                         good = true;
                     }
 
@@ -605,6 +605,8 @@ namespace ReserveBlockCore.Bitcoin.Services
                             pubKeys.Add(pubKey);
                         }
                         await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
+
+                        return await SCLogUtility.LogAndReturn($"HashGoesHere", "TokenizationService.WithdrawalCoin()", true);
                     }
 
 

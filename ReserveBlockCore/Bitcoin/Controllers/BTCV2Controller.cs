@@ -678,7 +678,13 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         {
             try
             {
-                var result = await TokenizationService.WithdrawalCoin(jsonData);
+                if(jsonData == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"BTCTokenizeTransaction data was null" });
+
+                if(string.IsNullOrEmpty(jsonData.FromAddress))
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"VFX From address cannot be null here." });
+
+                var result = await TokenizationService.WithdrawalCoin(jsonData.FromAddress, jsonData.ToAddress, jsonData.SCUID, jsonData.Amount, jsonData.ChosenFeeRate);
                 return result;
             }
             catch (Exception ex)
