@@ -1182,6 +1182,62 @@ namespace ReserveBlockCore.Services
                                         }
                                     }
                                     break;
+                                case "TransferCoin()":
+                                    {
+                                        var scUID = (string?)scData["ContractUID"];
+
+                                        var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                        if (scState != null)
+                                        {
+                                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scState.ContractData); });
+                                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                            //testing
+                                            //bool isCompletedSuccessfully = true;
+                                            //transferTask.Wait();
+                                            if (!isCompletedSuccessfully)
+                                            {
+                                                SCLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                            }
+                                            else
+                                            {
+                                                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                if (sc?.Features != null)
+                                                {
+                                                    if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                                    {
+                                                        await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
+
+                                                        await Bitcoin.Bitcoin.TransferCoinAudit(scUID);
+
+                                                        var postAuditTknz = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
+
+                                                        if (scState.SCStateTreiTokenizationTXes != null && scState.SCStateTreiTokenizationTXes.Any())
+                                                        {
+                                                            var balanceList = scState.SCStateTreiTokenizationTXes.ToList();
+                                                            if (balanceList.Any())
+                                                            {
+                                                                var stateBalance = balanceList.Sum(x => x.Amount);
+                                                                var totalBalance = postAuditTknz.Balance;
+                                                                if (stateBalance > totalBalance)
+                                                                {
+                                                                    var txdata = TransactionData.GetAll();
+                                                                    tx.TransactionStatus = TransactionStatus.Invalid;
+                                                                    txdata.UpdateSafe(tx);
+
+                                                                    //Delete because its invalid.
+                                                                    TokenizedBitcoin.DeleteSmartContract(scUID);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+
+                                        break;
+                                    }
                                 default:
                                     break;
                             }
