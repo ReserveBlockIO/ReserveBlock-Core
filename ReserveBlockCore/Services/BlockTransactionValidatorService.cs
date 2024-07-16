@@ -953,8 +953,8 @@ namespace ReserveBlockCore.Services
                 try
                 {
                     scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                    function = (string?)scData["Function"];
                     scData = scDataArray[0];
+                    function = (string?)scData["Function"];
                     skip = true;
                 }
                 catch { }
@@ -1014,8 +1014,9 @@ namespace ReserveBlockCore.Services
                         try
                         {
                             scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                            function = (string?)scData["Function"];
+
                             scData = scDataArray[0];
+                            function = (string?)scData["Function"];
                             data = (string?)scData["Data"];
                             skip = true;
                         }
@@ -1081,6 +1082,15 @@ namespace ReserveBlockCore.Services
                                             }
                                             else
                                             {
+
+                                                sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                if (sc?.Features != null)
+                                                {
+                                                    if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
+                                                    {
+                                                        await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
+                                                    }
+                                                }
                                                 //download files here.
                                                 if (localFromAddress == null)
                                                 {
@@ -1103,7 +1113,6 @@ namespace ReserveBlockCore.Services
 
                                         var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
                                         var scUID = jobj["ContractUID"]?.ToObject<string?>();
-
 
                                         SCLogUtility.Log($"SC Transfer: {scUID}", "BlockTransactionValidatorService.ProcessIncomingReserveTransactions()");
 
