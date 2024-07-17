@@ -198,6 +198,55 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
 
         }
+        public static async Task SaveSmartContractCoinTransfer(SmartContractMain scMain, string rbxAddress, string? scText = null)
+        {
+            var scs = GetDb();
+
+            var exist = scs.FindOne(x => x.SmartContractUID == scMain.SmartContractUID && x.RBXAddress == rbxAddress);
+
+            if (exist == null)
+            {
+                if (scMain.Features != null)
+                {
+                    var tknzFeature = scMain.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+                    if (tknzFeature != null)
+                    {
+                        var tknz = (TokenizationFeature)tknzFeature;
+                        if (tknz != null)
+                        {
+                            TokenizedBitcoin tokenizedBitcoin = new TokenizedBitcoin
+                            {
+                                DepositAddress = tknz.DepositAddress,
+                                IsPublished = false,
+                                RBXAddress = rbxAddress == null ? scMain.MinterAddress : rbxAddress,
+                                SmartContractMainId = scMain.Id,
+                                SmartContractUID = scMain.SmartContractUID,
+                                TokenDescription = scMain.Description,
+                                TokenName = scMain.Name,
+                            };
+                            scs.InsertSafe(tokenizedBitcoin);
+                        }
+                        else
+                        {
+                            SCLogUtility.Log("Failed to read tokenization feature, but it was found", "TokenizedBitcoin.SaveSmartContract()");
+                        }
+                    }
+                    else
+                    {
+                        SCLogUtility.Log("No tokenization features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                    }
+                }
+                else
+                {
+                    SCLogUtility.Log("No features found on SC", "TokenizedBitcoin.SaveSmartContract()");
+                }
+            }
+            if (scText != null)
+            {
+                SaveSCLocaly(scMain, scText);
+            }
+
+        }
         public static void DeleteSmartContract(string scUID)
         {
             try

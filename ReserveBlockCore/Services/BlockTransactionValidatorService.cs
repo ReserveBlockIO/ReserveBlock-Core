@@ -1206,7 +1206,7 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     if (sc.Features.Exists(x => x.FeatureName == FeatureName.Tokenization))
                                                     {
-                                                        await TokenizedBitcoin.SaveSmartContract(sc, null, tx.ToAddress);
+                                                        await TokenizedBitcoin.SaveSmartContractCoinTransfer(sc, tx.ToAddress);
 
                                                         await Bitcoin.Bitcoin.TransferCoinAudit(scUID);
 
