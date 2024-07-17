@@ -1422,8 +1422,10 @@ namespace ReserveBlockCore.Services
                     if (scStateTreiRec != null)
                     {
                         var owner = scStateTreiRec.OwnerAddress;
+
                         var account = AccountData.GetSingleAccount(owner);
-                        if (account == null)
+                        var resAccount = ReserveAccount.GetReserveAccountSingle(owner);
+                        if (account == null && resAccount == null)
                         {
                             SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                             TokenizedBitcoin.DeleteSmartContract(scUID);
