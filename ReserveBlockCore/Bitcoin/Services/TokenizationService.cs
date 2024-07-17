@@ -532,6 +532,11 @@ namespace ReserveBlockCore.Bitcoin.Services
         {
             try
             {
+                var account = AccountData.GetSingleAccount(address);
+
+                if(account == null)
+                    return await SCLogUtility.LogAndReturn($"Account was either not found, or you are attempting to withdrawal from a Reserve Account.", "TokenizationService.WithdrawalCoin()", false);
+
                 var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
 
                 if (scMain == null)
