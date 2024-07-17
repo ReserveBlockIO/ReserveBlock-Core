@@ -528,7 +528,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.TransferCoin()", false);
         }
 
-        public static async Task<string> WithdrawalCoin(string address, string toAddress, string scUID, decimal amount, long chosenFeeRate)
+        public static async Task<string> WithdrawalCoin(string address, string toAddress, string scUID, decimal amount, long chosenFeeRate = 10)
         {
             try
             {
