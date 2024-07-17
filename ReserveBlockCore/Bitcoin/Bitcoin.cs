@@ -122,7 +122,7 @@ namespace ReserveBlockCore.Bitcoin
                     {
                         foreach (var address in addressList)
                         {
-                            await Explorers.GetAddressInfo(address.Address);
+                            await Explorers.GetAddressInfo(address.Address, "NA");
                             await Task.Delay(3000);
                         }
                     }
@@ -134,7 +134,7 @@ namespace ReserveBlockCore.Bitcoin
                         {
                             if(address.DepositAddress != null)
                             {
-                                await Explorers.GetAddressInfo(address.DepositAddress, true);
+                                await Explorers.GetAddressInfo(address.DepositAddress, address.RBXAddress, true);
                                 var scState = SmartContractStateTrei.GetSmartContractState(address.SmartContractUID);
                                 var postAuditTknz = await TokenizedBitcoin.GetTokenizedBitcoin(address.SmartContractUID);
                                 if(scState != null && postAuditTknz != null)
@@ -181,7 +181,7 @@ namespace ReserveBlockCore.Bitcoin
 
             if (tknzBtc?.DepositAddress != null)
             {
-                await Explorers.GetAddressInfo(tknzBtc.DepositAddress, true);
+                await Explorers.GetAddressInfo(tknzBtc.DepositAddress, tknzBtc.RBXAddress, true);
                 await Task.Delay(5000);
             }
         }

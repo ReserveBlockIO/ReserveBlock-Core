@@ -45,17 +45,30 @@ namespace ReserveBlockCore.Bitcoin.Models
 
             return null;
         }
-        public static async Task UpdateBalance(string address, decimal balance)
+        public static async Task UpdateBalance(string address, decimal balance, string vfxAddress)
         {
             var scs = GetDb();
             if (scs != null)
             {
-                var sc = scs.FindOne(x => x.DepositAddress == address);
-                if (sc != null)
+                if(vfxAddress == "NA")
                 {
-                    sc.Balance = balance;
-                    scs.UpdateSafe(sc);
+                    var sc = scs.FindOne(x => x.DepositAddress == address);
+                    if (sc != null)
+                    {
+                        sc.Balance = balance;
+                        scs.UpdateSafe(sc);
+                    }
                 }
+                else
+                {
+                    var sc = scs.FindOne(x => x.DepositAddress == address && x.RBXAddress == vfxAddress);
+                    if (sc != null)
+                    {
+                        sc.Balance = balance;
+                        scs.UpdateSafe(sc);
+                    }
+                }
+                
             }
         }
 

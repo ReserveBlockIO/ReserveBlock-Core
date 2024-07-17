@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Bitcoin.Integrations
 {
     public class MempoolSpaceTestnet4
     {
-        public static async Task GetAddressBalance(string address, bool isTokenAddress = false)
+        public static async Task GetAddressBalance(string address, string vfxAddress, bool isTokenAddress = false)
         {
             var baseUri = GetBaseURL();
             var uri = $"{baseUri}/address/{address}";
@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                 if (isTokenAddress)
                                 {
                                     var balance = (response.chain_stats.funded_txo_sum - response.chain_stats.spent_txo_sum) / 100_000_000M;
-                                    await TokenizedBitcoin.UpdateBalance(returnedAddress, balance);
+                                    await TokenizedBitcoin.UpdateBalance(returnedAddress, balance, vfxAddress);
                                 }
                             }
                         }
