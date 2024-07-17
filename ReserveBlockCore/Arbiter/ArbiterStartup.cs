@@ -5,6 +5,7 @@ using NBitcoin;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.SecretSharing.Cryptography;
 using ReserveBlockCore.SecretSharing.Math;
 using ReserveBlockCore.Services;
@@ -138,6 +139,81 @@ namespace ReserveBlockCore.Arbiter
                                 var privateKey = BitcoinAccount.CreatePrivateKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, result.SCUID);
 
                                 NBitcoin.Transaction keySigned = builder.AddCoins(result.ScriptCoinList.ToArray()).AddKeys(privateKey) .SignTransaction(result.Transaction);
+
+                                var scState = SmartContractStateTrei.GetSmartContractState(result.SCUID);
+
+                                if(scState == null)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find vBTC token at state level." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+
+                                if(scMain == null )
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to make SC Main at state level." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                if (scMain.Features == null)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"NO SC Features Found." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var tknzFeature = scMain.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+                                if (tknzFeature == null)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"No Token Feature Found." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var tknz = (TokenizationFeature)tknzFeature;
+
+                                if(tknz == null)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to cast token feature." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var depositAddress = tknz.DepositAddress;
+
+                                bool changeAddressCorrect = false;
+                                foreach (var output in keySigned.Outputs)
+                                {
+                                    var addr = output.ScriptPubKey.GetDestinationAddress(Globals.BTCNetwork);
+                                    if(addr != null)
+                                    {
+                                        if (addr.ToString() == depositAddress)
+                                            changeAddressCorrect = true;
+                                    }
+                                }
+
+                                if(!changeAddressCorrect)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Change address must match deposit address." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
 
                                 var responseData = new ResponseData.MultiSigSigningResponse {
                                     Success = true,
