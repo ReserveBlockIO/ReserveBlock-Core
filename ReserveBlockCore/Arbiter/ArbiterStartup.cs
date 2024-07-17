@@ -1,4 +1,5 @@
 ﻿using ImageMagick;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
@@ -114,7 +115,6 @@ namespace ReserveBlockCore.Arbiter
                         {
                             var body = await reader.ReadToEndAsync();
                             var postData = JsonConvert.DeserializeObject<PostData.MultiSigSigningPostData>(body);
-
                             if (postData != null)
                             {
                                 var result = new
@@ -140,7 +140,20 @@ namespace ReserveBlockCore.Arbiter
 
                                 var unsignedTransaction = NBitcoin.Transaction.Parse(result.Transaction, Globals.BTCNetwork);
 
-                                NBitcoin.Transaction keySigned = builder.AddCoins(result.ScriptCoinList.ToArray()).AddKeys(privateKey) .SignTransaction(unsignedTransaction);
+                                List<ScriptCoin> coinList = new List<ScriptCoin>();
+
+                                foreach(var input in result.ScriptCoinList)
+                                {
+                                    Script redeemScript = Script.FromHex(input.RedeemScript);
+                                    Script scriptPubKey = Script.FromHex(input.ScriptPubKey);
+                                    OutPoint outPoint = new OutPoint(uint256.Parse(input.TxHash), input.Vout);
+                                    Coin coin = new Coin(outPoint, new TxOut(Money.Coins(input.Money), redeemScript));
+                                    ScriptCoin coinToSpend = new ScriptCoin(coin, scriptPubKey);
+
+                                    coinList.Add(coinToSpend);
+                                }
+
+                                NBitcoin.Transaction keySigned = builder.AddCoins(coinList).AddKeys(privateKey) .SignTransaction(unsignedTransaction);
 
                                 var scState = SmartContractStateTrei.GetSmartContractState(result.SCUID);
 

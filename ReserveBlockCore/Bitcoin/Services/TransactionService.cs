@@ -506,6 +506,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             bool sufficientInputsFound = false;
             List<Coin> unspentCoins = new List<Coin>();
             List<BitcoinUTXO> coinListBtcUTXOs = new List<BitcoinUTXO>();
+            List<CoinInput> coinInputs = new List<CoinInput>();
 
             ulong previousTotalInputAmount = 0;
 
@@ -547,6 +548,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 {
                     sufficientInputsFound = true;
                     coinListBtcUTXOs = coinList.Item2;
+                    coinInputs = coinList.Item3;
                 }
                 else
                 {
@@ -561,6 +563,11 @@ namespace ReserveBlockCore.Bitcoin.Services
             {
                 ScriptCoin coinToSpend = new ScriptCoin(coin, scriptPubKey);
                 coinsToSpend.Add(coinToSpend);
+            }
+
+            foreach(var input in coinInputs)
+            {
+                input.ScriptPubKey = scriptPubKey.ToHex();
             }
 
             var txBuilder = Globals.BTCNetwork.CreateTransactionBuilder();
@@ -587,11 +594,20 @@ namespace ReserveBlockCore.Bitcoin.Services
                 .SetOptInRBF(true)
                 .BuildTransaction(false);
 
+            var bob = unsigned.Inputs;
+
             var unsignedHex = unsigned.ToHex();
 
             List<NBitcoin.Transaction> signedTransactionList = new List<NBitcoin.Transaction>();
 
-            var postData = JsonConvert.SerializeObject(new PostData.MultiSigSigningPostData(unsignedHex, coinsToSpend, scUID));
+            var sigData = new PostData.MultiSigSigningPostData 
+            {
+                TransactionData = unsignedHex,
+                ScriptCoinListData = coinInputs,
+                SCUID = scUID
+            };
+
+            var postData = JsonConvert.SerializeObject(sigData);
             var httpContent = new StringContent(postData, Encoding.UTF8, "application/json");
 
             var myList = Globals.Arbiters.Where(x => x.EndOfService == null && x.StartOfService <= TimeUtil.GetTime()).ToList();
@@ -643,10 +659,11 @@ namespace ReserveBlockCore.Bitcoin.Services
             //broadcast
         }
 
-        private static (List<Coin>, List<BitcoinUTXO>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent)
+        private static (List<Coin>, List<BitcoinUTXO>, List<CoinInput>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent)
         {
             var coinList = new List<Coin>();
             var spentList = new List<BitcoinUTXO>();
+            var coinInputList = new List<CoinInput>();
 
             var utxoList = BitcoinUTXO.GetUnspetUTXOs(btcAddress);
 
@@ -661,6 +678,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                     OutPoint outPoint = new OutPoint(uint256.Parse(x.TxId), x.Vout);
                     Coin coin = new Coin(outPoint, new TxOut(Money.Coins(value), address.ScriptPubKey));
+                    coinInputList.Add(new CoinInput { Money = value, TxHash = x.TxId, Vout = x.Vout, RedeemScript = address.ScriptPubKey.PaymentScript.ToHex() });
 
                     coinList.Add(coin);
 
@@ -673,7 +691,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                 }
             }
 
-            return (coinList, spentList);
+            return (coinList, spentList, coinInputList);
         }
 
         private static (List<Coin>, List<BitcoinUTXO>) GetUnspentCoins(string btcAddress, BitcoinAddress address, decimal amountBeingSent, List<BitcoinUTXO> prevUTXOList)
