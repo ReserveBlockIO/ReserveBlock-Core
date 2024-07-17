@@ -636,7 +636,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                         if (!responseData.Success)
                             return;
 
-                        signedTransactionList.Add(responseData.SignedTransaction);
+                        var signedTx = NBitcoin.Transaction.Parse(responseData.SignedTransaction, Globals.BTCNetwork);
+
+                        signedTransactionList.Add(signedTx);
                     }
                     else
                     {

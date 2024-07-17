@@ -230,10 +230,12 @@ namespace ReserveBlockCore.Arbiter
                                     return;
                                 }
 
+                                var keySignedHex = keySigned.ToHex();
+
                                 var responseData = new ResponseData.MultiSigSigningResponse {
                                     Success = true,
                                     Message = "Transaction Signed",
-                                    SignedTransaction = keySigned
+                                    SignedTransaction = keySignedHex
                                 };
 
                                 context.Response.StatusCode = StatusCodes.Status200OK;
