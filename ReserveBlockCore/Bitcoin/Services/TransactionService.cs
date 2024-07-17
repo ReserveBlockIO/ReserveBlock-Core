@@ -17,6 +17,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
 using static ReserveBlockCore.Models.Integrations;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ReserveBlockCore.Bitcoin.Services
 {
@@ -655,6 +656,30 @@ namespace ReserveBlockCore.Bitcoin.Services
 
             var txVerified = txBuilder.Verify(fullySigned);
             var result = fullySigned.Check();
+
+            var hexTx = fullySigned.ToHex();
+
+            var tx = new BitcoinTransaction
+            {
+                Fee = (finalFee * SatoshiMultiplier),
+                Amount = sendAmount,
+                FromAddress = sender,
+                ToAddress = recipientAddress.ToString(),
+                FeeRate = chosenFeeRate,
+                Hash = fullySigned.GetHash().ToString(),
+                Signature = hexTx,
+                Timestamp = TimeUtil.GetTime(),
+                TransactionType = BTCTransactionType.Send,
+                BitcoinUTXOs = coinListBtcUTXOs,
+            };
+
+            BitcoinTransaction.SaveBitcoinTX(tx);
+
+            Console.WriteLine($"Broadcast started @ {DateTime.Now}");
+
+            _ = BroadcastService.BroadcastTx(fullySigned);
+
+            Console.WriteLine($"Broadcast completed @ {DateTime.Now}");
 
             //do local stuff
             //do utxo stuff
