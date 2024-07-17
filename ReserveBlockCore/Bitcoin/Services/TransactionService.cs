@@ -678,7 +678,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                     OutPoint outPoint = new OutPoint(uint256.Parse(x.TxId), x.Vout);
                     Coin coin = new Coin(outPoint, new TxOut(Money.Coins(value), address.ScriptPubKey));
-                    coinInputList.Add(new CoinInput { Money = value, TxHash = x.TxId, Vout = x.Vout, RedeemScript = address.ScriptPubKey.PaymentScript.ToHex() });
+                    coinInputList.Add(new CoinInput { Money = value, TxHash = x.TxId, Vout = x.Vout, RedeemScript = address.ScriptPubKey.ToHex() });
 
                     coinList.Add(coin);
 
