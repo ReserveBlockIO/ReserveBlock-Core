@@ -601,7 +601,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     if (good)
                     {
                         //pass to transaction now.
-                        var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs);
+                        var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs.ToStringFromBase64());
                         List<PubKey> pubKeys = new List<PubKey>();
 
                         foreach(var proof in arbProofs)
@@ -611,7 +611,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                         }
                         await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
 
-                        return await SCLogUtility.LogAndReturn($"HashGoesHere", "TokenizationService.WithdrawalCoin()", true);
+                        return await SCLogUtility.LogAndReturn($"TX Success: []", "TokenizationService.WithdrawalCoin()", true);
                     }
 
 

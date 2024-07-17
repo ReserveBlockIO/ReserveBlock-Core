@@ -4,6 +4,6 @@ namespace ReserveBlockCore.Arbiter
 {
     public class PostData
     {
-        public record MultiSigSigningPostData(NBitcoin.Transaction TransactionData, List<ScriptCoin> ScriptCoinListData, string SCUID);
+        public record MultiSigSigningPostData(string TransactionData, List<ScriptCoin> ScriptCoinListData, string SCUID);
     }
 }

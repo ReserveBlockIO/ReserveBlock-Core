@@ -138,7 +138,9 @@ namespace ReserveBlockCore.Arbiter
                                 TransactionBuilder builder = Globals.BTCNetwork.CreateTransactionBuilder();
                                 var privateKey = BitcoinAccount.CreatePrivateKeyForArbiter(Globals.ArbiterSigningAddress.GetKey, result.SCUID);
 
-                                NBitcoin.Transaction keySigned = builder.AddCoins(result.ScriptCoinList.ToArray()).AddKeys(privateKey) .SignTransaction(result.Transaction);
+                                var unsignedTransaction = NBitcoin.Transaction.Parse(result.Transaction, Globals.BTCNetwork);
+
+                                NBitcoin.Transaction keySigned = builder.AddCoins(result.ScriptCoinList.ToArray()).AddKeys(privateKey) .SignTransaction(unsignedTransaction);
 
                                 var scState = SmartContractStateTrei.GetSmartContractState(result.SCUID);
 

@@ -582,14 +582,16 @@ namespace ReserveBlockCore.Bitcoin.Services
 
             decimal totalAmountSpent = (amountToSend + finalFee) * SatoshiMultiplier;
 
-            var unsigned = txBuilder
+            NBitcoin.Transaction unsigned = txBuilder
                 .SendFees(new Money(finalFee, MoneyUnit.Satoshi))
                 .SetOptInRBF(true)
                 .BuildTransaction(false);
 
+            var unsignedHex = unsigned.ToHex();
+
             List<NBitcoin.Transaction> signedTransactionList = new List<NBitcoin.Transaction>();
 
-            var postData = JsonConvert.SerializeObject(new PostData.MultiSigSigningPostData(unsigned, coinsToSpend, scUID));
+            var postData = JsonConvert.SerializeObject(new PostData.MultiSigSigningPostData(unsignedHex, coinsToSpend, scUID));
             var httpContent = new StringContent(postData, Encoding.UTF8, "application/json");
 
             var myList = Globals.Arbiters.Where(x => x.EndOfService == null && x.StartOfService <= TimeUtil.GetTime()).ToList();
