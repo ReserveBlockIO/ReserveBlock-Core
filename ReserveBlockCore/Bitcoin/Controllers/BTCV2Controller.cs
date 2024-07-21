@@ -228,6 +228,32 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Gets TX List with option to includeTokens = true
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetBitcoinTXList/{includeTokens?}")]
+        public async Task<string> GetBitcoinTXList(bool? includeTokens)
+        {
+            List<BitcoinTransaction>? btcList = null;
+            if(includeTokens == false)
+            {
+                var tokenizeList = await TokenizedBitcoin.GetTokenizedList();
+                if(tokenizeList?.Count() != 0)
+                {
+                    var addressList = tokenizeList.Select(x => x.DepositAddress).ToList();
+                    btcList = BitcoinTransaction.GetAllTXs(addressList);
+                }
+            }
+
+            btcList = BitcoinTransaction.GetAllTXs();
+
+            if (btcList?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"No TXs Found." });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"TXs Found.", TXs = btcList });
+        }
+
+        /// <summary>
         /// Gets the last time the accounts were synced
         /// </summary>
         /// <returns></returns>

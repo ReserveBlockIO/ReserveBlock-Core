@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
 using System.Net;
 
@@ -59,6 +60,29 @@ namespace ReserveBlockCore.Bitcoin.Models
                     bitcoin.InsertSafe(btcUTXO);
                     return true;
                 }
+            }
+
+            return false;
+
+        }
+        #endregion
+
+        #region Delete Bitcoin Address UTXO
+        public static async Task<bool> DeleteBitcoinUTXO(BitcoinUTXO btcUTXO)
+        {
+            var bitcoin = GetBitcoinUTXO();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetBitcoinUTXO() returned a null value.", "BitcoinUTXO.SaveBitcoinUTXO()");
+            }
+            else
+            {
+                var utxo = bitcoin.FindOne(x => x.TxId == btcUTXO.TxId && x.Address == btcUTXO.Address);
+                if (utxo != null)
+                {
+                    bitcoin.DeleteSafe(btcUTXO.Id);
+                }
+                
             }
 
             return false;

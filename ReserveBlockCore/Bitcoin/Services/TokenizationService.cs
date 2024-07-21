@@ -609,9 +609,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                             PubKey pubKey = new PubKey(proof.PublicKey);
                             pubKeys.Add(pubKey);
                         }
-                        await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
-
-                        return await SCLogUtility.LogAndReturn($"TX Success: []", "TokenizationService.WithdrawalCoin()", true);
+                        return await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
                     }
 
 

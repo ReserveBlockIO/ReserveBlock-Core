@@ -120,6 +120,55 @@ namespace ReserveBlockCore.Bitcoin.Models
         }
         #endregion
 
+        #region Get Bitcoin TX List
+        public static List<BitcoinTransaction> GetAllTXs(List<string>? tokenAddressList = null)
+        {
+            List<BitcoinTransaction> txList = new List<BitcoinTransaction>();
+            var bitcoin = GetBitcoinTX();
+            if (bitcoin == null)
+            {
+                ErrorLogUtility.LogError("GetTXs() returned a null value.", "BitcoinTransaction.GetTXs()");
+            }
+            else
+            {
+                if(tokenAddressList == null)
+                {
+                    var tx = bitcoin.FindAll();
+                    if (tx.Any())
+                    {
+                        txList = tx.ToList();
+                        return txList;
+                    }
+                    else
+                    {
+                        return txList;
+                    }
+                }
+                else
+                {
+                    if( tokenAddressList?.Count() > 0)
+                    {
+                        var tx = bitcoin.Query().Where(x => !tokenAddressList.Contains(x.FromAddress) && !tokenAddressList.Contains(x.ToAddress)).ToList();
+                        if (tx.Any())
+                        {
+                            txList = tx.ToList();
+                            return txList;
+                        }
+                        else
+                        {
+                            return txList;
+                        }
+                    }
+                    
+                }
+                
+            }
+
+            return txList;
+
+        }
+        #endregion
+
         #region Get Bitcoin TX
         public static async Task<BitcoinTransaction?> GetTX(string txHash)
         {
@@ -153,7 +202,8 @@ namespace ReserveBlockCore.Bitcoin.Models
     {
         Send,
         Receive,
-        Replaced
+        Replaced,
+        MultiSigSend
     }
     #endregion
 }

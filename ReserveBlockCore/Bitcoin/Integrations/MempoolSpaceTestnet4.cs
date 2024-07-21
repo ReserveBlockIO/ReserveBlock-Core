@@ -66,7 +66,9 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                             if (transactions?.Count > 0)
                             {
                                 var walletUtxoList = BitcoinUTXO.GetUTXOs(address);
-                                if(walletUtxoList != null)
+                                var utxoKeys = new HashSet<(string txId, string address)>(transactions.Select(item => (item.txid, address)));
+
+                                if (walletUtxoList != null)
                                 {
                                     var utxoList = transactions;
                                     if(utxoList?.Count > 0)
@@ -83,6 +85,12 @@ namespace ReserveBlockCore.Bitcoin.Integrations
 
                                             BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
                                         }
+                                    }
+
+                                    var utxoSpentList = walletUtxoList.Where(item => !utxoKeys.Contains((item.TxId, item.Address))).ToList();
+                                    foreach (var utxo in utxoSpentList)
+                                    {
+                                        await BitcoinUTXO.DeleteBitcoinUTXO(utxo);
                                     }
                                 }
                                 else
@@ -104,9 +112,8 @@ namespace ReserveBlockCore.Bitcoin.Integrations
                                         }
                                     }
                                 }
-                                
+
                                 //TODO:perform audit and update values as needed.
-                                //Remove them from DB saves.
                                 //Push them into memory
                                 //Perform audit after every tx send
                             }
