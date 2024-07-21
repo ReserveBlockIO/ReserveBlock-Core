@@ -142,9 +142,9 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 Console.WriteLine($"Tx Has been signed");
 
-                var txVerified = txBuilder.Verify(signedTransaction);
+                var txVerified = ValidateTransaction(signedTransaction, txBuilder);//txBuilder.Verify(fullySigned);
 
-                if (txVerified)
+                if (txVerified.Item1)
                 {
                     Console.WriteLine($"Tx Has been verified.");
                     btcAccount.Balance -= totalAmountSpent;
@@ -192,6 +192,8 @@ namespace ReserveBlockCore.Bitcoin.Services
                 {
                     Console.WriteLine($"Tx FAILED to verify.");
                     ErrorLogUtility.LogError($"Tx FAILED to verify.", "TransactionService.SendTransaction()");
+                    return (false, txVerified.Item2);
+                    
                 }
 
                 return (false, $"Unknown Error");
