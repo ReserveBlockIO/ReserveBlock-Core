@@ -570,15 +570,15 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 var isOwner = scState.OwnerAddress == address ? true : false;
 
-                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == address && x.FromAddress == address).ToList();
+                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == address || x.FromAddress == address).ToList();
 
-                if (vBTCBalances == null)
+                if (vBTCBalances == null && !isOwner)
                     return await SCLogUtility.LogAndReturn($"Balances were null.", "TokenizationService.WithdrawalCoin()", false);
 
                 if(amount >= btcTkn.Balance)
                     return await SCLogUtility.LogAndReturn($"Withdrawal amount cannot exceed the total balance of the vBTC token.", "TokenizationService.WithdrawalCoin()", false);
 
-                if (vBTCBalances.Any() || isOwner)
+                if(vBTCBalances != null)
                 {
                     var balance = vBTCBalances.Sum(x => x.Amount);
                     bool good = false;
@@ -604,16 +604,34 @@ namespace ReserveBlockCore.Bitcoin.Services
                         var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs.ToStringFromBase64());
                         List<PubKey> pubKeys = new List<PubKey>();
 
-                        foreach(var proof in arbProofs)
+                        foreach (var proof in arbProofs)
                         {
                             PubKey pubKey = new PubKey(proof.PublicKey);
                             pubKeys.Add(pubKey);
                         }
                         return await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
                     }
-
-
                 }
+                else if(isOwner)
+                {
+                    //Do this is you are owner and there are no state level balances yet.
+                    //pass to transaction now.
+                    var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs.ToStringFromBase64());
+                    List<PubKey> pubKeys = new List<PubKey>();
+
+                    foreach (var proof in arbProofs)
+                    {
+                        PubKey pubKey = new PubKey(proof.PublicKey);
+                        pubKeys.Add(pubKey);
+                    }
+                    return await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
+                }
+                else
+                {
+                    return await SCLogUtility.LogAndReturn($"No balances and you are not the owner.", "TokenizationService.WithdrawalCoin()", false);
+                }
+
+
             }
             catch (Exception ex)
             {

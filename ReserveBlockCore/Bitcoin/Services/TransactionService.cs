@@ -11,6 +11,7 @@ using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.SecretSharing.Cryptography;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
@@ -495,7 +496,7 @@ namespace ReserveBlockCore.Bitcoin.Services
         {
             try
             {
-                Script scriptPubKey = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, pubKeys.ToArray());
+                Script scriptPubKey = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(Globals.TotalArbiterThreshold, pubKeys.OrderBy(x => x.ScriptPubKey.ToString()).ToArray());
                 Script redeemScript = scriptPubKey.PaymentScript;
 
                 BitcoinAddress multiSigAddress = scriptPubKey.Hash.GetAddress(Globals.BTCNetwork);
