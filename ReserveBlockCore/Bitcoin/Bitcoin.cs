@@ -116,6 +116,7 @@ namespace ReserveBlockCore.Bitcoin
 
                 try
                 {
+                    Globals.BTCSyncing = true;
                     var addressList = BitcoinAccount.GetBitcoin()?.FindAll().ToList();
 
                     if (addressList?.Count != 0)
@@ -169,6 +170,8 @@ namespace ReserveBlockCore.Bitcoin
                 {
                     BalanceCheckLock.Release();
                 }
+
+                Globals.BTCSyncing = false;
 
                 await delay;
             }

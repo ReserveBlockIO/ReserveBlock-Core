@@ -534,7 +534,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     if (totalInputAmount == previousTotalInputAmount)
                     {
                         // If total input amount is unchanged, no more UTXOs are available
-                        return await SCLogUtility.LogAndReturn($"Failed to find enough inputs for amount.", "TransactionService.SendMultiSigTransactions()", false);
+                        return await SCLogUtility.LogAndReturn($"Failed to find enough inputs for amount. Not enough in amount to cover fee.", "TransactionService.SendMultiSigTransactions()", false);
                     }
 
                     previousTotalInputAmount = totalInputAmount;

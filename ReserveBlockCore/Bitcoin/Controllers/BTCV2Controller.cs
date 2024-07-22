@@ -622,6 +622,16 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Gets BTC Sync Status
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("SyncStatus")]
+        public async Task<string> SyncStatus()
+        {
+            return JsonConvert.SerializeObject(new { Success = true, Message = "", BTCSyncing = Globals.BTCSyncing });
+        }
+
+        /// <summary>
         /// Rebroadcast transaction
         /// </summary>
         /// <returns></returns>
