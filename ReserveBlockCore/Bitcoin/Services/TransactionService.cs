@@ -593,6 +593,11 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 ulong totalAmountSpent = (amountToSend - finalFee);
 
+                if(amountToSend <= finalFee)
+                {
+                    return await SCLogUtility.LogAndReturn($"Not enough in amount to cover fee. Amount {amountToSend} - Fee: {finalFee}", "TransactionService.SendMultiSigTransactions()", false);
+                }
+
                 txBuilder
                     .Send(recipientAddress, new Money(totalAmountSpent, MoneyUnit.Satoshi))
                     .SetChange(multiSigAddress);
