@@ -45,6 +45,7 @@ namespace ReserveBlockCore.Config
 		public string? STUNServers { get; set; }
 		public bool SelfSTUNServer { get; set; }
         public int SelfSTUNPort { get; set; }
+		public string? ElectrumServers { get; set; }
 		public bool LogMemory { get; set; }
 		public bool BlockSeedCalls { get; set; }
 		public Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
@@ -105,6 +106,7 @@ namespace ReserveBlockCore.Config
                 config.STUNServers = dict.ContainsKey("STUNServers") ? dict["STUNServers"] : null;
                 config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
                 config.SelfSTUNPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
+                config.ElectrumServers = dict.ContainsKey("ElectrumServers") ? dict["ElectrumServers"] : null;
                 config.LogMemory = dict.ContainsKey("LogMemory") ? Convert.ToBoolean(dict["LogMemory"]) : false;
                 config.BlockSeedCalls = dict.ContainsKey("BlockSeedCalls") ? Convert.ToBoolean(dict["BlockSeedCalls"]) : false;
                 config.BitcoinAddressFormat = dict.ContainsKey("BitcoinAddressFormat") ? (Bitcoin.Bitcoin.BitcoinAddressFormat)Convert.ToInt32(dict["BitcoinAddressFormat"]) : Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit;
@@ -192,9 +194,67 @@ namespace ReserveBlockCore.Config
 			Globals.SegwitP2SHStartPrefix = "3";
 			Globals.SegwitTaprootStartPrefix = "bc1";
 			Globals.BitcoinAddressFormat = config.BitcoinAddressFormat;
+            Globals.ClientSettings = new List<Bitcoin.ElectrumX.ClientSettings> {
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "electrum.blockstream.info",
+                        Port = 50002,
+                        UseSsl = true
+                    },
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "bitcoin.lu.ke",
+                        Port = 50002,
+                        UseSsl = true
+                    },
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "electrum.emzy.de",
+                        Port = 50002,
+                        UseSsl = true
+                    },
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "electrum.bitaroo.net",
+                        Port = 50002,
+                        UseSsl = true
+                    },
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "electrum.diynodes.com",
+                        Port = 50002,
+                        UseSsl = true
+                    },
+                    new Bitcoin.ElectrumX.ClientSettings {
+                        Host = "fulcrum.sethforprivacy.com",
+                        Port = 50002,
+                        UseSsl = true
+                    }
+                };
 
-			Globals.ScriptPubKeyType = Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.SegwitP2SH ? NBitcoin.ScriptPubKeyType.SegwitP2SH :
+            Globals.ScriptPubKeyType = Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.SegwitP2SH ? NBitcoin.ScriptPubKeyType.SegwitP2SH :
 				Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit ? NBitcoin.ScriptPubKeyType.Segwit : NBitcoin.ScriptPubKeyType.TaprootBIP86;
+
+			if(config.ElectrumServers != null)
+			{
+				var clientSettings = new List<Bitcoin.ElectrumX.ClientSettings>();
+				Globals.ClientSettings.Clear();
+
+                var serverList = config.ElectrumServers.Split(',');
+                foreach (var server in serverList)
+                {
+					bool isSsl = server.ToLower().Contains("https://") ? true : false;
+					string serverFormat = isSsl ? server.ToLower().Replace("https://", "") : server.ToLower().Replace("http://", "");
+					var hostport = serverFormat.Split(':');
+					var host = hostport[0];
+					var port = hostport[1];
+					var clientSetting = new Bitcoin.ElectrumX.ClientSettings
+					{
+						Host = host,
+						Port = Convert.ToInt32(port),
+						UseSsl = isSsl
+                    };
+
+					clientSettings.Add(clientSetting);
+                }
+
+				Globals.ClientSettings = clientSettings;
+            }
 
             if (config.STUNServers?.Count() > 0)
 			{
@@ -230,28 +290,35 @@ namespace ReserveBlockCore.Config
                 }
             }
 
-            if (config.TestNet == true)
-            {
-                Globals.ADJPort = 13339;
+			if (config.TestNet == true)
+			{
+				Globals.ADJPort = 13339;
 				Globals.ValPort = 13339;
 				Globals.ArbiterPort = 13342;
-                Globals.IsTestNet = true;
+				Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;
-                Globals.APIPortSSL = 17777;
-                Globals.AddressPrefix = 0x89; //address prefix 'x'
+				Globals.APIPortSSL = 17777;
+				Globals.AddressPrefix = 0x89; //address prefix 'x'
 				Globals.V1ValHeight = 200;
 				Globals.TXHeightRule1 = 200;
 				Globals.TXHeightRule2 = 200;
 				Globals.DSTClientPort = 13341;
-                Globals.SelfSTUNPort = 13340;
+				Globals.SelfSTUNPort = 13340;
 				Globals.BTCNetwork = NBitcoin.Network.TestNet4;
-                Globals.SegwitP2SHStartPrefix = "2";
-                Globals.SegwitTaprootStartPrefix = "tb1";
-                Globals.ArbiterEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
+				Globals.SegwitP2SHStartPrefix = "2";
+				Globals.SegwitTaprootStartPrefix = "tb1";
+				Globals.ArbiterEncryptPassword = ("s7K#Y6fA%L3P9*wN2@R4$qG5hT8*dE7!").ToSecureString();
 				Globals.TotalArbiterParties = 2;
 				Globals.TotalArbiterThreshold = 2;
+				Globals.ClientSettings = new List<Bitcoin.ElectrumX.ClientSettings> { 
+					new Bitcoin.ElectrumX.ClientSettings {
+						Host = "mempool.space",
+						Port = 40002,
+						UseSsl = true
+					}
+				};
             }
 
 			if(!string.IsNullOrEmpty(config.ArbiterPassword))

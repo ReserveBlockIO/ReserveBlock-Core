@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Bitcoin.ElectrumX;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
@@ -73,6 +74,7 @@ namespace ReserveBlockCore
         public static Process GUIProcess;
         public static bool IsFork = false;
         public static Blockchain Blockchain { get; set; }
+        public static List<ClientSettings> ClientSettings { get; set; }
         public static NBitcoin.Network BTCNetwork { get; set; }
         public static string SegwitP2SHStartPrefix { get; set; }
         public static string SegwitTaprootStartPrefix { get; set; }
