@@ -1,10 +1,13 @@
-﻿using ReserveBlockCore.Bitcoin.Integrations;
+﻿using NBitcoin;
+using ReserveBlockCore.Bitcoin.ElectrumX;
+using ReserveBlockCore.Bitcoin.Integrations;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
 using System.Net;
@@ -114,20 +117,288 @@ namespace ReserveBlockCore.Bitcoin
 
                 Globals.BTCAccountLastCheckedDate = DateTime.Now;
 
+                bool electrumServerFound = false;
+                Client client = null;
+                while(!electrumServerFound)
+                {
+                    var electrumServer = Globals.ClientSettings.Where(x => x.FailCount < 10).OrderBy(x => x.Count).FirstOrDefault();
+                    if (electrumServer != null)
+                    {
+                        try
+                        {
+                            client = new Client(electrumServer.Host, electrumServer.Port, true);
+                            var serverVersion = await client.GetServerVersion();
+
+                            if (serverVersion == null)
+                                throw new Exception("Bad server response or no connection.");
+
+                            if(serverVersion.ProtocolVersion.Major != 1 && serverVersion.ProtocolVersion.Minor < 4)
+                                throw new Exception("Bad version.");
+
+                            electrumServerFound = true;
+                            electrumServer.Count++;
+                        }
+                        catch (Exception ex)
+                        {
+                            electrumServer.FailCount++;
+                            electrumServer.Count++;
+                            await Task.Delay(1000);
+                        }
+
+                    }
+                }
+                
+                
                 try
                 {
                     Globals.BTCSyncing = true;
+                    if (client == null)
+                        throw new Exception("ElectrumX client was null");
+
                     var addressList = BitcoinAccount.GetBitcoin()?.FindAll().ToList();
 
                     if (addressList?.Count != 0)
                     {
                         foreach (var address in addressList)
                         {
-                            await Explorers.GetAddressInfo(address.Address, "NA");
-                            await Task.Delay(3000);
+                            bool checkForNewUnspent = false;
+                            bool unconfirmedFound = false;
+                            var balance = await client.GetBalance(address.Address, false);
+                            var btcAccount = BitcoinAccount.GetBitcoin()?.FindOne(x => x.Address == address.Address);
+                            if (btcAccount != null)
+                            {
+                                if(btcAccount.Balance != (balance.Confirmed / 100_000_000M))
+                                    checkForNewUnspent = true;
+
+                                if ((balance.Unconfirmed / 100_000_000M) > 0.0M)
+                                    unconfirmedFound = true;
+
+                                btcAccount.Balance = balance.Confirmed / 100_000_000M;
+                                BitcoinAccount.GetBitcoin()?.UpdateSafe(btcAccount);
+                            }
+                            
+                            if(checkForNewUnspent)
+                            {
+                                var transactions = await client.GetListUnspent(address.Address, false);
+                                if (transactions?.Count > 0)
+                                {
+                                    var walletUtxoList = BitcoinUTXO.GetUTXOs(address.Address);
+                                    if (walletUtxoList != null)
+                                    {
+                                        var utxoList = transactions;
+                                        if (utxoList?.Count > 0)
+                                        {
+                                            foreach (var item in utxoList)
+                                            {
+                                                var nUTXO = new BitcoinUTXO
+                                                {
+                                                    Address = address.Address,
+                                                    IsUsed = false,
+                                                    TxId = item.TxHash,
+                                                    Value = (long)item.Value,
+                                                    Vout = (int)item.TxPos
+                                                };
+
+                                                BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (transactions?.Count > 0)
+                                        {
+                                            foreach (var item in transactions)
+                                            {
+                                                var nUTXO = new BitcoinUTXO
+                                                {
+                                                    Address = address.Address,
+                                                    IsUsed = false,
+                                                    TxId = item.TxHash,
+                                                    Value = (long)item.Value,
+                                                    Vout = (int)item.TxPos
+                                                };
+
+                                                BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if(checkForNewUnspent || unconfirmedFound)
+                            {
+                                //Also check for new TXs
+                                var transactionList = BitcoinTransaction.GetTXs(address.Address);
+                                if(transactionList?.Count > 0)
+                                {
+                                    var history = await client.GetHistory(address.Address);
+                                    if(history?.Count > 0)
+                                    {
+                                        foreach(var bTx in history)
+                                        {
+                                            var localTx = transactionList.Where(x => x.Hash == bTx.TxHash).FirstOrDefault();
+                                            if (localTx != null)
+                                            {
+                                                //confirmed
+                                                if (bTx.Height != 0 && !localTx.IsConfirmed && localTx.ConfirmedHeight == 0)
+                                                {
+                                                    localTx.IsConfirmed = true;
+                                                    localTx.ConfirmedHeight = bTx.Height;
+                                                    BitcoinTransaction.UpdateBitcoinTX(localTx);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                //confirmed
+                                                if (bTx.Height != 0)
+                                                {
+                                                    var rawTx = await client.GetRawTx(bTx.TxHash);
+                                                    var tx = NBitcoin.Transaction.Parse(rawTx.RawTx, Globals.BTCNetwork);
+                                                    var bitcoinAddress = BitcoinAddress.Create(address.Address, Globals.BTCNetwork);
+                                                    List<BitcoinAddress> outgoingAddrs = new List<BitcoinAddress>();
+                                                    foreach (var input in tx.Inputs)
+                                                    {
+                                                        var result = await InputUtility.GetAddressFromInput(client, input);
+                                                        if (result != null)
+                                                            outgoingAddrs.Add(result);
+                                                    }
+
+                                                    bool isOutgoing = outgoingAddrs.Any(inputAddress => inputAddress == bitcoinAddress);
+
+                                                    var fromAddress = "";
+                                                    var toAddress = "";
+                                                    var amount = 0.0M;
+                                                    foreach (var output in tx.Outputs)
+                                                    {
+                                                        var outputAddress = output.ScriptPubKey.GetDestinationAddress(Globals.BTCNetwork);
+                                                        
+
+                                                        // Heuristic: if the address is not the sender's address, it's likely a recipient
+                                                        if (outputAddress == bitcoinAddress && isOutgoing)
+                                                        {
+                                                            fromAddress = address.Address;
+                                                            toAddress = outputAddress.ToString();
+                                                        }
+                                                        if (outputAddress != bitcoinAddress && isOutgoing)
+                                                        {
+                                                            amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                        }
+
+                                                        if (outputAddress != bitcoinAddress && !isOutgoing)
+                                                        {
+                                                            fromAddress = outputAddress.ToString();
+                                                            toAddress = address.Address;
+                                                        }
+                                                        if (outputAddress == bitcoinAddress && !isOutgoing)
+                                                        {
+                                                            amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                        }
+
+                                                    }
+
+                                                    var totalInputAmount = await InputUtility.CalculateTotalInputAmount(client, tx);
+                                                    var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
+                                                    var fee = totalInputAmount - totalOutputAmount;
+
+                                                    var nTx = new BitcoinTransaction {
+                                                        Amount = amount,
+                                                        BitcoinUTXOs = new List<BitcoinUTXO>(),
+                                                        Fee = fee.ToUnit(MoneyUnit.BTC),
+                                                        FeeRate = 0,
+                                                        FromAddress = fromAddress,
+                                                        ToAddress = toAddress,
+                                                        Hash = bTx.TxHash,
+                                                        IsConfirmed = true,
+                                                        ConfirmedHeight = bTx.Height,
+                                                        Signature = rawTx.RawTx.ToString(),
+                                                        Timestamp = TimeUtil.GetTime(),
+                                                        TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
+                                                    };
+
+                                                    BitcoinTransaction.SaveBitcoinTX(nTx);
+                                                }
+                                                else
+                                                {
+                                                    var rawTx = await client.GetRawTx(bTx.TxHash);
+                                                    var tx = NBitcoin.Transaction.Parse(rawTx.RawTx, Globals.BTCNetwork);
+                                                    var bitcoinAddress = BitcoinAddress.Create(address.Address, Globals.BTCNetwork);
+                                                    List<BitcoinAddress> outgoingAddrs = new List<BitcoinAddress>();
+                                                    foreach (var input in tx.Inputs)
+                                                    {
+                                                        var result = await InputUtility.GetAddressFromInput(client, input);
+                                                        if (result != null)
+                                                            outgoingAddrs.Add(result);
+                                                    }
+
+                                                    bool isOutgoing = outgoingAddrs.Any(inputAddress => inputAddress == bitcoinAddress);
+
+                                                    var fromAddress = "";
+                                                    var toAddress = "";
+                                                    var amount = 0.0M;
+                                                    foreach (var output in tx.Outputs)
+                                                    {
+                                                        var outputAddress = output.ScriptPubKey.GetDestinationAddress(Globals.BTCNetwork);
+
+
+                                                        // Heuristic: if the address is not the sender's address, it's likely a recipient
+                                                        if (outputAddress == bitcoinAddress && isOutgoing)
+                                                        {
+                                                            fromAddress = address.Address;
+                                                            toAddress = outputAddress.ToString();
+                                                        }
+                                                        if (outputAddress != bitcoinAddress && isOutgoing)
+                                                        {
+                                                            amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                        }
+
+                                                        if (outputAddress != bitcoinAddress && !isOutgoing)
+                                                        {
+                                                            fromAddress = outputAddress.ToString();
+                                                            toAddress = address.Address;
+                                                        }
+                                                        if (outputAddress == bitcoinAddress && !isOutgoing)
+                                                        {
+                                                            amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                        }
+
+                                                    }
+
+                                                    var totalInputAmount = await InputUtility.CalculateTotalInputAmount(client, tx);
+                                                    var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
+                                                    var fee = totalInputAmount - totalOutputAmount;
+
+                                                    var nTx = new BitcoinTransaction
+                                                    {
+                                                        Amount = amount,
+                                                        BitcoinUTXOs = new List<BitcoinUTXO>(),
+                                                        Fee = fee.ToUnit(MoneyUnit.BTC),
+                                                        FeeRate = 0,
+                                                        FromAddress = fromAddress,
+                                                        ToAddress = toAddress,
+                                                        Hash = bTx.TxHash,
+                                                        IsConfirmed = false,
+                                                        Signature = rawTx.RawTx.ToString(),
+                                                        Timestamp = TimeUtil.GetTime(),
+                                                        TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
+                                                    };
+
+                                                    BitcoinTransaction.SaveBitcoinTX(nTx);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+
+                                }
+                            }
+                            
+                            await Task.Delay(1500);
                         }
                     }
 
+                    //Tokenized Address Check
                     var tokenizeList = await TokenizedBitcoin.GetTokenizedList();
                     if(tokenizeList?.Count != 0)
                     {
@@ -135,7 +406,246 @@ namespace ReserveBlockCore.Bitcoin
                         {
                             if(address.DepositAddress != null)
                             {
-                                await Explorers.GetAddressInfo(address.DepositAddress, address.RBXAddress, true);
+                                bool checkForNewUnspent = false;
+                                bool unconfirmedFound= false;
+                                var balance = await client.GetBalance(address.DepositAddress, false);
+
+                                var btcAccount = BitcoinAccount.GetBitcoin()?.FindOne(x => x.Address == address.DepositAddress);
+
+                                if (btcAccount != null)
+                                {
+                                    if (btcAccount.Balance != (balance.Confirmed / 100_000_000M))
+                                        checkForNewUnspent = true;
+
+                                    btcAccount.Balance = balance.Confirmed / 100_000_000M;
+                                    BitcoinAccount.GetBitcoin()?.UpdateSafe(btcAccount);
+                                }
+                                if (address.Balance != (balance.Confirmed / 100_000_000M))
+                                    checkForNewUnspent = true;
+
+                                if ((balance.Unconfirmed / 100_000_000M) > 0.0M)
+                                    unconfirmedFound = true;
+
+                                await TokenizedBitcoin.UpdateBalance(address.DepositAddress, balance.Confirmed / 100_000_000M, address.RBXAddress);
+
+                                if(checkForNewUnspent)
+                                {
+                                    var transactions = await client.GetListUnspent(address.DepositAddress, false);
+                                    if (transactions?.Count > 0)
+                                    {
+                                        var walletUtxoList = BitcoinUTXO.GetUTXOs(address.DepositAddress);
+                                        if (walletUtxoList != null)
+                                        {
+                                            var utxoList = transactions;
+                                            if (utxoList?.Count > 0)
+                                            {
+                                                foreach (var item in utxoList)
+                                                {
+                                                    var nUTXO = new BitcoinUTXO
+                                                    {
+                                                        Address = address.DepositAddress,
+                                                        IsUsed = false,
+                                                        TxId = item.TxHash,
+                                                        Value = (long)item.Value,
+                                                        Vout = (int)item.TxPos
+                                                    };
+
+                                                    BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (transactions?.Count > 0)
+                                            {
+                                                foreach (var item in transactions)
+                                                {
+                                                    var nUTXO = new BitcoinUTXO
+                                                    {
+                                                        Address = address.DepositAddress,
+                                                        IsUsed = false,
+                                                        TxId = item.TxHash,
+                                                        Value = (long)item.Value,
+                                                        Vout = (int)item.TxPos
+                                                    };
+
+                                                    BitcoinUTXO.SaveBitcoinUTXO(nUTXO, true);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (checkForNewUnspent || unconfirmedFound)
+                                {
+                                    //Also check for new TXs
+                                    var transactionList = BitcoinTransaction.GetTXs(address.DepositAddress);
+                                    if (transactionList?.Count > 0)
+                                    {
+                                        var history = await client.GetHistory(address.DepositAddress);
+                                        if (history?.Count > 0)
+                                        {
+                                            foreach (var bTx in history)
+                                            {
+                                                var localTx = transactionList.Where(x => x.Hash == bTx.TxHash).FirstOrDefault();
+                                                if (localTx != null)
+                                                {
+                                                    //confirmed
+                                                    if (bTx.Height != 0 && !localTx.IsConfirmed && localTx.ConfirmedHeight == 0)
+                                                    {
+                                                        localTx.IsConfirmed = true;
+                                                        localTx.ConfirmedHeight = bTx.Height;
+                                                        BitcoinTransaction.UpdateBitcoinTX(localTx);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    //confirmed
+                                                    if (bTx.Height != 0)
+                                                    {
+                                                        var rawTx = await client.GetRawTx(bTx.TxHash);
+                                                        var tx = NBitcoin.Transaction.Parse(rawTx.RawTx, Globals.BTCNetwork);
+                                                        var bitcoinAddress = BitcoinAddress.Create(address.DepositAddress, Globals.BTCNetwork);
+                                                        List<BitcoinAddress> outgoingAddrs = new List<BitcoinAddress>();
+                                                        foreach (var input in tx.Inputs)
+                                                        {
+                                                            var result = await InputUtility.GetAddressFromInput(client, input);
+                                                            if (result != null)
+                                                                outgoingAddrs.Add(result);
+                                                        }
+
+                                                        bool isOutgoing = outgoingAddrs.Any(inputAddress => inputAddress == bitcoinAddress);
+
+                                                        var fromAddress = "";
+                                                        var toAddress = "";
+                                                        var amount = 0.0M;
+                                                        foreach (var output in tx.Outputs)
+                                                        {
+                                                            var outputAddress = output.ScriptPubKey.GetDestinationAddress(Globals.BTCNetwork);
+
+
+                                                            // Heuristic: if the address is not the sender's address, it's likely a recipient
+                                                            if (outputAddress == bitcoinAddress && isOutgoing)
+                                                            {
+                                                                fromAddress = address.DepositAddress;
+                                                                toAddress = outputAddress.ToString();
+                                                            }
+                                                            if (outputAddress != bitcoinAddress && isOutgoing)
+                                                            {
+                                                                amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                            }
+
+                                                            if (outputAddress != bitcoinAddress && !isOutgoing)
+                                                            {
+                                                                fromAddress = outputAddress.ToString();
+                                                                toAddress = address.DepositAddress;
+                                                            }
+                                                            if (outputAddress == bitcoinAddress && !isOutgoing)
+                                                            {
+                                                                amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                            }
+
+                                                        }
+
+                                                        var totalInputAmount = await InputUtility.CalculateTotalInputAmount(client, tx);
+                                                        var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
+                                                        var fee = totalInputAmount - totalOutputAmount;
+
+                                                        var nTx = new BitcoinTransaction
+                                                        {
+                                                            Amount = amount,
+                                                            BitcoinUTXOs = new List<BitcoinUTXO>(),
+                                                            Fee = fee.ToUnit(MoneyUnit.BTC),
+                                                            FeeRate = 0,
+                                                            FromAddress = fromAddress,
+                                                            ToAddress = toAddress,
+                                                            Hash = bTx.TxHash,
+                                                            IsConfirmed = true,
+                                                            ConfirmedHeight = bTx.Height,
+                                                            Signature = rawTx.RawTx.ToString(),
+                                                            Timestamp = TimeUtil.GetTime(),
+                                                            TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
+                                                        };
+
+                                                        BitcoinTransaction.SaveBitcoinTX(nTx);
+                                                    }
+                                                    else
+                                                    {
+                                                        var rawTx = await client.GetRawTx(bTx.TxHash);
+                                                        var tx = NBitcoin.Transaction.Parse(rawTx.RawTx, Globals.BTCNetwork);
+                                                        var bitcoinAddress = BitcoinAddress.Create(address.DepositAddress, Globals.BTCNetwork);
+                                                        List<BitcoinAddress> outgoingAddrs = new List<BitcoinAddress>();
+                                                        foreach (var input in tx.Inputs)
+                                                        {
+                                                            var result = await InputUtility.GetAddressFromInput(client, input);
+                                                            if (result != null)
+                                                                outgoingAddrs.Add(result);
+                                                        }
+
+                                                        bool isOutgoing = outgoingAddrs.Any(inputAddress => inputAddress == bitcoinAddress);
+
+                                                        var fromAddress = "";
+                                                        var toAddress = "";
+                                                        var amount = 0.0M;
+                                                        foreach (var output in tx.Outputs)
+                                                        {
+                                                            var outputAddress = output.ScriptPubKey.GetDestinationAddress(Globals.BTCNetwork);
+
+
+                                                            // Heuristic: if the address is not the sender's address, it's likely a recipient
+                                                            if (outputAddress == bitcoinAddress && isOutgoing)
+                                                            {
+                                                                fromAddress = address.DepositAddress;
+                                                                toAddress = outputAddress.ToString();
+                                                            }
+                                                            if (outputAddress != bitcoinAddress && isOutgoing)
+                                                            {
+                                                                amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                            }
+
+                                                            if (outputAddress != bitcoinAddress && !isOutgoing)
+                                                            {
+                                                                fromAddress = outputAddress.ToString();
+                                                                toAddress = address.DepositAddress;
+                                                            }
+                                                            if (outputAddress == bitcoinAddress && !isOutgoing)
+                                                            {
+                                                                amount = output.Value.ToUnit(MoneyUnit.BTC);
+                                                            }
+
+                                                        }
+
+                                                        var totalInputAmount = await InputUtility.CalculateTotalInputAmount(client, tx);
+                                                        var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
+                                                        var fee = totalInputAmount - totalOutputAmount;
+
+                                                        var nTx = new BitcoinTransaction
+                                                        {
+                                                            Amount = amount,
+                                                            BitcoinUTXOs = new List<BitcoinUTXO>(),
+                                                            Fee = fee.ToUnit(MoneyUnit.BTC),
+                                                            FeeRate = 0,
+                                                            FromAddress = fromAddress,
+                                                            ToAddress = toAddress,
+                                                            Hash = bTx.TxHash,
+                                                            IsConfirmed = false,
+                                                            Signature = rawTx.RawTx.ToString(),
+                                                            Timestamp = TimeUtil.GetTime(),
+                                                            TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
+                                                        };
+
+                                                        BitcoinTransaction.SaveBitcoinTX(nTx);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+
+                                    }
+                                }
+
                                 var scState = SmartContractStateTrei.GetSmartContractState(address.SmartContractUID);
                                 var postAuditTknz = await TokenizedBitcoin.GetTokenizedBitcoin(address.SmartContractUID);
                                 if(scState != null && postAuditTknz != null)
@@ -156,22 +666,23 @@ namespace ReserveBlockCore.Bitcoin
                                     }
                                 }
 
-                                await Task.Delay(5000);
+                                await Task.Delay(1500);
                             }
                             
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
 
                 }
                 finally
                 {
                     BalanceCheckLock.Release();
+                    Globals.BTCSyncing = false;
+                    if (client != null)
+                        client.Dispose();
                 }
-
-                Globals.BTCSyncing = false;
 
                 await delay;
             }

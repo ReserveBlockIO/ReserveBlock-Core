@@ -198,32 +198,44 @@ namespace ReserveBlockCore.Config
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "electrum.blockstream.info",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+						Count = 0,
+                        FailCount = 0
                     },
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "bitcoin.lu.ke",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+                        Count = 0,
+                        FailCount = 0
                     },
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "electrum.emzy.de",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+                        Count = 0,
+                        FailCount = 0
                     },
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "electrum.bitaroo.net",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+                        Count = 0,
+                        FailCount = 0
                     },
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "electrum.diynodes.com",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+                        Count = 0,
+                        FailCount = 0
                     },
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "fulcrum.sethforprivacy.com",
                         Port = 50002,
-                        UseSsl = true
+                        UseSsl = true,
+                        Count = 0,
+                        FailCount = 0
                     }
                 };
 
@@ -247,7 +259,9 @@ namespace ReserveBlockCore.Config
 					{
 						Host = host,
 						Port = Convert.ToInt32(port),
-						UseSsl = isSsl
+						UseSsl = isSsl,
+                        Count = 0,
+                        FailCount = 0
                     };
 
 					clientSettings.Add(clientSetting);
@@ -316,8 +330,10 @@ namespace ReserveBlockCore.Config
 					new Bitcoin.ElectrumX.ClientSettings {
 						Host = "mempool.space",
 						Port = 40002,
-						UseSsl = true
-					}
+						UseSsl = true,
+                        Count = 0,
+						FailCount = 0
+                    }
 				};
             }
 

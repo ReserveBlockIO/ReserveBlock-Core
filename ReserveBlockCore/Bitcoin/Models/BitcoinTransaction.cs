@@ -3,6 +3,7 @@ using NBitcoin;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
 
 namespace ReserveBlockCore.Bitcoin.Models
 {
@@ -17,6 +18,8 @@ namespace ReserveBlockCore.Bitcoin.Models
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string Signature { get; set; }
+        public bool IsConfirmed { get; set; }
+        public int ConfirmedHeight { get; set; }
         public BTCTransactionType TransactionType { get; set; }
         public long FeeRate { get; set; }
         public List<BitcoinUTXO> BitcoinUTXOs { get; set; }
@@ -93,7 +96,7 @@ namespace ReserveBlockCore.Bitcoin.Models
         #endregion
 
         #region Get Bitcoin Address TX List
-        public static List<BitcoinTransaction> GetTXs(string address)
+        public static List<BitcoinTransaction> GetTXs(string address, bool unconfirmedOnly = false)
         {
             List<BitcoinTransaction> txList = new List<BitcoinTransaction>();
             var bitcoin = GetBitcoinTX();
@@ -103,7 +106,7 @@ namespace ReserveBlockCore.Bitcoin.Models
             }
             else
             {
-                var tx = bitcoin.Find(x => x.FromAddress == address);
+                var tx = bitcoin.Find(x => x.FromAddress == address || x.ToAddress == address);
                 if (tx.Any())
                 {
                     txList = tx.ToList();
@@ -203,7 +206,8 @@ namespace ReserveBlockCore.Bitcoin.Models
         Send,
         Receive,
         Replaced,
-        MultiSigSend
+        MultiSigSend,
+        SameWalletTransaction
     }
     #endregion
 }

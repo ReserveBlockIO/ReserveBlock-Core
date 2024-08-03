@@ -1,9 +1,9 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Bitcoin.ElectrumX.Request;
 using ReserveBlockCore.Bitcoin.ElectrumX.Response;
 using ReserveBlockCore.Bitcoin.ElectrumX.Results;
-using System.Drawing;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
@@ -83,22 +83,46 @@ namespace ReserveBlockCore.Bitcoin.ElectrumX
         }
         private async Task<string> SendMessageWithSsl(byte[] requestData)
         {
-            string response;
-            var buffer = new byte[Buffersize];
+            const int bufferSize = 8192; // Use a smaller buffer size for manageable chunks
+            var buffer = new byte[bufferSize];
             await SslStream.WriteAsync(requestData, 0, requestData.Length);
 
-            await using (var ms = new MemoryStream())
+            var responseBuilder = new StringBuilder();
+
+            while (true)
             {
-                int read;
-                while ((read = await SslStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                    if (read < Buffersize) break;
-                }
-                response = Encoding.ASCII.GetString(ms.ToArray());
+                int read = await SslStream.ReadAsync(buffer, 0, buffer.Length);
+                if (read == 0)
+                    break; // No more data to read
+
+                responseBuilder.Append(Encoding.ASCII.GetString(buffer, 0, read));
+
+                // Check if the current response forms a complete JSON
+                if (IsCompleteJson(responseBuilder.ToString()))
+                    break;
             }
+
             Disconnect();
-            return response;
+            return responseBuilder.ToString();
+        }
+        private bool IsCompleteJson(string response)
+        {
+            response = response.Trim();
+            if ((response.StartsWith("{") && response.EndsWith("}")) || // Object
+                (response.StartsWith("[") && response.EndsWith("]")))   // Array
+            {
+                try
+                {
+                    JToken.Parse(response);
+                    return true;
+                }
+                catch (JsonReaderException)
+                {
+                    // Not a complete JSON
+                    return false;
+                }
+            }
+            return false;
         }
         private async Task<string> SendMessageNoSsl(byte[] requestData)
         {
@@ -218,11 +242,13 @@ namespace ReserveBlockCore.Bitcoin.ElectrumX
             return response != null ? response.GetResultModel() : new List<BlockchainScripthashGetHistoryResult>();
         }
 
-        public async Task<List<BlockchainScripthashGetHistoryResult>> GetHistory(string scriptHash)
+        public async Task<List<BlockchainScripthashGetHistoryResult>> GetHistory(string baseAddr)
         {
-            if (string.IsNullOrEmpty(scriptHash))
+            if (string.IsNullOrEmpty(baseAddr))
                 return new List<BlockchainScripthashGetHistoryResult>();
-            var requestData = new BlockchainScripthashGetHistoryRequest(scriptHash).GetRequestData();
+
+            var bAddr = BitcoinAddress.Create(baseAddr, Globals.BTCNetwork);
+            var requestData = new BlockchainScripthashGetHistoryRequest(GetScriptHash(bAddr)).GetRequestData();
             var buff = "";
             try
             {
@@ -407,6 +433,67 @@ namespace ReserveBlockCore.Bitcoin.ElectrumX
             if (response?.Error != null)
                 OnError?.Invoke(this, response.Error.Code, response.Error.Message);
             return response != null ? response.GetResultModel() : new ServerVersionResult();
+        }
+        #endregion
+
+        #region Get Raw Tx
+        public async Task<BlockchainTransactionGetResult> GetRawTx(string txHash)
+        {
+            if (string.IsNullOrEmpty(txHash))
+                return new BlockchainTransactionGetResult();
+            var requestData = new BlockchainTransactionGetRequest(txHash).GetRequestData();
+            var buff = "";
+            try
+            {
+                if (UseSsl)
+                {
+                    await ConnectWithSsl();
+                    buff = await SendMessageWithSsl(requestData);
+                }
+                else
+                {
+                    await ConnectNoSsl();
+                    buff = await SendMessageNoSsl(requestData);
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+            var response = !string.IsNullOrEmpty(buff) ? JsonConvert.DeserializeObject<BlockchainTransactionGetResponse>(buff) : null;
+            if (response?.Error != null)
+                OnError?.Invoke(this, response.Error.Code, response.Error.Message);
+            return response?.GetResultModel() ?? new BlockchainTransactionGetResult();
+        }
+        #endregion
+
+        #region Get Block Transaction  Merkle
+        public async Task<BlockchainTransactionGetMerkleResult> GetBlockchainTransactionGetMerkle(string txId, int height)
+        {
+            var requestData = new BlockchainTransactionGetMerkleRequest(txId, height).GetRequestData();
+            var buff = "";
+            try
+            {
+                if (UseSsl)
+                {
+                    await ConnectWithSsl();
+                    buff = await SendMessageWithSsl(requestData);
+                }
+                else
+                {
+                    await ConnectNoSsl();
+                    buff = await SendMessageNoSsl(requestData);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            var response = !string.IsNullOrEmpty(buff) ? JsonConvert.DeserializeObject<BlockchainTransactionGetMerkleResponse>(buff) : null;
+            if (response?.Error != null)
+                OnError?.Invoke(this, response.Error.Code, response.Error.Message);
+            return response != null ? response.GetResultModel() : new BlockchainTransactionGetMerkleResult();
         }
         #endregion
 
