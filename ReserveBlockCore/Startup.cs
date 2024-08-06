@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using ElmahCore;
+using ElmahCore.Mvc;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,14 +34,16 @@ namespace ReserveBlockCore
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            string path = GetPathUtility.GetDatabasePath();
+            var logDirectory = path;
+            var logFilePath = Path.Combine(logDirectory, "elmah.xml");
 
+            services.AddControllers();
             //services.AddApiVersioning(options =>
             //{
             //    options.ReportApiVersions = true;
             //    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
             //});
-
             services.AddSwaggerGen(c => {
                 c.CustomSchemaIds(type => type.ToString());
                 c.CustomSchemaIds(type => $"{type.Name}_{System.Guid.NewGuid().ToString().Replace("-", "")}");
@@ -113,12 +119,12 @@ namespace ReserveBlockCore
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseElmah();
             app.UseSwagger();
             app.UseSwaggerUI(c => {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "ReserveBlock API v1");
                 c.DisplayRequestDuration();
             });
-
 
             app.Use((context, func) =>
             {
@@ -166,6 +172,10 @@ namespace ReserveBlockCore
             {
                 endpoints.MapControllers();
             });
+
+            
         }
     }
+
+    
 }

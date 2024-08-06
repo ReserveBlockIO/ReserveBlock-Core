@@ -25,6 +25,11 @@ using ReserveBlockCore.Engines;
 using ReserveBlockCore.Config;
 using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Bitcoin.Integrations;
+using ElmahCore.Mvc;
+using ElmahCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
 
 namespace ReserveBlockCore
 {
@@ -472,8 +477,15 @@ namespace ReserveBlockCore
             while (Globals.StopAllTimers || Globals.BlocksDownloadSlim.CurrentCount == 0)
                 await Task.Delay(20);
 
+            string dbPath = GetPathUtility.GetDatabasePath();
             //for web API using Kestrel
             var builder = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) => { 
+                services.AddElmah<XmlFileErrorLog>(options =>
+                {
+                    options.LogPath = Path.Combine(dbPath, "elmah.xml");
+                });
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseKestrel(options =>
@@ -493,7 +505,7 @@ namespace ReserveBlockCore
                     .UseStartup<Startup>()
                     //.UseUrls(new string[] {$"http://*:{Globals.APIPort}", $"https://*:{Globals.APIPort}" })
                     .ConfigureLogging(!keslog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
-                });
+                }).Build();
 
             //for p2p using signalr
             var builder2 = Host.CreateDefaultBuilder(args)
@@ -510,8 +522,10 @@ namespace ReserveBlockCore
                     });
                 });
 
+            var errorLog = builder.Services.GetRequiredService<ErrorLog>();
+            VFXLogging.Initialize(errorLog);
 
-            _ = builder.RunConsoleAsync();
+            _ = builder.RunAsync();
             _ = builder2.RunConsoleAsync();
 
             StartupService.SetLastBlockchainPoint();

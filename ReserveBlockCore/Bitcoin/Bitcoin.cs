@@ -140,12 +140,15 @@ namespace ReserveBlockCore.Bitcoin
                         }
                         catch (Exception ex)
                         {
+                            //TODO: ADD LOGS
                             electrumServer.FailCount++;
                             electrumServer.Count++;
                             await Task.Delay(1000);
                         }
 
                     }
+                    //TODO: ADD LOGS
+                    await Task.Delay(1000);
                 }
                 
                 

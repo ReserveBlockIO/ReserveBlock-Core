@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using ElmahCore;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace ReserveBlockCore.Utilities
@@ -13,7 +14,9 @@ namespace ReserveBlockCore.Utilities
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
-                var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
+                var errorMessage = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]";
+
+                var text = errorMessage + " : " + message;
                 string path = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
@@ -52,8 +55,13 @@ namespace ReserveBlockCore.Utilities
                         writeLog = true;
                 }
 
-                if(writeLog)
+                if (writeLog)
+                {
                     await File.AppendAllTextAsync(path + "errorlog.txt", Environment.NewLine + text);
+                    VFXLogging.LogInfo(message, location);
+                }
+                    
+
             }
             catch (Exception ex)
             {

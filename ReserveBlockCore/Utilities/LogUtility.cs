@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using ElmahCore;
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -6,7 +8,7 @@ using System.Text;
 namespace ReserveBlockCore.Utilities
 {
     public class LogUtility
-    {        
+    {
         private static ConcurrentQueue<(string Message, string Location, string FileName, DateTime Time)> FileQueue = new ConcurrentQueue<(string, string, string, DateTime)>();
         public static void LogQueue(string message, string location, string fileName, bool log)
         {
@@ -69,6 +71,7 @@ namespace ReserveBlockCore.Utilities
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
+                var locationMessage = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]";
                 var text = "[" + DateTime.Now.ToString() +  "]" + " : " + "[" + location + "]" + " : " + message;
                 string path = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -100,11 +103,11 @@ namespace ReserveBlockCore.Utilities
                 if (firstEntry == true)
                 {
                     await File.AppendAllTextAsync(path + "rbxlog.txt", Environment.NewLine + " ");
-
-
                 }
 
+
                 await File.AppendAllTextAsync(path + "rbxlog.txt", Environment.NewLine + text);
+                VFXLogging.LogInfo(message, location);
             }
             catch (Exception ex)
             {
