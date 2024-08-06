@@ -61,6 +61,14 @@ namespace ReserveBlockCore.Utilities
             {
             }
 
+            if(success)
+            {
+                VFXLogging.LogInfo(message, location);
+            }
+            else
+            {
+                VFXLogging.LogError(message, location, true);
+            }
             return JsonConvert.SerializeObject(new { Success = success, Message = message });
         }
         public static async void Log(string message, string location, bool firstEntry = false)

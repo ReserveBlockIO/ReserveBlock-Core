@@ -454,6 +454,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                                 //}
 
                                 SCLogUtility.Log($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()");
+                                VFXLogging.LogInfo($"TX Success. SCUID: {payload.SCUID}", "TokenizationService.TransferCoin()", true);
                                 return JsonConvert.SerializeObject(new { Success = true, Message = "Transaction Success!", Hash = scTx.Hash });
                             }
                             else

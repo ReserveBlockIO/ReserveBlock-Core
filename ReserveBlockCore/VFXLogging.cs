@@ -21,7 +21,7 @@ namespace ReserveBlockCore
             var error = new Error(new Exception("Test error"));
             _errorLog.Log(error);
         }
-        public static void LogInfo(string message, string loc)
+        public static void LogInfo(string message, string loc, bool isSC = false)
         {
             if (_errorLog == null)
             {
@@ -33,7 +33,7 @@ namespace ReserveBlockCore
                 Source = $"{loc}",
                 StatusCode = 200,
                 Time = DateTime.Now,
-                Type = "Info Logged",
+                Type = !isSC ? "Info Logged" : "SC Info Logged",
                 ApplicationName = "VFX Core CLI",
                 Message = loc
             };
@@ -41,7 +41,7 @@ namespace ReserveBlockCore
             _errorLog.Log(error);
         }
 
-        public static void LogError(string message, string loc)
+        public static void LogError(string message, string loc, bool isSC = false)
         {
             if (_errorLog == null)
             {
@@ -53,7 +53,7 @@ namespace ReserveBlockCore
                 Source = $"{loc}",
                 StatusCode = 500,
                 Time = DateTime.Now,
-                Type = "Error Logged",
+                Type = !isSC ? "Error Logged" : "SC Error Logged",
                 ApplicationName = "VFX Core CLI",
                 Message = loc
 
