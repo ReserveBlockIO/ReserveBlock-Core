@@ -104,7 +104,8 @@ namespace ReserveBlockCore.Controllers
                     "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract", "GetNFTAssetLocation", "GetCLIVersion", "CheckPasswordNeeded",
                     "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock", "GetDecShop", "GetSummaryChatMessages",
                     "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData", "GetShopSpecificAuction", "GetListing", "GetCollectionListings",
-                    "GetSmartContractData"};
+                    "GetSmartContractData", "GetBalances", "GetDefaultAddressType", "GetLastAccounySync", "GetTokenizedBTCList", "GetBitcoinAccountList", "GetAddressTXList",
+                    "GetDefaultAddressType", "GetAddressUTXOList", "GetCurrentSCOwner", "GetBitcoinTXList" };
 
 
 
