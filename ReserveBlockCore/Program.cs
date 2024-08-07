@@ -347,6 +347,7 @@ namespace ReserveBlockCore
                         Explorers.PopulateExplorerDictionary();
                         _ = NodeFinder.GetNode();
                         _ = Bitcoin.Bitcoin.AccountCheck();
+                        _ = Bitcoin.Bitcoin.ElectrumXRun();
                     }
                     if (argC.Contains("privkey"))
                     {

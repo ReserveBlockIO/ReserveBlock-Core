@@ -265,6 +265,16 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Gets the electrumx communication stuff
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetElectrumXState")]
+        public async Task<string> GetElectrumXState()
+        {
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"", LastCommunication = Globals.ElectrumXLastCommunication, IsConnected = Globals.ElectrumXConnected });
+        }
+
+        /// <summary>
         /// Send a transaction. Specify from, to, and amount
         /// </summary>
         /// <param name="faddr"></param>

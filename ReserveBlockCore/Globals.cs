@@ -73,6 +73,9 @@ namespace ReserveBlockCore
         public static Block? LastWonBlock = null;
         public static Process GUIProcess;
         public static bool IsFork = false;
+        public static bool ElectrumXConnected = false;
+        public static DateTime ElectrumXLastCommunication = DateTime.Now;
+        public static bool BTCAccountCheckRunning = false;
         public static Blockchain Blockchain { get; set; }
         public static List<ClientSettings> ClientSettings { get; set; }
         public static NBitcoin.Network BTCNetwork { get; set; }

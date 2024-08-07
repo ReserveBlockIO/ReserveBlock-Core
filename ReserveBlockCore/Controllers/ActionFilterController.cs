@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Controllers
                     "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock", "GetDecShop", "GetSummaryChatMessages",
                     "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData", "GetShopSpecificAuction", "GetListing", "GetCollectionListings",
                     "GetSmartContractData", "GetBalances", "GetDefaultAddressType", "GetLastAccounySync", "GetTokenizedBTCList", "GetBitcoinAccountList", "GetAddressTXList",
-                    "GetDefaultAddressType", "GetAddressUTXOList", "GetCurrentSCOwner", "GetBitcoinTXList" };
+                    "GetDefaultAddressType", "GetAddressUTXOList", "GetCurrentSCOwner", "GetBitcoinTXList", "GetElectrumXState" };
 
 
 

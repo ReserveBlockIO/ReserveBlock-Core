@@ -108,6 +108,10 @@ namespace ReserveBlockCore.Utilities
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 
+            var electrumxConnected = Globals.ElectrumXConnected ? "ElectrumX Connected? : Yes" : "ElectrumX Connected? : No";
+            var lastElectrumXCommunication = $"ElectrumX Last Communication: {Globals.ElectrumXLastCommunication}";
+            var btcAccountCheck = Globals.BTCAccountCheckRunning ? "Account Check Running? : Yes" : "Account Check Running? : No";
+
             StringBuilder strBld = new StringBuilder();
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(cliVersionText);
@@ -172,7 +176,13 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(adjConnection);
             strBld.AppendLine("---------------------------------------------------------------------");
-            if(Globals.SelfSTUNServer)
+            strBld.AppendLine(btcAccountCheck);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(electrumxConnected);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastElectrumXCommunication);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            if (Globals.SelfSTUNServer)
             {
                 strBld.AppendLine(stunServerText);
                 strBld.AppendLine("---------------------------------------------------------------------");

@@ -33,6 +33,7 @@ namespace ReserveBlockCore.Bitcoin
             Explorers.PopulateExplorerDictionary();
 
             _ = NodeFinder.GetNode(); // Get Node for later use now. This is to save time.
+            _ = ElectrumXRun();
             _ = AccountCheck();
 
             while (!exit)
@@ -108,14 +109,62 @@ namespace ReserveBlockCore.Bitcoin
             return result;
         }
 
+        public static async Task ElectrumXRun()
+        {
+            while(true)
+            {
+                bool electrumServerFound = false;
+                while (!electrumServerFound)
+                {
+                    var electrumServer = Globals.ClientSettings.Where(x => x.FailCount < 10).OrderBy(x => x.Count).FirstOrDefault();
+                    if (electrumServer != null)
+                    {
+                        try
+                        {
+                            var client = new Client(electrumServer.Host, electrumServer.Port, true);
+                            var serverVersion = await client.GetServerVersion();
+
+                            if (serverVersion == null)
+                                throw new Exception("Bad server response or no connection.");
+
+                            Globals.ElectrumXConnected = true;
+                            Globals.ElectrumXLastCommunication = DateTime.Now;
+                            electrumServerFound = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            electrumServer.FailCount++;
+                            electrumServer.Count++;
+                        }
+                    }
+                    else
+                    {
+                        Globals.ElectrumXConnected = false;
+                    }
+                }
+
+                if(Globals.ElectrumXLastCommunication < DateTime.Now.AddMinutes(-10))
+                {
+                    //reset counts
+                    foreach(var elec in Globals.ClientSettings)
+                    {
+                        elec.FailCount = 0;
+                    }
+                }
+                
+                await Task.Delay(new TimeSpan(0,1,0));
+            }   
+        }
+
         public static async Task AccountCheck()
         {
+            if(Globals.BTCAccountCheckRunning) return;
+
             while(!exit)
             {
+                Globals.BTCAccountCheckRunning = true;
                 var delay = Task.Delay(new TimeSpan(0,4,0));
                 await BalanceCheckLock.WaitAsync();
-
-                Globals.BTCAccountLastCheckedDate = DateTime.Now;
 
                 bool electrumServerFound = false;
                 Client client = null;
@@ -146,6 +195,11 @@ namespace ReserveBlockCore.Bitcoin
                             await Task.Delay(1000);
                         }
 
+                    }
+                    else
+                    {
+                        //no servers found
+                        await Task.Delay(60000);
                     }
                     //TODO: ADD LOGS
                     await Task.Delay(1000);
@@ -677,10 +731,11 @@ namespace ReserveBlockCore.Bitcoin
                 }
                 catch (Exception ex)
                 {
-
+                    ErrorLogUtility.LogError($"Error Running BTC Account Checl. Error: {ex}", "Bitcoin.AccountCheck()");
                 }
                 finally
                 {
+                    Globals.BTCAccountLastCheckedDate = DateTime.Now;
                     BalanceCheckLock.Release();
                     Globals.BTCSyncing = false;
                     if (client != null)
@@ -689,7 +744,8 @@ namespace ReserveBlockCore.Bitcoin
 
                 await delay;
             }
-            
+
+            Globals.BTCAccountCheckRunning = false;
         }
 
         public static async Task TransferCoinAudit(string scUID)
