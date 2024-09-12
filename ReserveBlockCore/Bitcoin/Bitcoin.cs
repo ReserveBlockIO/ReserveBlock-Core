@@ -163,7 +163,7 @@ namespace ReserveBlockCore.Bitcoin
             while(!exit)
             {
                 Globals.BTCAccountCheckRunning = true;
-                var delay = Task.Delay(new TimeSpan(0,4,0));
+                var delay = Task.Delay(new TimeSpan(0,2,0));
                 await BalanceCheckLock.WaitAsync();
 
                 bool electrumServerFound = false;

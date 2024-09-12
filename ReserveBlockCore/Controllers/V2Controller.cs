@@ -145,7 +145,7 @@ namespace ReserveBlockCore.Controllers
         {
             if(!string.IsNullOrEmpty(adnr))
             {
-                if (adnr.ToLower().Contains(".rbx"))
+                if (adnr.ToLower().Contains(".vfx") || adnr.ToLower().Contains(".rbx"))
                 {
                     var rbxAdnr = Adnr.GetAddress(adnr.ToLower());
                     if(rbxAdnr.Item1)

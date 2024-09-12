@@ -88,7 +88,7 @@ namespace ReserveBlockCore.Services
 
             if (Globals.LastBlock.Height > Globals.TXHeightRule1) //March 31th, 2023 at 03:44 UTC
             {
-                if (txRequest.Amount < 0.0M)
+                if (txRequest.Amount < 0.0M && txRequest.FromAddress != "Coinbase_BlkRwd")
                 {
                     return (txResult, "Amount cannot be less than or equal to zero.");
                 }
@@ -1201,7 +1201,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     if(!string.IsNullOrEmpty(name))
                                     {
-                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameRBX = name.ToLower() + ".vfx";
                                         var nameCheck = adnrList.FindOne(x => x.Name == name || x.Name == nameRBX);
                                         if (nameCheck != null)
                                         {

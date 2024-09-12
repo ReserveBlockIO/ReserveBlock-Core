@@ -1382,7 +1382,7 @@ namespace ReserveBlockCore.Commands
                             while (nameFound)
                             {
                                 Console.WriteLine($"You have selected the following wallet: {address}");
-                                Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
+                                Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.vfx' will automatically be added. DO NOT INCLUDE IT.");
                                 Console.WriteLine("type exit to leave this menu.");
                                 var name = await ReadLineUtility.ReadLine();
                                 if (!string.IsNullOrWhiteSpace(name) && name != "exit")
@@ -1394,7 +1394,7 @@ namespace ReserveBlockCore.Commands
                                     }
                                     else
                                     {
-                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameRBX = name.ToLower() + ".vfx";
                                         var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                         if (nameCheck == null)
                                         {

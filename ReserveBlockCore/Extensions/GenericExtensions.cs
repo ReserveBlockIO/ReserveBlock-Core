@@ -265,7 +265,7 @@ namespace ReserveBlockCore.Extensions
 
         public static string ToAddressNormalize(this string source)
         {
-            var adnrCheck = source.ToLower().Contains(".rbx");
+            var adnrCheck = (source.ToLower().Contains(".rbx") || source.ToLower().Contains(".vfx")) ? true : false;
 
             if (adnrCheck)
             {

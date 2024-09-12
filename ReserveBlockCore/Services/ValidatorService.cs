@@ -11,6 +11,9 @@ using System.Net;
 using LiteDB;
 using System.Linq;
 using ReserveBlockCore.Beacon;
+using System.Text;
+using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 
 namespace ReserveBlockCore.Services
 {
@@ -472,9 +475,13 @@ namespace ReserveBlockCore.Services
             {
                 return 1000;
             }
+            else if(Globals.LastBlock.Height < Globals.V2ValHeight)
+            {
+                return 12_000;
+            }
             else
             {
-                return 12000;
+                return 50_000;
             }
         }
 
@@ -924,6 +931,74 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
+
+        #region Notify Explorer Status
+        public static async Task NotifyExplorer()
+        {
+            try
+            {
+                var account = AccountData.GetLocalValidator();
+                if (account == null)
+                    return;
+
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
+                if (validator == null)
+                    return;
+
+                var fortis = new FortisPool {
+                    Address = Globals.ValidatorAddress,
+                    ConnectDate = Globals.ValidatorStartDate,
+                    IpAddress = P2PClient.MostLikelyIP(),
+                    LastAnswerSendDate = DateTime.UtcNow,
+                    UniqueName = validator.UniqueName,
+                    WalletVersion = validator.WalletVersion
+                };
+
+                List<FortisPool> fortisPool = new List<FortisPool> { fortis };
+
+                var listFortisPool = fortisPool.Select(x => new
+                {
+                    ConnectionId = "NA",
+                    x.ConnectDate,
+                    x.LastAnswerSendDate,
+                    x.IpAddress,
+                    x.Address,
+                    x.UniqueName,
+                    x.WalletVersion
+                }).ToList();
+
+                var fortisPoolStr = JsonConvert.SerializeObject(listFortisPool);
+
+                using (var client = Globals.HttpClientFactory.CreateClient())
+                {
+                    string endpoint = Globals.IsTestNet ? "https://testnet-data.rbx.network/api/masternodes/send/" : "https://data.rbx.network/api/masternodes/send/";
+                    var httpContent = new StringContent(fortisPoolStr, Encoding.UTF8, "application/json");
+                    using (var Response = await client.PostAsync(endpoint, httpContent))
+                    {
+                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            //success
+                            Globals.ExplorerValDataLastSend = DateTime.Now;
+                            Globals.ExplorerValDataLastSendSuccess = true;
+                        }
+                        else
+                        {
+                            //ErrorLogUtility.LogError($"Error sending payload to explorer. Response Code: {Response.StatusCode}. Reason: {Response.ReasonPhrase}", "ClientCallService.DoFortisPoolWork()");
+                            Globals.ExplorerValDataLastSendSuccess = false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Failed to send validator list to explorer API. Error: {ex.ToString()}", "ValidatorService.NotifyExplorer()");
+                Globals.ExplorerValDataLastSendSuccess = false;
+            }
+        }
+
+        #endregion
+
+        
 
     }
 }

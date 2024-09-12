@@ -10,6 +10,6 @@ namespace ReserveBlockCore.Models
         public string WalletVersion { get; set; }
         public DateTime ConnectDate { get; set; }
         public DateTime? LastAnswerSendDate { get; set; }
-        public HubCallerContext Context { get; set; }
+        public HubCallerContext? Context { get; set; }
     }
 }

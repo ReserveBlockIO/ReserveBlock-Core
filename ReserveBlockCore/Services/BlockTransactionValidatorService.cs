@@ -801,8 +801,8 @@ namespace ReserveBlockCore.Services
                         {
                             if (!string.IsNullOrWhiteSpace(name))
                             {
-                                if (!name.Contains(".rbx"))
-                                    name = name + ".rbx";
+                                if (!name.Contains(".rbx") && !name.Contains(".vfx"))
+                                    name = Globals.LastBlock.Height < Globals.V4Height ? name + ".rbx" : name + ".vfx";
                                 await Account.AddAdnrToAccount(tx.FromAddress, name);
                             }
                         }

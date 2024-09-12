@@ -1097,7 +1097,7 @@ namespace ReserveBlockCore.Data
 
                 adnr.Address = tx.FromAddress;
                 adnr.Timestamp = tx.Timestamp;
-                adnr.Name = name + ".rbx";
+                adnr.Name = Globals.V4Height < Globals.LastBlock.Height ? name + ".rbx" : name + ".vfx";
                 adnr.TxHash = tx.Hash;
 
                 Adnr.SaveAdnr(adnr);

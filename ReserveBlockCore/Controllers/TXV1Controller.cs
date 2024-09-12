@@ -997,7 +997,7 @@ namespace ReserveBlockCore.Controllers
                             }
                             else
                             {
-                                var nameRBX = name.ToLower() + ".rbx";
+                                var nameRBX = name.ToLower() + ".vfx";
                                 var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                 if (nameCheck == null)
                                 {

@@ -294,6 +294,29 @@ namespace ReserveBlockCore.Bitcoin.Services
             if (account == null)
                 return await SCLogUtility.LogAndReturn($"Owner address account not found.", "TokenizationService.TransferOwnership()", false);
 
+
+            if(scState.SCStateTreiTokenizationTXes != null)
+            {
+                var balances = scState.SCStateTreiTokenizationTXes.Where(x => x.FromAddress == account.Address || x.ToAddress == account.Address).ToList();
+                if (balances.Any())
+                {
+                    var balance = balances.Sum(x => x.Amount);
+                    var finalBalance = btcTkn.Balance + balance;
+                    if(finalBalance <= 0)
+                        return await SCLogUtility.LogAndReturn($"Cannot transfer a token with zero balance.", "TokenizationService.TransferOwnership()", false);
+                }
+                else
+                {
+                    if(btcTkn.Balance <= 0M)
+                        return await SCLogUtility.LogAndReturn($"Cannot transfer a token with zero balance.", "TokenizationService.TransferOwnership()", false);
+                }
+            }
+            else
+            {
+                if (btcTkn.Balance <= 0M)
+                    return await SCLogUtility.LogAndReturn($"Cannot transfer a token with zero balance.", "TokenizationService.TransferOwnership()", false);
+            }
+            
             if (!Globals.Beacons.Any())
                 return await SCLogUtility.LogAndReturn("Error - You do not have any beacons stored.", "TokenizationService.TransferOwnership()", false);
 

@@ -94,7 +94,7 @@ namespace ReserveBlockCore
         public static DateTime? APIUnlockTime = null;
         public static DateTime? ExplorerValDataLastSend = null;
 
-        public const int ValidatorRequiredRBX = 12000;
+        public const int ValidatorRequiredRBX = 50_000;
         public const decimal ADNRRequiredRBX = 5.0M;
         public const decimal ADNRTransferRequiredRBX = 1.0M;
         public const decimal ADNRDeleteRequiredRBX = 0.0M;
@@ -109,9 +109,11 @@ namespace ReserveBlockCore
         public static long V3Height = 579015;
         public static long V4Height = 0;
         public static long V1ValHeight = 832000;
+        public static long V2ValHeight = 999999999999;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
         public static long TXHeightRule2 = 847847; //around April 7, 2023 at 18:30 UTC
         public static long TXHeightRule3 = 1079488; //around June 13th, 2023 at 19:30 UTC
+
         //public static long Validating
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
@@ -251,7 +253,11 @@ namespace ReserveBlockCore
         public static SecureString? MotherPassword = null;
         public static SecureString ArbiterEncryptPassword = new SecureString();
 
-        public static IHttpClientFactory HttpClientFactory;        
+        public static IHttpClientFactory HttpClientFactory;
+
+        public static List<string> ABL = new List<string>();
+
+        public static DateTime ValidatorStartDate = DateTime.UtcNow;
 
         #endregion
 

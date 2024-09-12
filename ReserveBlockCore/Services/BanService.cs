@@ -147,6 +147,8 @@ namespace ReserveBlockCore.Services
                 await BanServiceLock.WaitAsync();
                 try
                 {
+                    UpdateABL();
+
                     RunUnban();
 
                     RunBanReset();
@@ -160,6 +162,10 @@ namespace ReserveBlockCore.Services
 
                 await delay;
             }
+        }
+        private static void UpdateABL()
+        {
+            Config.Config.ProcessABL();
         }
 
         private static void ReleasePeer(string ipAddress)

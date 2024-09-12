@@ -318,6 +318,138 @@ namespace ReserveBlockCore.Data
             return null;
         }
         #endregion
+
+        #region Craft Block V5 - WIP
+        public static async Task<Block?> CraftBlock_V5(string validator, int totalVals, string valAnswer, long height)
+        {
+            try
+            {
+                Block block;
+                int craftCount = 1;
+                bool blockCrafted = false;
+                do
+                {
+                    await BlockValidatorService.ValidationDelay();
+
+                    var startCraftTimer = DateTime.UtcNow;
+                    var validatorAccount = AccountData.GetSingleAccount(validator);
+
+                    if (validatorAccount == null)
+                    {
+                        return null;
+                    }
+
+                    //Get tx's from Mempool                
+                    var processedTxPool = await TransactionData.ProcessTxPool();
+                    var txPool = TransactionData.GetPool();
+
+                    //Need to get master node validator.
+                    var timestamp = TimeUtil.GetTime();
+
+                    if (timestamp <= Globals.LastBlock.Timestamp)
+                        timestamp = Globals.LastBlock.Timestamp + 1;
+
+                    var transactionList = new List<Transaction>();
+
+                    var coinbase_tx2 = new Transaction
+                    {
+                        Amount = 0.00M,
+                        ToAddress = validator,
+                        Fee = 0.00M,
+                        Timestamp = timestamp,
+                        FromAddress = "Coinbase_BlkRwd",
+                        TransactionType = TransactionType.TX
+                    };
+
+                    if (processedTxPool.Count() > 0)
+                    {
+                        //commenting these out to test burning of fee.
+                        //coinbase_tx.Amount = GetTotalFees(processedTxPool);
+                        //coinbase_tx.Build();
+                        coinbase_tx2.Build();
+
+                        //transactionList.Add(coinbase_tx);
+                        transactionList.Add(coinbase_tx2);
+
+                        transactionList.AddRange(processedTxPool);
+
+                        //need to only delete processed mempool tx's in event new ones get added while creating block.
+                        //delete after block is added, so they can't  be re-added before block is over.
+                        foreach (var tx in processedTxPool)
+                        {
+                            var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
+                            if (txRec != null)
+                            {
+                                //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        coinbase_tx2.Build();
+                        transactionList.Add(coinbase_tx2);
+                    }
+
+                    block = new Block
+                    {
+                        Height = height,
+                        Timestamp = timestamp,
+                        Transactions = GiveOtherInfos(transactionList, height),
+                        Validator = validator,
+                        ChainRefId = ChainRef,
+                        TotalValidators = totalVals,
+                        ValidatorAnswer = "0"
+                    };
+                    block.Build();
+
+                    if (block.PrevHash == "0")
+                    {
+                        if (Globals.OptionalLogging)
+                            ErrorLogUtility.LogError("Block Previous Hash not available.", "BlockchainData.CraftBlock_V5()");
+
+                        return null;
+                    }
+
+                    //Add validator signature
+                    block.ValidatorSignature = SignatureService.ValidatorSignature(block.Hash);
+
+                    //block size
+                    var str = JsonConvert.SerializeObject(block);
+                    block.Size = str.Length;
+
+                    // get craft time    
+                    var endTimer = DateTime.UtcNow;
+                    var buildTime = endTimer - startCraftTimer;
+                    block.BCraftTime = buildTime.Milliseconds;
+
+
+                    blockCrafted = await BlockValidatorService.ValidateBlock(block, true, false, true);
+                    if (blockCrafted == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        craftCount += 1; //add count to attempts and retry.
+                    }
+
+                } while (craftCount != 5);
+
+                if (blockCrafted == true)
+                {
+                    return block;
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftBlock_V5()");
+            }
+
+            return null;
+        }
+
+        #endregion
+
         public static decimal GetBlockReward()
         {
             var BlockReward = HalvingUtility.GetBlockReward();
@@ -414,7 +546,7 @@ namespace ReserveBlockCore.Data
                 if (tx.FromAddress == "Coinbase_BlkRwd")
                 {
                     //validating block reward to ensure block is not malformed.
-                    result = tx.Amount == GetBlockReward() ? true : false;
+                    result = block.Version < 4 ? tx.Amount == GetBlockReward() ? true : false : tx.Amount == 0.0M ? true : false;
                     //ensures the reward person is the validator themselves.
                     result = result != true ? false : tx.ToAddress == block.Validator ? true : false;
 

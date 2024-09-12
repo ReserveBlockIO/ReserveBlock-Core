@@ -69,7 +69,8 @@ namespace ReserveBlockCore
 
             //Forced Testnet
             Globals.IsTestNet = true;
-            Globals.V4Height = Globals.IsTestNet ? 1 : 9999999;//change for mainnet.
+            Globals.V4Height = Globals.IsTestNet ? 1 : 99999999999999;//change for mainnet.
+            Globals.V2ValHeight = Globals.IsTestNet ? 0 : 99999999999999;//change for mainnet.
             Globals.GenesisValidator = Globals.IsTestNet ? "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC" : "SomeMainnetAddress";
 
 
@@ -273,8 +274,10 @@ namespace ReserveBlockCore
             Globals.SystemMemory = MemoryService.GetTotalMemory();
 
             Config.Config.EstablishConfigFile();
+            Config.Config.EstablishABLFile();
             var config = Config.Config.ReadConfigFile();
             Config.Config.ProcessConfig(config);
+            Config.Config.ProcessABL();
 
             LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");

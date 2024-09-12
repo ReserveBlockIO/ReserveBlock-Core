@@ -381,8 +381,43 @@ namespace ReserveBlockCore.Config
 			}
 			
         }
+        public static void ProcessABL()
+        {
+            var path = GetPathUtility.GetConfigPath();
+            if (File.Exists(path + "abl.txt"))
+            {
+                try
+                {
+                    var records = ReadAblFile(path + "abl.txt");
 
-		public static async void EstablishConfigFile()
+                    Globals.ABL.Clear();
+                    Globals.ABL = new List<string>();
+                    Globals.ABL = records;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError("Error processing ABL File.", "Config.ProcessABL()");
+                }
+            }
+
+        }
+        private static List<string> ReadAblFile(string filePath)
+        {
+            var records = new List<string>();
+
+            using (var reader = new StreamReader(filePath))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    records.Add(line);
+                }
+            }
+
+            return records;
+        }
+
+        public static async void EstablishConfigFile()
 		{
 			var path = GetPathUtility.GetConfigPath();
 			var fileExist = File.Exists(path + "config.txt");
@@ -410,5 +445,20 @@ namespace ReserveBlockCore.Config
 				
 			}
 		}
+
+        public static async void EstablishABLFile()
+        {
+            var path = GetPathUtility.GetABLPath();
+            var fileExist = File.Exists(path + "abl.txt");
+
+            if (!fileExist)
+            {
+                if (Globals.IsTestNet == false)
+                {
+                    File.AppendAllText(path + "abl.txt", "");
+
+                }
+            }
+        }
     }
 }

@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Utilities
         {
             var result = false;
 
-			var adnrCheck = addr.ToLower().Contains(".rbx");
+			var adnrCheck = (addr.ToLower().Contains(".rbx") || addr.ToLower().Contains(".vfx")) ? true : false;
 
             if (adnrCheck)
             {
