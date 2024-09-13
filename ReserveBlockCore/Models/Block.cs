@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Models
 		}
 		private decimal GetTotalFees()
 		{
-			var totFee = Transactions.AsEnumerable().Sum(x => x.Fee) + HalvingUtility.GetBlockReward();
+			var totFee = Transactions.AsEnumerable().Sum(x => x.Fee);
 			return totFee;
 		}
 		public static LiteDB.ILiteCollection<Block> GetBlocks()
