@@ -977,7 +977,10 @@ namespace ReserveBlockCore.Nodes
                     ErrorLogUtility.LogError($"Failed to send validator list to explorer API. Error: {ex.ToString()}", "ValidatorService.NotifyExplorer()");
                     Globals.ExplorerValDataLastSendSuccess = false;
                 }
-
+                finally
+                {
+                    NotifyExplorerLock.Release();
+                }
                 await delay;
             }
             
