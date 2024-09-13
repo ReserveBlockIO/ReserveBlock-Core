@@ -908,9 +908,9 @@ namespace ReserveBlockCore.Nodes
         {
             while(true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
+                var delay = Task.Delay(new TimeSpan(0, 1, 0));
                 try
                 {
-                    var delay = Task.Delay(new TimeSpan(0, 1, 0));
                     if (Globals.StopAllTimers && !Globals.IsChainSynced)
                     {
                         await delay;
