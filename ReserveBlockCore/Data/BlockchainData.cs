@@ -398,7 +398,7 @@ namespace ReserveBlockCore.Data
                         Validator = validator,
                         ChainRefId = ChainRef,
                         TotalValidators = totalVals,
-                        ValidatorAnswer = "0"
+                        ValidatorAnswer = valAnswer
                     };
                     block.Build();
 
