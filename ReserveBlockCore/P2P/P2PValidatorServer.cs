@@ -33,7 +33,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 var portCheck = PortUtility.IsPortOpen(peerIP, Globals.ValPort);
-                if(!portCheck && !Globals.IsTestNet) 
+                if(!portCheck) 
                 {
                     _ = EndOnConnect(peerIP, $"Port: {Globals.ValPort} was not detected as open.", $"Port: {Globals.ValPort} was not detected as open for IP: {peerIP}.");
                     return;
@@ -85,8 +85,8 @@ namespace ReserveBlockCore.P2P
                 if (stateAddress.Balance < ValidatorService.ValidatorRequiredAmount())
                 {
                     _ = EndOnConnect(peerIP,
-                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX. You are being disconnected.",
-                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX: " + address);
+                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} VFX. You are being disconnected.",
+                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} VFX: " + address);
                     return;
                 }
 

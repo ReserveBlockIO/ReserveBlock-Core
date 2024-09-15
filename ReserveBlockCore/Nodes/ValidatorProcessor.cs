@@ -911,7 +911,7 @@ namespace ReserveBlockCore.Nodes
                 var delay = Task.Delay(new TimeSpan(0, 1, 0));
                 try
                 {
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced && Globals.NetworkValidators.Count() > 0)
                     {
                         await delay;
                         continue;
