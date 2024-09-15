@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Utilities
         {
             if (assets.Count() > 0)
             {
-                SCLogUtility.Log($"NFT Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                SCLogUtility.Log($"SC Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
                 foreach (var asset in assets)
                 {
                     await SendAssets(scUID, asset, connectedBeacon.Beacons.BeaconLocator);
@@ -88,7 +88,7 @@ namespace ReserveBlockCore.Utilities
                 connectedBeacon.Uploading = false;
                 Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
 
-                SCLogUtility.Log($"NFT Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
+                SCLogUtility.Log($"SC Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
             }
         }
 
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Utilities
         {
             if (assets.Count() > 0)
             {
-                SCLogUtility.Log($"NFT Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                SCLogUtility.Log($"SC Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
                 foreach (var asset in assets)
                 {
                     await SendAssets_New(scUID, asset, connectedBeacon.Beacons.BeaconLocator);
@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Utilities
                 connectedBeacon.Uploading = false;
                 Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
 
-                SCLogUtility.Log($"NFT Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
+                SCLogUtility.Log($"SC Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
             }
         }
 
@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Utilities
                             {
                                 await Task.Delay(2000);
                                 retryCount += 1;
-                                SCLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
+                                SCLogUtility.Log($"SC Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
                             }
                         }
                         else
@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Utilities
                 catch(Exception ex)
                 {
                     retryCount += 1;
-                    SCLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconUtility.SendAssets_New() - send");
+                    SCLogUtility.Log($"SC Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconUtility.SendAssets_New() - send");
                 }
             }
 
@@ -241,7 +241,7 @@ namespace ReserveBlockCore.Utilities
                         else
                         {
                             retryCount += 1;
-                            SCLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
+                            SCLogUtility.Log($"SC Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
                         }
                     }
                     else
@@ -252,7 +252,7 @@ namespace ReserveBlockCore.Utilities
                 catch (Exception ex)
                 {
                     retryCount += 1;
-                    SCLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.SendAssets() - send");
+                    SCLogUtility.Log($"SC Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.SendAssets() - send");
                 }
             }
 
