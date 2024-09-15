@@ -273,6 +273,20 @@ namespace ReserveBlockCore.Controllers
             return JsonConvert.SerializeObject(new { Success = true, Message = $"No Blocks found" });
         }
 
+        /// <summary>
+        /// Get Val List
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetValLists")]
+        public async Task<string> GetValLists()
+        {
+            var networkVals = Globals.NetworkValidators.Values.ToList();
+            var valVals = Globals.ValidatorNodes.Values.ToList();
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"", NetworkVals = networkVals, ValidatorNodes = valVals }, Formatting.Indented);
+        }
+
 
         /// <summary>
         /// Takes compressed base 64 image and decompresses it and returns byte array.

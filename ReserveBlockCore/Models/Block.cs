@@ -59,10 +59,13 @@ namespace ReserveBlockCore.Models
 			if(Globals.LastBlock.Height + 1 == Height)
 				return Globals.LastBlock.Hash;
 
-			if(Globals.NetworkBlockQueue.TryGetValue(Height - 1, out var block))
+			if(Globals.NetworkBlockQueue.Count() > 0)
 			{
-				return block.Hash;
-			}
+                if (Globals.NetworkBlockQueue.TryGetValue(Height - 1, out var block))
+                {
+                    return block.Hash;
+                }
+            }
 
 			return "0";
         }
@@ -93,9 +96,17 @@ namespace ReserveBlockCore.Models
 		}
 		public string GetStateRoot()
 		{
-			var strSum = Hash.Substring(0,6) + PrevHash.Substring(0, 6) + MerkleRoot.Substring(0, 6) + Timestamp;
-			var hash = HashingService.GenerateHash(strSum);
-			return hash;
+			try
+			{
+                var strSum = Hash.Substring(0, 6) + PrevHash.Substring(0, 6) + MerkleRoot.Substring(0, 6) + Timestamp;
+                var hash = HashingService.GenerateHash(strSum);
+                return hash;
+            }
+			
+			catch (Exception ex)
+			{
+				return "";
+			}
 		}
 		private string GetMerkleRoot()
 		{

@@ -595,7 +595,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
 
-            _ = ValidatorService.ValidatingMonitorService();
+            //_ = ValidatorService.ValidatingMonitorService();
 
             _ = ValidatorService.GetActiveValidators();
             _ = ValidatorService.ValidatorCountRun();

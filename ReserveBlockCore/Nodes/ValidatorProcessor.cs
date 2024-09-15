@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -26,6 +27,7 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim LockWinnerLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim RequestCurrentWinnersLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim NotifyExplorerLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim HealthCheckLock = new SemaphoreSlim(1, 1);
         public static bool IsRunning { get; private set; }
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
@@ -48,6 +50,7 @@ namespace ReserveBlockCore.Nodes
             _ = ProduceBlock();
             _ = ConfirmBlock();
             _ = NotifyExplorer();
+            _ = HealthCheck();
 
             return Task.CompletedTask;
         }
@@ -79,7 +82,8 @@ namespace ReserveBlockCore.Nodes
                 case "7":
                     _ = ReceiveConfirmedBlock(data);
                     break;
-                case "9999":
+                case "9999": 
+                    _ = FailedToConnect(data);
                     break;
             }
             
@@ -152,6 +156,11 @@ namespace ReserveBlockCore.Nodes
         #endregion
 
         #region Messages
+        //9999
+        public static async Task FailedToConnect(string data)
+        {
+            
+        }
         //7
         public static async Task ReceiveConfirmedBlock(string data)
         {
@@ -186,6 +195,9 @@ namespace ReserveBlockCore.Nodes
             var nextBlock = JsonConvert.DeserializeObject<Block>(data);
 
             if(nextBlock == null ) return;
+
+            if(!Globals.NetworkBlockQueue.ContainsKey(nextBlock.Height - 1))
+                await P2PValidatorClient.RequestQueuedBlock(nextBlock.Height - 1);
 
             var lastBlock = Globals.LastBlock;
             if (lastBlock.Height < nextBlock.Height)
@@ -911,7 +923,7 @@ namespace ReserveBlockCore.Nodes
                 var delay = Task.Delay(new TimeSpan(0, 1, 0));
                 try
                 {
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced && Globals.NetworkValidators.Count() > 0)
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
                     {
                         await delay;
                         continue;
@@ -984,6 +996,112 @@ namespace ReserveBlockCore.Nodes
                 await delay;
             }
             
+        }
+
+        #endregion
+
+        #region Validator Health Check
+        public static async Task HealthCheck()
+        {
+            int portCheckCount = 0;
+            Dictionary<string, int> ErrorCountDict = new Dictionary<string, int>();
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                var delay = Task.Delay(new TimeSpan(0, 1, 0));
+                try
+                {
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    {
+                        await delay;
+                        continue;
+                    }
+                    await HealthCheckLock.WaitAsync();
+
+                    if (Globals.ValidatorNodes.Count() == 0)
+                    {
+                        Globals.ValidatorIssueCount += 1;
+                        Globals.ValidatorErrorMessages.Add($"Validator Nodes are not connected.");
+                    }
+
+                    if (Globals.NetworkValidators.Count() == 0)
+                    {
+                        Globals.ValidatorIssueCount += 1;
+                        Globals.ValidatorErrorMessages.Add($"Network Nodes are not connected.");
+                    }  
+
+                    if(Globals.NetworkBlockQueue.Count() == 0)
+                    {
+                        Globals.ValidatorIssueCount += 1;
+                        Globals.ValidatorErrorMessages.Add($"Network Blocks were not found.");
+                    }
+
+                    var valAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    if (valAccount != null)
+                    {
+                        if (valAccount.Balance < ValidatorService.ValidatorRequiredAmount())
+                        {
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Balance Error. Please ensure you have proper amount.");
+                            Globals.ValidatorBalanceGood = false;
+                            await ValidatorService.DoMasterNodeStop();
+                        }
+                        else
+                        {
+                            Globals.ValidatorBalanceGood = true;
+                        }
+                    }
+                    else
+                    {
+                        Globals.ValidatorIssueCount += 1;
+                        Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Validator Account Missing");
+                    }
+
+                    if (Globals.TimeSyncError)
+                    {
+                        Globals.ValidatorIssueCount += 1;
+                        Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Node system time is out of sync. Please correct.");
+                    }
+
+                    if(Globals.ReportedIPs.Count() != 0)
+                    {
+                        var ip = Globals.ReportedIPs.OrderByDescending(y => y.Value).Select(y => y.Key).First();
+                        var portCheck = PortUtility.IsPortOpen(ip, Globals.ValPort);
+                        if(!portCheck)
+                        {
+                            portCheckCount += 1;
+                            if(portCheckCount >= 4)
+                            {
+                                await ValidatorService.DoMasterNodeStop();
+                                ConsoleWriterService.OutputMarked($"[red]Validator Ports were found to not be open. Please ensure ports: {Globals.ValPort} & {Globals.Port} are open.[/]");
+                                ErrorLogUtility.LogError($"Validator Ports were found to not be open. Please ensure ports: {Globals.ValPort} & {Globals.Port} are open.", "ValidatorProcessor.HealthCheck()");
+                            }
+                        }
+
+                    }
+                    
+
+                    if (Globals.ValidatorIssueCount >= 15)
+                    {
+                        ConsoleWriterService.OutputMarked("[red]Validator has had the following issues to report. Please ensure node is operating correctly[/]");
+                        foreach (var issue in Globals.ValidatorErrorMessages)
+                        {
+                            ConsoleWriterService.OutputMarked($"[yellow]{issue}[/]");
+                        }
+
+                        Globals.ValidatorIssueCount = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally 
+                {
+                    HealthCheckLock.Release();
+                }
+
+                await delay;
+            }
         }
 
         #endregion

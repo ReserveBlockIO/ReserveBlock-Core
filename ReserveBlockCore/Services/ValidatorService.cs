@@ -304,7 +304,7 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                await P2PClient.DisconnectAdjudicators();
+                await P2PValidatorClient.DisconnectValidators();
 
 
                 Console.WriteLine("Validator database records have been reset.");

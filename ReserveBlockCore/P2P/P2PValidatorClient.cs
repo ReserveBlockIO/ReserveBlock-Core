@@ -324,6 +324,15 @@ namespace ReserveBlockCore.P2P
                 foreach (var node in Globals.ValidatorNodes.Values)
                     if (node.Connection != null)
                         await node.Connection.DisposeAsync();
+
+                if(Globals.NetworkValidators.Count() > 0)
+                {
+                    foreach (var val in Globals.NetworkValidators.Values)
+                    {
+                        if (val.Context != null)
+                            val.Context.Abort();
+                    }
+                }
             }
             catch (Exception ex)
             {

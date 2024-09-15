@@ -172,6 +172,10 @@ namespace ReserveBlockCore.Utilities
                     {
                         if (proof.VerifyProof())
                         {
+                            //Skip proof since winner was already found.
+                            if (Globals.FinalizedWinner.ContainsKey(proof.BlockHeight))
+                                continue;
+
                             //Closer to zero wins.
                             if (currentWinningProof.Value.VRFNumber > proof.VRFNumber)
                             {

@@ -457,7 +457,7 @@ namespace ReserveBlockCore.Bitcoin
 
                     //Tokenized Address Check
                     var tokenizeList = await TokenizedBitcoin.GetTokenizedList();
-                    if(tokenizeList?.Count != 0)
+                    if(tokenizeList != null && tokenizeList?.Count() != 0)
                     {
                         foreach (var address in tokenizeList)
                         {
@@ -731,7 +731,7 @@ namespace ReserveBlockCore.Bitcoin
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error Running BTC Account Checl. Error: {ex}", "Bitcoin.AccountCheck()");
+                    ErrorLogUtility.LogError($"Error Running BTC Account Check. Error: {ex}", "Bitcoin.AccountCheck()");
                 }
                 finally
                 {
