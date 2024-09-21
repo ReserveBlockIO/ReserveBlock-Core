@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Nodes;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 
@@ -325,12 +326,155 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send to Mempool
+        #region Send to Mempool Vals
         public async Task<string> SendTxToMempoolVals(Transaction txReceived)
         {
-            //This needs to have new modified network reach
-            //No longer uses ADJs
-            return "";
+            try
+            {
+                return await SignalRQueue(Context, (txReceived.Data?.Length ?? 0) + 1024, async () =>
+                {
+                    var result = "";
+
+                    var data = JsonConvert.SerializeObject(txReceived);
+
+                    var mempool = TransactionData.GetPool();
+
+                    if (mempool.Exists(x => x.Hash == txReceived.Hash))
+                        return "ATMP";
+
+                    if (mempool.Count() != 0)
+                    {
+                        var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
+                        if (txFound == null)
+                        {
+                            var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                            if (!isTxStale)
+                            {
+                                var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
+                                if (txResult.Item1 == false)
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                    return "TFVP";
+                                }
+                                var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                                var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                                txReceived.TransactionRating = rating;
+
+                                if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                {
+                                    mempool.InsertSafe(txReceived);
+                                    _ = ValidatorProcessor.Broadcast("7777", data, "SendTxToMempoolVals");
+
+                                    return "ATMP";//added to mempool
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                    return "TFVP"; //transaction failed verification process
+                                }
+                            }
+
+
+                        }
+                        else
+                        {
+                            var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                            if (!isTxStale)
+                            {
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                                if (isCraftedIntoBlock)
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                }
+
+                                return "AIMP"; //already in mempool
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch (Exception ex)
+                                {
+                                    //delete failed
+                                }
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                        if (!isTxStale)
+                        {
+                            var txResult = await TransactionValidatorService.VerifyTX(txReceived);
+                            if (!txResult.Item1)
+                            {
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch { }
+
+                                return "TFVP";
+                            }
+                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
+                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                            var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                            txReceived.TransactionRating = rating;
+
+                            if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                            {
+                                mempool.InsertSafe(txReceived);
+                                if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                                {
+                                    _ = ValidatorProcessor.Broadcast("7777", data, "SendTxToMempoolVals");
+                                } //sends tx to connected peers
+                                return "ATMP";//added to mempool
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch { }
+
+                                return "TFVP"; //transaction failed verification process
+                            }
+                        }
+
+                    }
+
+                    return "";
+                });
+            }
+            catch { }
+
+            return "TFVP";
         }
 
         #endregion

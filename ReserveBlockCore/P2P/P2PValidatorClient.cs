@@ -492,44 +492,14 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var valNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
-                if (valNodes.Count() > 0)
+                try
                 {
-                    var successCount = 0;
-                    foreach (var node in valNodes)
-                    {
-                        try
-                        {
-                            string message = Globals.AdjudicateAccount == null ? await node.InvokeAsync<string>("SendTxToMempool", new object?[] { txSend },
-                                () => new CancellationTokenSource(3000).Token, "SendTxToMempool") : await node.Connection.InvokeCoreAsync
-                                <string>("SendTxToMempool", new object?[] { txSend }, new CancellationTokenSource(3000).Token);
-
-                            if (message == "ATMP")
-                            {
-                                //success
-                                successCount += 1;
-                            }
-                            else if (message == "TFVP")
-                            {
-                                if(successCount == 0)
-                                    Console.WriteLine("Transaction Failed Verification Process on remote node");
-                            }
-                            else
-                            {
-                                //already in mempool
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-
-                        }
-                    }
+                    var txJson = JsonConvert.SerializeObject(txSend);
+                    _ = ValidatorProcessor.Broadcast("7777", txJson, "SendTxToMempoolVals");
                 }
-                else
+                catch (Exception ex)
                 {
-                    //need method to drop at least 2-3 peers to find validators in event client is not connected to any.
-                    Console.WriteLine("You have no validator peers connected to you. Close wallet and attempt to reconnect.");
-                    ErrorLogUtility.LogError("You have no validator peers connected to you. Close wallet and attempt to reconnect.", "P2PClient.SendTXMempool()");
+
                 }
             }
         }

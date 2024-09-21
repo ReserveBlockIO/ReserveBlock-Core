@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Nodes;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
@@ -390,13 +391,9 @@ namespace ReserveBlockCore.P2P
                                 if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                 {
                                     mempool.InsertSafe(txReceived);
-                                    if(Globals.AdjudicateAccount == null)
+                                    if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
                                     {
-                                        await P2PClient.SendTXToAdjudicator(txReceived);
-                                    }
-                                    else
-                                    {
-                                        //this should not happen as no one should be connected to an ADJ through p2pserver
+                                        _ = ValidatorProcessor.Broadcast("7777", data, "SendTxToMempoolVals");
                                     }
                                     
                                     return "ATMP";//added to mempool
@@ -475,8 +472,10 @@ namespace ReserveBlockCore.P2P
                             if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
-                                if(Globals.AdjudicateAccount == null)
-                                    await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
+                                if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                                {
+                                    _ = ValidatorProcessor.Broadcast("7777", data, "SendTxToMempoolVals");
+                                } //sends tx to connected peers
                                 return "ATMP";//added to mempool
                             }
                             else

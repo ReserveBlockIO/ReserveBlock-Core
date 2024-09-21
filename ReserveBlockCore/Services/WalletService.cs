@@ -324,7 +324,7 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+                await P2PValidatorClient.SendTXMempool(txRequest);//send directly to adjs
             }
             else
             {
@@ -356,7 +356,7 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(txRequest.FromAddress, specialAmount == null ? (txRequest.Fee + txRequest.Amount) : specialAmount.Value);
-                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+                await P2PValidatorClient.SendTXMempool(txRequest);//send directly to adjs
             }
             else
             {
@@ -381,7 +381,7 @@ namespace ReserveBlockCore.Services
                 {
                     ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount), txRequest.Amount);
                 }
-                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+                await P2PValidatorClient.SendTXMempool(txRequest);//send directly to adjs
             }
             else
             {

@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             if (account.IsValidating || !string.IsNullOrEmpty(Globals.ValidatorAddress))
                                             {
-                                                await P2PClient.SendTXToAdjudicator(mempoolEntry);//send directly to adjs
+                                                await P2PValidatorClient.SendTXMempool(mempoolEntry);//send directly to adjs
                                             }
                                             else
                                             {
@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Services
                                     {
                                         if (account.IsValidating || !string.IsNullOrEmpty(Globals.ValidatorAddress))
                                         {
-                                            await P2PClient.SendTXToAdjudicator(mempoolEntry);//send directly to adjs
+                                            await P2PValidatorClient.SendTXMempool(mempoolEntry);//send directly to adjs
                                         }
                                         else
                                         {

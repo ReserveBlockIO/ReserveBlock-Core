@@ -278,17 +278,28 @@ namespace ReserveBlockCore.Data
 
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
-            var result = false;
-            
             if (Globals.MemBlocks.Any())
             {
                 var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
                 if (txExist == true)
                 {
-                    result = true;
+                    return true;
                 }
             }
-            return result;
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                if (Globals.NetworkBlockQueue.Any())
+                {
+                    foreach (var block in Globals.NetworkBlockQueue)
+                    {
+                        var txExist = block.Value.Transactions.Where(x => x.Hash == tx.Hash).FirstOrDefault();
+                        if (txExist != null)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         public static async Task<bool> IsTxTimestampStale(Transaction tx)

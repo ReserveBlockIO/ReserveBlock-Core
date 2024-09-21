@@ -82,6 +82,9 @@ namespace ReserveBlockCore.Nodes
                 case "7":
                     _ = ReceiveConfirmedBlock(data);
                     break;
+                case "7777":
+                    _ = TxMessage(data);
+                    break;
                 case "9999": 
                     _ = FailedToConnect(data);
                     break;
@@ -161,6 +164,7 @@ namespace ReserveBlockCore.Nodes
         {
             
         }
+
         //7
         public static async Task ReceiveConfirmedBlock(string data)
         {
@@ -344,15 +348,17 @@ namespace ReserveBlockCore.Nodes
                 Globals.ReportedIPs[IP] = 1;
         }
 
+        //7777
         private static async Task TxMessage(string data)
         {
-            var transaction = JsonConvert.DeserializeObject<Models.Transaction>(data);
+            var transaction = JsonConvert.DeserializeObject<Transaction>(data);
             if (transaction != null)
             {
                 var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
                 if (!isTxStale)
                 {
                     var mempool = TransactionData.GetPool();
+
                     if (mempool.Count() != 0)
                     {
                         var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
@@ -369,6 +375,8 @@ namespace ReserveBlockCore.Nodes
                                 if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                 {
                                     mempool.InsertSafe(transaction);
+                                    _ = Broadcast("7777", data, "SendTxToMempoolVals");
+
                                 }
                             }
 
@@ -415,7 +423,7 @@ namespace ReserveBlockCore.Nodes
 
         #region Broadcast
 
-        private static async Task Broadcast(string messageType, string data, string method = "")
+        public static async Task Broadcast(string messageType, string data, string method = "")
         {
             await HubContext.Clients.All.SendAsync("GetValMessage", messageType, data);
 
@@ -424,6 +432,8 @@ namespace ReserveBlockCore.Nodes
             if (!Globals.ValidatorNodes.Any()) return;
 
             var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+            if(valNodeList == null || valNodeList.Count() == 0) return;
 
             foreach (var val in valNodeList)
             {
