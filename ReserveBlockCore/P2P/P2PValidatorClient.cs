@@ -256,6 +256,9 @@ namespace ReserveBlockCore.P2P
 
             await DropDisconnectedValidator();
 
+            //Force unban quicker
+            await BanService.RunUnban();
+
             var SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
                 .Union(Globals.SkipValPeers.Keys)
