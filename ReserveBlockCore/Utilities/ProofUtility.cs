@@ -14,9 +14,9 @@ namespace ReserveBlockCore.Utilities
             var blockHeightStart = blockHeight + 1;
             if(firstProof)
             {
-                blockHeightStart = blockHeight + 144;//if first proof of the day then push it out.
+                blockHeightStart = blockHeight + 5;//if first proof of the day then push it out.
             }
-            var finalHeight = blockHeightStart + 144;
+            var finalHeight = blockHeightStart + 5;
             for(long h = blockHeightStart; h <= finalHeight; h++)
             {
                 var proof = await CreateProof(address, publicKey, h);
