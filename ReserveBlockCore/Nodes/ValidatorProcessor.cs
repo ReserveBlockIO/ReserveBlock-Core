@@ -573,7 +573,7 @@ namespace ReserveBlockCore.Nodes
 
                 var minProofCount = 2;
 
-                if (proofCount <= minProofCount)
+                if (proofCount < minProofCount)
                 {
                     await delay;
                     continue;
