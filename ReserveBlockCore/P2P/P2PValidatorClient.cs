@@ -283,8 +283,12 @@ namespace ReserveBlockCore.P2P
             if(!newPeers.Any())
             {
                 //clear out skipped peers to try again
-                Globals.SkipPeers.Clear();
                 Globals.SkipValPeers.Clear();
+
+                SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
+                .Union(Globals.BannedIPs.Keys)
+                .Union(Globals.SkipValPeers.Keys)
+                .Union(Globals.ReportedIPs.Keys));
 
                 connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
 
