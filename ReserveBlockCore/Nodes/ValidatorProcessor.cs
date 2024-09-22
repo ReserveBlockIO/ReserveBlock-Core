@@ -43,6 +43,7 @@ namespace ReserveBlockCore.Nodes
             _ = BroadcastNetworkValidators();
             _ = BlockHeightCheckLoopForVals();
             _ = GenerateProofs();
+            _ = RequestFinalizedWinners();
             _ = SendCurrentWinners();
             _ = RequestCurrentWinners();
             _ = LockWinner();
@@ -111,6 +112,7 @@ namespace ReserveBlockCore.Nodes
                         }
 
                         await Task.Delay(30000);
+                        await P2PValidatorClient.RequestFinalizedWinners();
 
                         await P2PValidatorClient.SendCurrentWinners();
                         await Task.Delay(5000);
@@ -639,6 +641,27 @@ namespace ReserveBlockCore.Nodes
             }
         }
 
+        private async Task RequestFinalizedWinners()
+        {
+            
+
+            if (Globals.StopAllTimers && !Globals.IsChainSynced)
+            {
+                await Task.Delay(new TimeSpan(0, 0, 20));
+                return;
+            }
+
+            await RequestCurrentWinnersLock.WaitAsync();
+
+            try
+            {
+                await P2PValidatorClient.RequestFinalizedWinners();
+            }
+            catch { }
+            finally { RequestCurrentWinnersLock.Release(); }
+            
+        }
+
         private async Task SendCurrentWinners()
         {
             while (true)
@@ -668,6 +691,8 @@ namespace ReserveBlockCore.Nodes
                 }
             }
         }
+
+        
 
         private async Task ConfirmBlock()
         {

@@ -693,5 +693,37 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        #region Request Finalized Winner List
+        public static async Task RequestFinalizedWinners()
+        {
+            var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+            if (valNodeList.Count() == 0)
+            {
+                return;
+            }
+
+            foreach (var val in valNodeList)
+            {
+                try
+                {
+                    var source = new CancellationTokenSource(2000);
+                    var finalizedWinnerList = await val.Connection.InvokeAsync<string>("GetFinalizedWinnersList", source.Token);
+                    if (finalizedWinnerList != null)
+                    {
+                        if (finalizedWinnerList != "0")
+                        {
+                            var fList = JsonConvert.DeserializeObject<ConcurrentDictionary<long, string>>(finalizedWinnerList);
+                            if (fList != null)
+                                Globals.FinalizedWinner = fList;
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        #endregion
     }
 }

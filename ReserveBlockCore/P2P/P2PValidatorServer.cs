@@ -538,6 +538,23 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Finalized Winners (Send it)
+
+        public async Task<string> GetFinalizedWinnersList()
+        {
+            string result = "0";
+            if (Globals.WinningProofs.Count() != 0)
+            {
+                var list = Globals.FinalizedWinner.Select(x => x.Value).ToList();
+                if (list != null)
+                    result = JsonConvert.SerializeObject(list);
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Get Wallet Version
         public async Task<string> GetWalletVersionVal()
         {
