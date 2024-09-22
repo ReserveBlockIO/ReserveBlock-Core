@@ -12,12 +12,13 @@ namespace ReserveBlockCore.Utilities
         {
             List<Proof> proofs = new List<Proof>();
             var blockHeightStart = blockHeight + 1;
-            if(firstProof)
+            var finalHeight = blockHeightStart + 1;
+
+            if (firstProof)
             {
-                blockHeightStart = blockHeight + 5;//if first proof of the day then push it out.
+                finalHeight = blockHeightStart + 3;//if first proof of the day then push it out.
             }
-            var finalHeight = blockHeightStart + 5;
-            for(long h = blockHeightStart; h <= finalHeight; h++)
+            for (long h = blockHeightStart; h <= finalHeight; h++)
             {
                 var proof = await CreateProof(address, publicKey, h);
                 if(proof.Item1 != 0 && !string.IsNullOrEmpty(proof.Item2))
