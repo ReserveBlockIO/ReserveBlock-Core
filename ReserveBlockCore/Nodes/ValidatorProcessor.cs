@@ -532,6 +532,11 @@ namespace ReserveBlockCore.Nodes
                                         await P2PValidatorClient.RequestQueuedBlock(nextblock);
                                 }
                             }
+                            else
+                            {
+                                if (!Globals.NetworkBlockQueue.TryGetValue(nextblock, out _))
+                                    await P2PValidatorClient.RequestQueuedBlock(nextblock);
+                            }
                         }
                         else
                         {
@@ -564,7 +569,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
 
-                var minProofCount = Globals.IsTestNet ? 1 : 5;
+                var minProofCount = Globals.IsTestNet ? 1 : 3;
 
                 if (proofCount <= minProofCount)
                 {
@@ -578,7 +583,7 @@ namespace ReserveBlockCore.Nodes
                 {
                     var nextBlock = Globals.LastBlock.Height + 1;
 
-                    for(var i = nextBlock; i <= nextBlock + 29; i++)
+                    for(var i = nextBlock; i <= nextBlock + 2; i++)
                     {
                         if (!Globals.FinalizedWinner.TryGetValue(i, out var winner))
                         {
@@ -615,7 +620,7 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 2, 0));
+                var delay = Task.Delay(new TimeSpan(0, 0, 25));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     await Task.Delay(new TimeSpan(0, 0, 20));

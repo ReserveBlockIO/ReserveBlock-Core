@@ -269,6 +269,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, Peers> BannedIPs;
         public static ConcurrentDictionary<string, int> SkipPeers = new ConcurrentDictionary<string, int>();
+        public static ConcurrentDictionary<string, int> SkipValPeers = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, NetworkValidator> NetworkValidators = new ConcurrentDictionary<string, NetworkValidator>(); //key = rbx address
         public static ConcurrentDictionary<string, Peers> ValidatorPool = new ConcurrentDictionary<string, Peers>();
         public static ConcurrentDictionary<string, NodeInfo> ValidatorNodes = new ConcurrentDictionary<string, NodeInfo>(); //key = ipaddress

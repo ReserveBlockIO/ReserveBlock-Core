@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Extensions;
+﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,12 +22,12 @@ namespace ReserveBlockCore.Utilities
                 var proof = await CreateProof(address, publicKey, h);
                 if(proof.Item1 != 0 && !string.IsNullOrEmpty(proof.Item2))
                 {
-                    Proof _proof = new Proof { 
+                    Proof _proof = new Proof {
                         Address = address,
                         BlockHeight = h,
                         ProofHash = proof.Item2,
                         PublicKey = publicKey,
-                        VRFNumber = proof.Item1
+                        VRFNumber = proof.Item1,
                     };
 
                     proofs.Add(_proof);

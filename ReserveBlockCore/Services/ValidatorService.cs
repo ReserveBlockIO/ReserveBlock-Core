@@ -60,15 +60,15 @@ namespace ReserveBlockCore.Services
 
         internal static async Task StartupValidators()
         {
-            //wait 15 seconds
-            await Task.Delay(15000);
+            //wait 25 seconds
+            await Task.Delay(new TimeSpan(0,0,25));
             while (true)
             {
                 if (string.IsNullOrEmpty(Globals.ValidatorAddress))
                     return;
 
                 var startupCount = Globals.ValidatorNodes.Count / 2 + 1;
-                var delay = Globals.ValidatorNodes.Count < startupCount ? 1000 : 15000;
+                var delay = Globals.ValidatorNodes.Count < startupCount ? new TimeSpan(0,0,10) : new TimeSpan(0,1,0);
 
                 try
                 {

@@ -48,6 +48,7 @@ namespace ReserveBlockCore.Config
 		public string? ElectrumServers { get; set; }
 		public bool LogMemory { get; set; }
 		public bool BlockSeedCalls { get; set; }
+		public string? SkipIPs { get; set; }
 		public Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
 
         public static Config ReadConfigFile()
@@ -110,7 +111,7 @@ namespace ReserveBlockCore.Config
                 config.LogMemory = dict.ContainsKey("LogMemory") ? Convert.ToBoolean(dict["LogMemory"]) : false;
                 config.BlockSeedCalls = dict.ContainsKey("BlockSeedCalls") ? Convert.ToBoolean(dict["BlockSeedCalls"]) : false;
                 config.BitcoinAddressFormat = dict.ContainsKey("BitcoinAddressFormat") ? (Bitcoin.Bitcoin.BitcoinAddressFormat)Convert.ToInt32(dict["BitcoinAddressFormat"]) : Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit;
-
+                config.SkipIPs = dict.ContainsKey("SkipIPs") ? dict["SkipIPs"] : null;
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
@@ -241,6 +242,20 @@ namespace ReserveBlockCore.Config
 
             Globals.ScriptPubKeyType = Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.SegwitP2SH ? NBitcoin.ScriptPubKeyType.SegwitP2SH :
 				Globals.BitcoinAddressFormat == Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit ? NBitcoin.ScriptPubKeyType.Segwit : NBitcoin.ScriptPubKeyType.TaprootBIP86;
+
+			if(!string.IsNullOrEmpty(config.SkipIPs))
+			{
+				var ips = config.SkipIPs.Split(',').ToList();
+				foreach(var ip in ips) 
+				{
+					if(!string.IsNullOrEmpty(ip))
+					{
+                        var ipSani = ip.Replace(" ", "");
+                        Globals.SkipPeers.TryAdd(ipSani, 0);
+						Globals.SkipValPeers.TryAdd(ipSani, 0);
+                    }
+                }
+			}
 
 			if(config.ElectrumServers != null)
 			{

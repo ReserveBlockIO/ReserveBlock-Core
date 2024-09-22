@@ -179,9 +179,9 @@ namespace ReserveBlockCore.P2P
                 await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
                 if (hubConnection.ConnectionId == null)
                 {
-                    Globals.SkipPeers.TryAdd(peer.PeerIP, 0);
+                    Globals.SkipValPeers.TryAdd(peer.PeerIP, 0);
                     peer.FailCount += 1;
-                    if (peer.FailCount > 4)
+                    if (peer.FailCount > 60)
                         peer.IsOutgoing = false;
                     Peers.GetAll()?.UpdateSafe(peer);
                     return;
@@ -234,9 +234,9 @@ namespace ReserveBlockCore.P2P
             }
             catch 
             {
-                Globals.SkipPeers.TryAdd(peer.PeerIP, 0);
+                Globals.SkipValPeers.TryAdd(peer.PeerIP, 0);
                 peer.FailCount += 1;
-                if (peer.FailCount > 4)
+                if (peer.FailCount > 60)
                     peer.IsOutgoing = false;
                 Peers.GetAll()?.UpdateSafe(peer);
             }
@@ -258,7 +258,7 @@ namespace ReserveBlockCore.P2P
 
             var SkipIPs = new HashSet<string>(Globals.ValidatorNodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
-                .Union(Globals.SkipPeers.Keys)
+                .Union(Globals.SkipValPeers.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
             var connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
@@ -284,6 +284,7 @@ namespace ReserveBlockCore.P2P
             {
                 //clear out skipped peers to try again
                 Globals.SkipPeers.Clear();
+                Globals.SkipValPeers.Clear();
 
                 connectedNodes = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToArray();
 
@@ -652,7 +653,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 List<Proof> winningProofs = new List<Proof>();
-                for (int i = 1; i < 30; i++)
+                for (int i = 1; i < 5; i++)
                 {
                     var nextBlock = Globals.LastBlock.Height + i;
                     if (!Globals.FinalizedWinner.TryGetValue(nextBlock, out _))

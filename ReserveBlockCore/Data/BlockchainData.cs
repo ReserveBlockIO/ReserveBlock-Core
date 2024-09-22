@@ -320,7 +320,7 @@ namespace ReserveBlockCore.Data
         #endregion
 
         #region Craft Block V5 - WIP
-        public static async Task<Block?> CraftBlock_V5(string validator, int totalVals, string valAnswer, long height)
+        public static async Task<Block?> CraftBlock_V5(string validator, int totalVals, string valAnswer, long height, bool skipTXs = false)
         {
             try
             {
@@ -371,18 +371,9 @@ namespace ReserveBlockCore.Data
                         //transactionList.Add(coinbase_tx);
                         transactionList.Add(coinbase_tx2);
 
-                        transactionList.AddRange(processedTxPool);
-
-                        //need to only delete processed mempool tx's in event new ones get added while creating block.
-                        //delete after block is added, so they can't  be re-added before block is over.
-                        foreach (var tx in processedTxPool)
-                        {
-                            var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
-                            if (txRec != null)
-                            {
-                                //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
-                            }
-                        }
+                        //We will skip during proof generation
+                        if(!skipTXs)
+                            transactionList.AddRange(processedTxPool);
                     }
                     else
                     {
