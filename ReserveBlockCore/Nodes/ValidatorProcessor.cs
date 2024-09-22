@@ -569,7 +569,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 var proofCount = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
 
-                var minProofCount = Globals.IsTestNet ? 1 : 3;
+                var minProofCount = 2;
 
                 if (proofCount <= minProofCount)
                 {
