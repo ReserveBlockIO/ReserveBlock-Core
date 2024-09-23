@@ -227,6 +227,22 @@ namespace ReserveBlockCore.Utilities
             catch { return; }
         }
 
+        public static async Task CleanupProofs()
+        {
+            var blockHeight = Globals.LastBlock.Height;
+
+            var keysToRemove = Globals.WinningProofs.Where(x => x.Key < blockHeight).ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                try
+                {
+                    Globals.WinningProofs.TryRemove(key.Key, out _);
+                }
+                catch { }
+            }
+        }
+
         public static string CalculateSHA256Hash(string input)
         {
             using (SHA256 sha256 = SHA256.Create())

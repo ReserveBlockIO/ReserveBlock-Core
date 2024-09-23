@@ -28,6 +28,7 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim RequestCurrentWinnersLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim NotifyExplorerLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim HealthCheckLock = new SemaphoreSlim(1, 1);
+        public static long BlockStartHeight = 0;
         public static bool IsRunning { get; private set; }
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
@@ -758,15 +759,28 @@ namespace ReserveBlockCore.Nodes
                 var delay = Task.Delay(new TimeSpan(0, 0, 30));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
+                    BlockStartHeight = 0;
                     await delay;
                     continue;
                 }
 
                 if (!Globals.ValidatorNodes.Any())
                 {
+                    BlockStartHeight = 0;
                     await delay;
                     continue;
                 }
+
+                if (BlockStartHeight == 0)
+                    BlockStartHeight = Globals.LastBlock.Height + 10;
+
+                if (Globals.LastBlock.Height < BlockStartHeight)
+                {
+                    await delay;
+                    continue;
+                }
+
+                //if(Globals.LastProofBlockheight >= Globals.LastBlock.Height + 10)
                 await GenerateProofLock.WaitAsync();
                 try
                 {
@@ -783,6 +797,8 @@ namespace ReserveBlockCore.Nodes
 
                     if (valNodeList.Count() == 0)
                         continue;
+
+                    await ProofUtility.CleanupProofs();
 
                     if (Globals.LastProofBlockheight == 0)
                     {
@@ -805,7 +821,7 @@ namespace ReserveBlockCore.Nodes
                     {
                         var firstProof = Globals.IsTestNet ? false : true;
 
-                        if (Globals.LastBlock.Height + 72 >= Globals.LastProofBlockheight)
+                        if (Globals.LastBlock.Height + 10 >= Globals.LastProofBlockheight)
                         {
                             var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, firstProof);
                             await ProofUtility.SortProofs(proofs);

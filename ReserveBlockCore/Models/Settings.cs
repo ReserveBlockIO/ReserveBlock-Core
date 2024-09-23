@@ -95,6 +95,28 @@ namespace ReserveBlockCore.Models
                     await Task.Delay(500);
                 }
             }
+
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                Globals.LastProofBlockheight = 999_999_999_999_999_999;
+                bool run = true;
+                while (run)
+                {
+                    foreach (var proof in Globals.WinningProofs)
+                    {
+                        if (proof.Value != null)
+                        {
+                            if (proof.Value.Address == Globals.ValidatorAddress)
+                            {
+                                await Task.Delay(10000);
+                                continue;
+                            }
+                        }
+                    }
+
+                    run = false;
+                }
+            }
         }
     }
 }
