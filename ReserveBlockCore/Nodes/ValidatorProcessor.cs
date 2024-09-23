@@ -29,6 +29,7 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim NotifyExplorerLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim HealthCheckLock = new SemaphoreSlim(1, 1);
         public static long BlockStartHeight = 0;
+        public static bool GenesisVal = false;
         public static bool IsRunning { get; private set; }
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
