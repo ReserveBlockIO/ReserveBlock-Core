@@ -775,7 +775,7 @@ namespace ReserveBlockCore.Nodes
                 if (BlockStartHeight == 0)
                     BlockStartHeight = Globals.LastBlock.Height + 10;
 
-                if (Globals.LastBlock.Height < BlockStartHeight)
+                if (Globals.LastBlock.Height < BlockStartHeight && !GenesisVal)
                 {
                     await delay;
                     continue;
