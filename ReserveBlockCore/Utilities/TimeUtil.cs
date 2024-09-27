@@ -19,6 +19,13 @@ namespace ReserveBlockCore.Utilities
             return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();            
         }
 
+        public static long GetTime(string hexTimestamp)
+        {
+            var timestampUnix = Convert.ToUInt32(hexTimestamp, 16);
+
+            return timestampUnix < 0 ? 0 : timestampUnix;
+        }
+
         public static long GetTimeFromDateTime(DateTime date)
         {
             return ((DateTimeOffset)date).ToUnixTimeSeconds();

@@ -467,6 +467,39 @@ namespace ReserveBlockCore.Bitcoin.ElectrumX
         }
         #endregion
 
+        #region Get Block Header Hex
+        public async Task<BlockchainBlockHeaderGetResult> GetBlockHeaderHex(int height)
+        {
+            var requestData = new BlockchainBlockHeaderGetRequest(height, 1).GetRequestData();
+            var responseString = "";
+            try
+            {
+                if (UseSsl)
+                {
+                    await ConnectWithSsl();
+                    responseString = await SendMessageWithSsl(requestData);
+                }
+                else
+                {
+                    await ConnectNoSsl();
+                    responseString = await SendMessageNoSsl(requestData);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            var response = JsonConvert.DeserializeObject<BlockchainBlockHeaderGetResponse>(responseString);
+            if (response?.Error != null)
+            {
+                OnError?.Invoke(this, response.Error.Code, response.Error.Message);
+            }
+            return response?.Result;
+        }
+
+        #endregion
+
         #region Get Block Transaction  Merkle
         public async Task<BlockchainTransactionGetMerkleResult> GetBlockchainTransactionGetMerkle(string txId, int height)
         {

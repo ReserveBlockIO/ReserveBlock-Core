@@ -605,14 +605,14 @@ namespace ReserveBlockCore
 
             if (startGUI)
             {
-                Process[] pname = Process.GetProcessesByName("RBXWallet");
+                Process[] pname = Process.GetProcessesByName("VFXWallet");
 
                 if(pname.Length == 0)
                 {
                     Globals.GUIProcess = new Process();
                     Globals.GUIProcess.StartInfo = new ProcessStartInfo
                     {
-                        FileName = @"C:\Program Files (x86)\RBXWallet\RBXWallet.exe",
+                        FileName = @"C:\Program Files (x86)\RBXWallet\VFXWallet.exe",
                         Verb = "runas",
                         WorkingDirectory = @"C:\Program Files (x86)\RBXWallet\"
                     };
