@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
@@ -36,6 +37,11 @@ namespace ReserveBlockCore.Controllers
             var output = "Command not recognized."; // this will only display if command not recognized.
             var accounts = AccountData.GetAccounts();
             var rAccounts = ReserveAccount.GetReserveAccounts();
+
+            var scs = SmartContractMain.SmartContractData.GetSCs()
+                    .Find(x => x.Features != null &&
+                        !x.Features.Where(y => y != null && y.FeatureName == FeatureName.Tokenization).Any())
+                    .ToList();
 
             if (accounts.Count() == 0)
             {
@@ -99,6 +105,86 @@ namespace ReserveBlockCore.Controllers
                                 TokenAccounts = tokenAccounts
                             };
                             accountBalanceList.Add(accountBalance);
+                        }
+                    }
+                }
+
+                if(scs.Any())
+                {
+                    var tokenList = accountBalanceList.Select(x => x.TokenAccounts).FirstOrDefault();
+                    if (tokenList != null)
+                    {
+                        var scStateTrei = SmartContractStateTrei.GetSCST();
+                        if (scStateTrei != null)
+                        {
+                            foreach (var sc in scs)
+                            {
+                                try
+                                {
+                                    if (sc != null)
+                                    {
+                                        var sToken = tokenList.Where(x => x.SmartContractUID == sc.SmartContractUID).FirstOrDefault();
+                                        if (sToken == null)
+                                        {
+                                            var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
+                                            if (scState != null)
+                                            {
+                                                var sAccount = accounts.FindOne(x => x.Address == scState.OwnerAddress);
+                                                if (sAccount != null)
+                                                {
+                                                    var scFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Token).FirstOrDefault();
+                                                    var scTokenFeature = (TokenFeature)scFeature.FeatureFeatures;
+                                                    var tknAcc = new TokenAccount
+                                                    {
+                                                        Balance = 0.0M,
+                                                        DecimalPlaces = scTokenFeature.TokenDecimalPlaces,
+                                                        LockedBalance = 0.0M,
+                                                        SmartContractUID = sc.SmartContractUID,
+                                                        TokenName = scTokenFeature.TokenName,
+                                                        TokenTicker = scTokenFeature.TokenTicker
+                                                    };
+
+                                                    var nAccBalList = accountBalanceList.Where(x => x.Address == scState.OwnerAddress).FirstOrDefault();
+                                                    if (nAccBalList != null)
+                                                    {
+                                                        nAccBalList.TokenAccounts.Add(tknAcc);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    var rAccount = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress);
+                                                    if (rAccount != null)
+                                                    {
+                                                        var scFeature = sc.Features.Where(x => x.FeatureName == FeatureName.Token).FirstOrDefault();
+                                                        var scTokenFeature = (TokenFeature)scFeature.FeatureFeatures;
+                                                        var tknAcc = new TokenAccount
+                                                        {
+                                                            Balance = 0.0M,
+                                                            DecimalPlaces = scTokenFeature.TokenDecimalPlaces,
+                                                            LockedBalance = 0.0M,
+                                                            SmartContractUID = sc.SmartContractUID,
+                                                            TokenName = scTokenFeature.TokenName,
+                                                            TokenTicker = scTokenFeature.TokenTicker
+                                                        };
+
+                                                        var nAccBalList = accountBalanceList.Where(x => x.Address == scState.OwnerAddress).FirstOrDefault();
+                                                        if (nAccBalList != null)
+                                                        {
+                                                            nAccBalList.TokenAccounts.Add(tknAcc);
+                                                        }
+                                                    }
+                                                }
+
+                                            }
+                                        }
+
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+
+                                }
+                            }
                         }
                     }
                 }

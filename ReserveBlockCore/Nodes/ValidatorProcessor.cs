@@ -781,7 +781,6 @@ namespace ReserveBlockCore.Nodes
                     continue;
                 }
 
-                //if(Globals.LastProofBlockheight >= Globals.LastBlock.Height + 10)
                 await GenerateProofLock.WaitAsync();
                 try
                 {
