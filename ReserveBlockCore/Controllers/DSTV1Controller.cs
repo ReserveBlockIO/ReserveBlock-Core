@@ -626,6 +626,8 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
+            url = WebUtility.UrlDecode(url);
+
             var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
 
             if (decshop != null)
@@ -983,6 +985,8 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetNetworkDecShopInfo/{**url}")]
         public async Task<string> GetNetworkDecShopInfo(string url)
         {
+            url = WebUtility.UrlDecode(url);
+
             var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
 
             if(decshop == null)
@@ -1017,6 +1021,8 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("ConnectToDecShop/{address}/{**url}")]
         public async Task<bool> ConnectToDecShop(string address, string url)
         {
+            url = WebUtility.UrlDecode(url);
+
             var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
 
             if (decshop != null)
