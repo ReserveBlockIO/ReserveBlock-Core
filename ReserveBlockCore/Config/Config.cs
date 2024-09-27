@@ -295,7 +295,7 @@ namespace ReserveBlockCore.Config
 			}
 			else
 			{
-				var port = Globals.IsTestNet ? 13340 : Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //needs to be 3340 **patched  DSTServer.cs Line: 20**
+				var port = Globals.IsTestNet ? 13340 : Globals.SelfSTUNPort; //needs to be 3340 **patched  DSTServer.cs Line: 20**
 
 				if(!Globals.IsTestNet)
 				{
@@ -315,7 +315,7 @@ namespace ReserveBlockCore.Config
                 }
 				else
 				{
-                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"162.251.121.150:{port}", Group = 1, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"144.126.156.102:{port}", Group = 1, IsNetwork = true });
                 }
             }
 
