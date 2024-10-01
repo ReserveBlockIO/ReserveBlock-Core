@@ -2,6 +2,7 @@
 using ReserveBlockCore.Bitcoin.ElectrumX;
 using ReserveBlockCore.Bitcoin.Integrations;
 using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Bitcoin.Services;
 using ReserveBlockCore.Bitcoin.Utilities;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
@@ -356,20 +357,33 @@ namespace ReserveBlockCore.Bitcoin
                                                     var totalInputAmount = await InputUtility.CalculateTotalInputAmount(client, tx);
                                                     var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
                                                     var fee = totalInputAmount - totalOutputAmount;
+                                                    var timestampUnix = TimeUtil.GetTime();
+                                                    var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                    if (blockHeader != null)
+                                                    {
+                                                        var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                        // Reverse the byte order (little-endian to big-endian)
+                                                        var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                        // Convert the reversed hex string to Unix timestamp
+                                                        timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                    }
 
                                                     var nTx = new BitcoinTransaction {
-                                                        Amount = amount,
-                                                        BitcoinUTXOs = new List<BitcoinUTXO>(),
-                                                        Fee = fee.ToUnit(MoneyUnit.BTC),
-                                                        FeeRate = 0,
-                                                        FromAddress = fromAddress,
-                                                        ToAddress = toAddress,
-                                                        Hash = bTx.TxHash,
-                                                        IsConfirmed = true,
-                                                        ConfirmedHeight = bTx.Height,
-                                                        Signature = rawTx.RawTx.ToString(),
-                                                        Timestamp = TimeUtil.GetTime(),
-                                                        TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
+                                                    Amount = amount,
+                                                    BitcoinUTXOs = new List<BitcoinUTXO>(),
+                                                    Fee = fee.ToUnit(MoneyUnit.BTC),
+                                                    FeeRate = 0,
+                                                    FromAddress = fromAddress,
+                                                    ToAddress = toAddress,
+                                                    Hash = bTx.TxHash,
+                                                    IsConfirmed = true,
+                                                    ConfirmedHeight = bTx.Height,
+                                                    Signature = rawTx.RawTx.ToString(),
+                                                    Timestamp = timestampUnix,
+                                                    TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
                                                     };
 
                                                     BitcoinTransaction.SaveBitcoinTX(nTx);
@@ -424,6 +438,20 @@ namespace ReserveBlockCore.Bitcoin
                                                     var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
                                                     var fee = totalInputAmount - totalOutputAmount;
 
+                                                    var timestampUnix = TimeUtil.GetTime();
+                                                    var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                    if (blockHeader != null)
+                                                    {
+                                                        var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                        // Reverse the byte order (little-endian to big-endian)
+                                                        var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                        // Convert the reversed hex string to Unix timestamp
+                                                        timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                    }
+
                                                     var nTx = new BitcoinTransaction
                                                     {
                                                         Amount = amount,
@@ -435,7 +463,7 @@ namespace ReserveBlockCore.Bitcoin
                                                         Hash = bTx.TxHash,
                                                         IsConfirmed = false,
                                                         Signature = rawTx.RawTx.ToString(),
-                                                        Timestamp = TimeUtil.GetTime(),
+                                                        Timestamp = timestampUnix,
                                                         TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
                                                     };
 
@@ -447,7 +475,7 @@ namespace ReserveBlockCore.Bitcoin
                                 }
                                 else
                                 {
-
+                                    await AddressSyncService.GetTxHistory(client, address.Address);
                                 }
                             }
                             
@@ -608,6 +636,20 @@ namespace ReserveBlockCore.Bitcoin
                                                         var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
                                                         var fee = totalInputAmount - totalOutputAmount;
 
+                                                        var timestampUnix = TimeUtil.GetTime();
+                                                        var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                        if (blockHeader != null)
+                                                        {
+                                                            var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                            // Reverse the byte order (little-endian to big-endian)
+                                                            var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                            // Convert the reversed hex string to Unix timestamp
+                                                            timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                        }
+
                                                         var nTx = new BitcoinTransaction
                                                         {
                                                             Amount = amount,
@@ -620,7 +662,7 @@ namespace ReserveBlockCore.Bitcoin
                                                             IsConfirmed = true,
                                                             ConfirmedHeight = bTx.Height,
                                                             Signature = rawTx.RawTx.ToString(),
-                                                            Timestamp = TimeUtil.GetTime(),
+                                                            Timestamp = timestampUnix,
                                                             TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
                                                         };
 
@@ -676,6 +718,20 @@ namespace ReserveBlockCore.Bitcoin
                                                         var totalOutputAmount = tx.Outputs.Sum(o => o.Value);
                                                         var fee = totalInputAmount - totalOutputAmount;
 
+                                                        var timestampUnix = TimeUtil.GetTime();
+                                                        var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                        if (blockHeader != null)
+                                                        {
+                                                            var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                            // Reverse the byte order (little-endian to big-endian)
+                                                            var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                            // Convert the reversed hex string to Unix timestamp
+                                                            timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                        }
+
                                                         var nTx = new BitcoinTransaction
                                                         {
                                                             Amount = amount,
@@ -687,7 +743,7 @@ namespace ReserveBlockCore.Bitcoin
                                                             Hash = bTx.TxHash,
                                                             IsConfirmed = false,
                                                             Signature = rawTx.RawTx.ToString(),
-                                                            Timestamp = TimeUtil.GetTime(),
+                                                            Timestamp = timestampUnix,
                                                             TransactionType = isOutgoing ? BTCTransactionType.Send : BTCTransactionType.Receive,
                                                         };
 

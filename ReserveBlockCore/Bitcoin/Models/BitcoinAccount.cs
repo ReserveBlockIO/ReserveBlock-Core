@@ -1,4 +1,5 @@
 ﻿using NBitcoin;
+using ReserveBlockCore.Bitcoin.Services;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
@@ -198,6 +199,8 @@ namespace ReserveBlockCore.Bitcoin.Models
             };
 
             SaveBitcoinAddress(btcAddress);
+
+            _ = AddressSyncService.SyncAddress(btcAddress.Address);
         }
 
         #endregion
@@ -228,6 +231,8 @@ namespace ReserveBlockCore.Bitcoin.Models
             };
 
             SaveBitcoinAddress(btcAddress);
+
+            _ = AddressSyncService.SyncAddress(btcAddress.Address);
         }
 
         #endregion

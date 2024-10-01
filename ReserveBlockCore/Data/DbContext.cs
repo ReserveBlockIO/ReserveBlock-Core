@@ -248,17 +248,17 @@ namespace ReserveBlockCore.Data
             DB_Shares.Commit();
         }
 
-        public static void Rollback(string location = "")
+        public static void Rollback(string location = "", string message = "")
         {
             bool isStateUpdating = Globals.TreisUpdating;
 
             if(isStateUpdating)
             {
-                ErrorLogUtility.LogError("Rollback Has Occurred during Trei Update!", location);
+                ErrorLogUtility.LogError($"Rollback Has Occurred during Trei Update! Message: {message}", location);
             }
             else
             {
-                ErrorLogUtility.LogError("Rollback Has Occurred!", location);
+                ErrorLogUtility.LogError($"Rollback Has Occurred! Message: {message}", location);
             }
             
 

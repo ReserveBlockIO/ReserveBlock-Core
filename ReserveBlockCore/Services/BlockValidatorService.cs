@@ -271,7 +271,7 @@ namespace ReserveBlockCore.Services
                 //This will also check that the prev hash matches too
                 if (!newBlock.Hash.Equals(block.Hash))
                 {
-                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-10");
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-10", $"Current Hash: {block.Hash} - Newly Block Hash: {newBlock.Hash}");
                     return result;//block rejected
                 }
 
