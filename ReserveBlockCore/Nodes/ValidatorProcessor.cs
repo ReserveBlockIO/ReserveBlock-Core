@@ -566,7 +566,7 @@ namespace ReserveBlockCore.Nodes
         {
             while (true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 5));
+                var delay = Task.Delay(new TimeSpan(0, 0, 12));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     await delay;
@@ -598,49 +598,74 @@ namespace ReserveBlockCore.Nodes
                                 {
                                     if (ProofUtility.VerifyProof(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
                                     {
-                                        if(winningProof.Address == Globals.ValidatorAddress)
+                                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+
+                                        var result = await RequestLockedWinner(nextBlock);
+                                        if (result != null)
                                         {
-                                            var result = await RequestLockedWinner(nextBlock);
-                                            if(result != null)
+                                            if (result.Count() > 0)
                                             {
-                                                if(result.Count() > 0)
+                                                var order = result.OrderByDescending(x => x.Value).GroupBy(x => x.Value).FirstOrDefault();
+                                                if (order != null)
                                                 {
-                                                    var order = result.OrderByDescending(x => x.Value).GroupBy(x => x.Value).FirstOrDefault();
-                                                    if(order != null)
+                                                    if (order.Count() == 1)
                                                     {
-                                                        if(order.Count() == 1)
+                                                        var sentWinner = order.First().Key;
+                                                        if (sentWinner != winningProof.Address)
                                                         {
-                                                            var sentWinner = order.First().Key;
-                                                            if(sentWinner == winningProof.Address)
-                                                            {
-                                                                Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                                            }
-                                                            else
-                                                            {
-                                                                Globals.FinalizedWinner.TryAdd(i, sentWinner);
-                                                            }
+                                                            Console.WriteLine("Potential Winner Mismatch");
+                                                            Globals.FinalizedWinner.TryRemove(i, out _);
+                                                            await P2PValidatorClient.RequestCurrentWinners();
                                                         }
                                                         else
                                                         {
-                                                            var found = order.Where(x => x.Key == winningProof.Address).FirstOrDefault();
-                                                            if(found.Key != null)
-                                                            {
-                                                                Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                                            }
-                                                            else
-                                                            {
-                                                                Globals.FinalizedWinner.TryAdd(i, order.First().Key);
-                                                            }
+                                                            // All good
                                                         }
                                                     }
                                                 }
                                             }
+
+                                            //    var result = await RequestLockedWinner(nextBlock);
+                                            //    if(result != null)
+                                            //    {
+                                            //        if(result.Count() > 0)
+                                            //        {
+                                            //            var order = result.OrderByDescending(x => x.Value).GroupBy(x => x.Value).FirstOrDefault();
+                                            //            if(order != null)
+                                            //            {
+                                            //                if(order.Count() == 1)
+                                            //                {
+                                            //                    var sentWinner = order.First().Key;
+                                            //                    if(sentWinner == winningProof.Address)
+                                            //                    {
+                                            //                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                            //                    }
+                                            //                    else
+                                            //                    {
+                                            //                        Globals.FinalizedWinner.TryAdd(i, sentWinner);
+                                            //                    }
+                                            //                }
+                                            //                else
+                                            //                {
+                                            //                    var found = order.Where(x => x.Key == winningProof.Address).FirstOrDefault();
+                                            //                    if(found.Key != null)
+                                            //                    {
+                                            //                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                            //                    }
+                                            //                    else
+                                            //                    {
+                                            //                        Globals.FinalizedWinner.TryAdd(i, order.First().Key);
+                                            //                    }
+                                            //                }
+                                            //            }
+                                            //        }
+                                            //    }
+                                            //}
+                                            //else
+                                            //{
+                                            //    Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                            //}
                                         }
-                                        else
-                                        {
-                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
-                                        }
-                                        
                                     }
                                 }
                             }
