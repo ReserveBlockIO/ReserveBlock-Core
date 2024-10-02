@@ -667,10 +667,10 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 25));
+                var delay = Task.Delay(new TimeSpan(0, 0, 5));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
-                    await Task.Delay(new TimeSpan(0, 0, 20));
+                    await Task.Delay(new TimeSpan(0, 0, 5));
                     continue;
                 }
                 
