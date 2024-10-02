@@ -42,10 +42,10 @@ namespace ReserveBlockCore.P2P
         }
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
-            var peerIP = GetIP(Context);
+            //var peerIP = GetIP(Context);
             //var netVal = Globals.NetworkValidators.Where(x => x.Value.IPAddress == peerIP).FirstOrDefault();
 
-            Globals.P2PValDict.TryRemove(peerIP, out _);
+            //Globals.P2PValDict.TryRemove(peerIP, out _);
             Context?.Abort();
 
             await base.OnDisconnectedAsync(ex);

@@ -555,6 +555,30 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send locked Winner
+        //Send locked winner to client from p2p server
+        public async Task<string> SendLockedWinner(long height)
+        {
+            try
+            {
+                var peerIP = GetIP(Context);
+
+                if(Globals.FinalizedWinner.TryGetValue(height, out var winner))
+                {
+                    return winner;
+                }
+                else
+                {
+                    return "0";
+                }
+            }
+            catch { }
+
+            return "0";
+        }
+
+        #endregion
+
         #region Get Wallet Version
         public async Task<string> GetWalletVersionVal()
         {

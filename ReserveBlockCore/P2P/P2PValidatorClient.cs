@@ -725,5 +725,45 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        #region Request Locked Winner
+        public static async Task<Dictionary<string, int>> RequestLockedWinner(long height)
+        {
+            Dictionary<string, int> LockedWinnerDict = new Dictionary<string, int>();
+            var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
+
+            if (valNodeList.Count() == 0)
+            {
+                return LockedWinnerDict;
+            }
+
+            foreach (var val in valNodeList)
+            {
+                try
+                {
+                    var source = new CancellationTokenSource(2000);
+                    var lockedWinner = await val.Connection.InvokeCoreAsync<string>("SendLockedWinner", args: new object?[] { height }, source.Token);
+                    if (lockedWinner != null)
+                    {
+                        if (lockedWinner != "0")
+                        {
+                            if(LockedWinnerDict.ContainsKey(lockedWinner))
+                            {
+                                LockedWinnerDict[lockedWinner]++;
+                            }
+                            else
+                            {
+                                LockedWinnerDict.Add(lockedWinner, 1);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return LockedWinnerDict;
+        }
+
+        #endregion
     }
 }

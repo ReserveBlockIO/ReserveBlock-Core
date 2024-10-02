@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Reflection.Metadata;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -597,7 +598,49 @@ namespace ReserveBlockCore.Nodes
                                 {
                                     if (ProofUtility.VerifyProof(winningProof.PublicKey, winningProof.BlockHeight, winningProof.ProofHash))
                                     {
-                                        Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                        if(winningProof.Address == Globals.ValidatorAddress)
+                                        {
+                                            var result = await RequestLockedWinner(nextBlock);
+                                            if(result != null)
+                                            {
+                                                if(result.Count() > 0)
+                                                {
+                                                    var order = result.OrderByDescending(x => x.Value).GroupBy(x => x.Value).FirstOrDefault();
+                                                    if(order != null)
+                                                    {
+                                                        if(order.Count() == 1)
+                                                        {
+                                                            var sentWinner = order.First().Key;
+                                                            if(sentWinner == winningProof.Address)
+                                                            {
+                                                                Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                                            }
+                                                            else
+                                                            {
+                                                                Globals.FinalizedWinner.TryAdd(i, sentWinner);
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            var found = order.Where(x => x.Key == winningProof.Address).FirstOrDefault();
+                                                            if(found.Key != null)
+                                                            {
+                                                                Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                                            }
+                                                            else
+                                                            {
+                                                                Globals.FinalizedWinner.TryAdd(i, order.First().Key);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
+                                        }
+                                        
                                     }
                                 }
                             }
@@ -662,6 +705,30 @@ namespace ReserveBlockCore.Nodes
             catch { }
             finally { RequestCurrentWinnersLock.Release(); }
             
+        }
+
+        private async Task<Dictionary<string, int>> RequestLockedWinner(long blockHeight)
+        {
+
+            Dictionary<string, int> LockedWinnerDict = new Dictionary<string, int>();
+            if (Globals.StopAllTimers && !Globals.IsChainSynced)
+            {
+                await Task.Delay(new TimeSpan(0, 0, 20));
+                return LockedWinnerDict;
+            }
+
+            await RequestCurrentWinnersLock.WaitAsync();
+
+            try
+            {
+                var result = await P2PValidatorClient.RequestLockedWinner(blockHeight);
+                if (result != null)
+                    return result;
+            }
+            catch { }
+            finally { RequestCurrentWinnersLock.Release(); }
+            return LockedWinnerDict;
+
         }
 
         private async Task SendCurrentWinners()
@@ -821,7 +888,7 @@ namespace ReserveBlockCore.Nodes
                     {
                         var firstProof = Globals.IsTestNet ? false : true;
 
-                        if (Globals.LastBlock.Height + 10 >= Globals.LastProofBlockheight)
+                        if (Globals.LastBlock.Height + 10 >= Globals.LastProofBlockheight || GenesisVal)
                         {
                             var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, firstProof);
                             await ProofUtility.SortProofs(proofs);
