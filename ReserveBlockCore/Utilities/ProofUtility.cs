@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -260,7 +261,15 @@ namespace ReserveBlockCore.Utilities
                 }
 
                 counter = 0;
-                Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 50);
+                var blockDiff = (TimeUtil.GetTime() - Globals.LastBlockAddedTimestamp);
+                if (blockDiff >= 120)
+                {
+                    Globals.FailedValidators.Clear();
+                    Globals.FailedValidators = new ConcurrentDictionary<string, long>();
+                }
+                    
+                Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 1);
+
                 var proofList = Globals.WinningProofs;
                 foreach (var proof in proofList)
                 {
