@@ -828,9 +828,7 @@ namespace ReserveBlockCore.Nodes
 
                         await ProofUtility.AbandonProof(supposedHeight, supposeValidatorAddress);
 
-                        await LockWinnerLock.WaitAsync();
-                        await SendWinningVoteLock.WaitAsync();
-                        await RequestCurrentWinnersLock.WaitAsync();
+                        await P2PValidatorClient.RequestCurrentWinners();
 
                         LockWinnerLock.Release();
                         SendWinningVoteLock.Release();

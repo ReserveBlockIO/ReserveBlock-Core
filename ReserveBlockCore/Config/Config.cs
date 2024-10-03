@@ -50,6 +50,7 @@ namespace ReserveBlockCore.Config
 		public bool BlockSeedCalls { get; set; }
 		public string? SkipIPs { get; set; }
 		public int ElmahFileStore { get; set; }
+		public string? ReportedIP { get; set; }
 		public Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
 
         public static Config ReadConfigFile()
@@ -113,6 +114,7 @@ namespace ReserveBlockCore.Config
                 config.BlockSeedCalls = dict.ContainsKey("BlockSeedCalls") ? Convert.ToBoolean(dict["BlockSeedCalls"]) : false;
                 config.BitcoinAddressFormat = dict.ContainsKey("BitcoinAddressFormat") ? (Bitcoin.Bitcoin.BitcoinAddressFormat)Convert.ToInt32(dict["BitcoinAddressFormat"]) : Bitcoin.Bitcoin.BitcoinAddressFormat.Segwit;
                 config.SkipIPs = dict.ContainsKey("SkipIPs") ? dict["SkipIPs"] : null;
+                config.ReportedIP = dict.ContainsKey("ReportedIP") ? dict["ReportedIP"] : null;
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
@@ -198,6 +200,13 @@ namespace ReserveBlockCore.Config
 			Globals.SegwitP2SHStartPrefix = "3";
 			Globals.SegwitTaprootStartPrefix = "bc1";
 			Globals.BitcoinAddressFormat = config.BitcoinAddressFormat;
+
+			if(!string.IsNullOrEmpty(config.ReportedIP))
+			{
+				Globals.ReportedIP = config.ReportedIP;
+				Globals.ReportedIPs.TryAdd(Globals.ReportedIP, 99999);
+			}
+
             Globals.ClientSettings = new List<Bitcoin.ElectrumX.ClientSettings> {
                     new Bitcoin.ElectrumX.ClientSettings {
                         Host = "electrum.blockstream.info",

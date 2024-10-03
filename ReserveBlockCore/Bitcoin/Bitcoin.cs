@@ -300,8 +300,23 @@ namespace ReserveBlockCore.Bitcoin
                                                 //confirmed
                                                 if (bTx.Height != 0 && !localTx.IsConfirmed && localTx.ConfirmedHeight == 0)
                                                 {
+                                                    var timestampUnix = TimeUtil.GetTime();
+                                                    var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                    if (blockHeader != null)
+                                                    {
+                                                        var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                        // Reverse the byte order (little-endian to big-endian)
+                                                        var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                        // Convert the reversed hex string to Unix timestamp
+                                                        timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                    }
+
                                                     localTx.IsConfirmed = true;
                                                     localTx.ConfirmedHeight = bTx.Height;
+                                                    localTx.Timestamp = timestampUnix;
                                                     BitcoinTransaction.UpdateBitcoinTX(localTx);
                                                 }
                                             }
@@ -578,8 +593,23 @@ namespace ReserveBlockCore.Bitcoin
                                                     //confirmed
                                                     if (bTx.Height != 0 && !localTx.IsConfirmed && localTx.ConfirmedHeight == 0)
                                                     {
+                                                        var timestampUnix = TimeUtil.GetTime();
+                                                        var blockHeader = await client.GetBlockHeaderHex(bTx.Height);
+
+                                                        if (blockHeader != null)
+                                                        {
+                                                            var timestampHex = blockHeader.Hex.Substring(136, 8);
+
+                                                            // Reverse the byte order (little-endian to big-endian)
+                                                            var reversedTimestampHex = string.Join("", Enumerable.Range(0, 4).Select(i => timestampHex.Substring(i * 2, 2)).Reverse());
+
+                                                            // Convert the reversed hex string to Unix timestamp
+                                                            timestampUnix = TimeUtil.GetTime(reversedTimestampHex);
+                                                        }
+
                                                         localTx.IsConfirmed = true;
                                                         localTx.ConfirmedHeight = bTx.Height;
+                                                        localTx.Timestamp = timestampUnix;
                                                         BitcoinTransaction.UpdateBitcoinTX(localTx);
                                                     }
                                                 }
