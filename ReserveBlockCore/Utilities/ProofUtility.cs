@@ -198,6 +198,23 @@ namespace ReserveBlockCore.Utilities
                                 //Update winning proof with new proof if the value is greater.
                                 Globals.WinningProofs[proof.BlockHeight] = proof;
                             }
+                            else
+                            {
+                                Globals.BackupProofs.TryGetValue(proof.BlockHeight, out var backupProofs);
+                                if (backupProofs != null)
+                                {
+                                    var hasProof = backupProofs.Exists(x => x.Address == proof.Address && x.BlockHeight == proof.BlockHeight);
+                                    if (!hasProof)
+                                    {
+                                        backupProofs.Add(currentWinningProof.Value);
+                                        Globals.BackupProofs[proof.BlockHeight] = backupProofs.OrderBy(x => x.VRFNumber).ToList();
+                                    }
+                                }
+                                else
+                                {
+                                    Globals.BackupProofs.TryAdd(proof.BlockHeight, new List<Proof> { proof });
+                                }
+                            }
                         }
                         else
                         {
@@ -227,17 +244,69 @@ namespace ReserveBlockCore.Utilities
             catch { return; }
         }
 
+        public static async Task AbandonProof(long height, string supposeValidatorAddress)
+        {
+            Globals.FinalizedWinner.TryRemove(height, out _);
+            Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 50);
+            var proofList = Globals.WinningProofs;
+            foreach (var proof in proofList)
+            {
+                if (proof.Value.Address == supposeValidatorAddress)
+                {
+                    Globals.WinningProofs.TryRemove(proof);
+                    Globals.BackupProofs.TryGetValue(proof.Key, out var backupProofList);
+                    if (backupProofList != null)
+                    {
+                        var newProof = backupProofList.Where(x => x.Address != supposeValidatorAddress).OrderBy(x => x.VRFNumber).FirstOrDefault();
+                        if (newProof != null)
+                        {
+                            Globals.WinningProofs.TryAdd(proof.Key, newProof);
+                        }
+                    }
+                }
+            }
+
+            ValidatorLogUtility.Log($"Validator {supposeValidatorAddress} failed to produce block for height: {height} ", "ProofUtility.AbandonProof()");
+        }
+
         public static async Task CleanupProofs()
         {
             var blockHeight = Globals.LastBlock.Height;
 
             var keysToRemove = Globals.WinningProofs.Where(x => x.Key < blockHeight).ToList();
 
+            var backupKeysToRemove = Globals.BackupProofs.Where(x => x.Key < blockHeight).ToList();
+
             foreach (var key in keysToRemove)
             {
                 try
                 {
                     Globals.WinningProofs.TryRemove(key.Key, out _);
+                }
+                catch { }
+            }
+
+            foreach (var key in backupKeysToRemove)
+            {
+                try
+                {
+                    Globals.BackupProofs.TryRemove(key.Key, out _);
+                }
+                catch { }
+            }
+
+            if(Globals.FailedValidators.Count() > 0)
+            {
+                try
+                {
+                    var failedValsToRemove = Globals.FailedValidators.Where(x => x.Value < blockHeight).ToList();
+                    if (failedValsToRemove?.Count() > 0)
+                    {
+                        foreach (var val in failedValsToRemove)
+                        {
+                            Globals.FailedValidators.TryRemove(val.Key, out _);
+                        }
+                    }
                 }
                 catch { }
             }

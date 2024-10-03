@@ -259,6 +259,9 @@ namespace ReserveBlockCore
 
         public static DateTime ValidatorStartDate = DateTime.UtcNow;
 
+        public static ConcurrentDictionary<string, long> FailedValidators = new ConcurrentDictionary<string, long>();
+        public static int ElmahFileStore = 10000;
+
         #endregion
 
         #region P2P Client Variables

@@ -1,4 +1,6 @@
 ﻿using ElmahCore;
+using ReserveBlockCore.Utilities;
+using System.Runtime.CompilerServices;
 
 namespace ReserveBlockCore
 {
@@ -11,6 +13,22 @@ namespace ReserveBlockCore
         {
             _errorLog = errorLog;
         }
+        public static async Task ClearElmah()
+        {
+            //Keep ALL files
+            if (Globals.ElmahFileStore == 0)
+                return;
+
+            string dbPath = GetPathUtility.GetDatabasePath();
+            string logPath = Path.Combine(dbPath, "elmah.xml");
+            if (Directory.Exists(logPath))
+            {
+                var logFiles = Directory.GetFiles(logPath, "*.xml"); // Adjust the file extension if needed
+                int fileCount = logFiles.Length;
+                if (fileCount > Globals.ElmahFileStore)
+                    Directory.Delete(logPath, true);
+            }
+        }
         public static void LogEvent()
         {
             if (_errorLog == null)
@@ -21,7 +39,7 @@ namespace ReserveBlockCore
             var error = new Error(new Exception("Test error"));
             _errorLog.Log(error);
         }
-        public static void LogInfo(string message, string loc, bool isSC = false)
+        public static void LogInfo(string message, string loc, bool isSC = false, bool isVal = false)
         {
             if (_errorLog == null)
             {
@@ -33,7 +51,7 @@ namespace ReserveBlockCore
                 Source = $"{loc}",
                 StatusCode = 200,
                 Time = DateTime.Now,
-                Type = !isSC ? "Info Logged" : "SC Info Logged",
+                Type = !isSC ? !isVal ? "Info Logged" : "Validator Info Logged" : "SC Info Logged",
                 ApplicationName = "VFX Core CLI",
                 Message = loc
             };

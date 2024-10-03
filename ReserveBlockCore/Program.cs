@@ -296,6 +296,7 @@ namespace ReserveBlockCore
 
             await DbContext.CheckPoint(); //checkpoints db log files
 
+            await VFXLogging.ClearElmah();
             StartupService.SetBlockHeight(); //sets current block height
             StartupService.SetLastBlock(); //puts last known block into memory
             StartupService.StartupMemBlocks(); //puts 400 blocks into memory (height, hash)

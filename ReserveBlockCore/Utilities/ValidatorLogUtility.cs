@@ -57,8 +57,13 @@ namespace ReserveBlockCore.Utilities
                         writeLog = true;
                 }
 
-                if(writeLog)
+                if (writeLog)
+                {
                     File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + text);
+                    VFXLogging.LogInfo(message, location, false, true);
+                }
+
+                    
             }
             catch (Exception ex)
             {

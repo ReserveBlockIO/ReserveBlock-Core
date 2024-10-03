@@ -31,7 +31,10 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim HealthCheckLock = new SemaphoreSlim(1, 1);
         public static long BlockStartHeight = 0;
         public static bool GenesisVal = false;
+        public static int ProofNumber = GenesisVal ? 20: 10;
+        public static bool FirstRun = true;
         public static bool IsRunning { get; private set; }
+        
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -613,7 +616,6 @@ namespace ReserveBlockCore.Nodes
                                                         var sentWinner = order.First().Key;
                                                         if (sentWinner != winningProof.Address)
                                                         {
-                                                            Console.WriteLine("Potential Winner Mismatch");
                                                             Globals.FinalizedWinner.TryRemove(i, out _);
                                                             await P2PValidatorClient.RequestCurrentWinners();
                                                         }
@@ -799,7 +801,55 @@ namespace ReserveBlockCore.Nodes
                     continue;
                 }
 
-                if(!Globals.NetworkBlockQueue.Any())
+                var blockDiff = (TimeUtil.GetTime() - Globals.LastBlockAddedTimestamp);
+                if(blockDiff >= 60 && !FirstRun)
+                {
+                    //begin proof removal.
+                    string supposeValidatorAddress = "";
+                    var supposedHeight = Globals.LastBlock.Height + 1;
+                    var supposedWinner = Globals.FinalizedWinner.TryGet(supposedHeight);
+                    if(supposedWinner == null)
+                    {
+                        var supposedWinningProof = Globals.WinningProofs.TryGet(supposedHeight);
+                        if(supposedWinningProof != null)
+                            supposeValidatorAddress = supposedWinningProof.Address;
+                    }
+                    else
+                    {
+                        supposeValidatorAddress = supposedWinner;
+                    }
+
+                    if(!string.IsNullOrEmpty(supposeValidatorAddress))
+                    {
+                        Console.WriteLine($"KILLING PROOF: {supposeValidatorAddress} - {supposedHeight}");
+                        await LockWinnerLock.WaitAsync();
+                        await SendWinningVoteLock.WaitAsync();
+                        await RequestCurrentWinnersLock.WaitAsync();
+
+                        await ProofUtility.AbandonProof(supposedHeight, supposeValidatorAddress);
+
+                        await LockWinnerLock.WaitAsync();
+                        await SendWinningVoteLock.WaitAsync();
+                        await RequestCurrentWinnersLock.WaitAsync();
+
+                        LockWinnerLock.Release();
+                        SendWinningVoteLock.Release();
+                        RequestCurrentWinnersLock.Release();
+
+                        FirstRun = true;
+                        await Task.Delay(10000);
+                        continue;
+                    }
+                    else
+                    {
+                        FirstRun = true;
+                        await Task.Delay(10000);
+                        continue;
+                    }
+                }
+                
+
+                if (!Globals.NetworkBlockQueue.Any())
                 {
                     await delay;
                     continue;
@@ -820,13 +870,13 @@ namespace ReserveBlockCore.Nodes
 
                             if(result)
                             {
+                                FirstRun = false;
+
                                 var blockJson = JsonConvert.SerializeObject(block);
 
                                 _ = P2PValidatorClient.BroadcastBlock(block, false);
 
                                 _ = _hubContext.Clients.All.SendAsync("GetValMessage", "7", blockJson);
-
-                                
                             }
                         }
                         else
@@ -849,7 +899,7 @@ namespace ReserveBlockCore.Nodes
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                var delay = Task.Delay(new TimeSpan(0, 0, 15));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
                 {
                     BlockStartHeight = 0;
@@ -888,7 +938,10 @@ namespace ReserveBlockCore.Nodes
                     var valNodeList = Globals.ValidatorNodes.Values.Where(x => x.IsConnected).ToList();
 
                     if (valNodeList.Count() == 0)
+                    {
+                        await delay;
                         continue;
+                    }
 
                     await ProofUtility.CleanupProofs();
 
@@ -913,8 +966,15 @@ namespace ReserveBlockCore.Nodes
                     {
                         var firstProof = Globals.IsTestNet ? false : true;
 
-                        if (Globals.LastBlock.Height + 10 >= Globals.LastProofBlockheight || GenesisVal)
+                        var proofDiff = Globals.WinningProofs.Values.GroupBy(x => x.Address).Count();
+
+                        if (Globals.LastBlock.Height + ProofNumber >= Globals.LastProofBlockheight)
                         {
+                            if(Globals.WinningProofs.Count() > 25)
+                            {
+                                await delay;
+                                continue;
+                            }
                             var proofs = await ProofUtility.GenerateProofs(Globals.ValidatorAddress, account.PublicKey, Globals.LastProofBlockheight, firstProof);
                             await ProofUtility.SortProofs(proofs);
                             //send proofs
@@ -1170,17 +1230,35 @@ namespace ReserveBlockCore.Nodes
                         Globals.ValidatorIssueCount += 1;
                         Globals.ValidatorErrorMessages.Add($"Validator Nodes are not connected.");
                     }
+                    else
+                    {
+                        bool remove = true;
+                        int count = 0;
+                        while(remove)
+                        {
+                            remove = Globals.ValidatorErrorMessages.Remove($"Validator Nodes are not connected.");
+                            count++;
+                        }
+
+                        Globals.ValidatorIssueCount -= count;
+                    }
 
                     if (Globals.NetworkValidators.Count() == 0)
                     {
                         Globals.ValidatorIssueCount += 1;
                         Globals.ValidatorErrorMessages.Add($"Network Nodes are not connected.");
-                    }  
-
-                    if(Globals.NetworkBlockQueue.Count() == 0)
+                    }
+                    else
                     {
-                        Globals.ValidatorIssueCount += 1;
-                        Globals.ValidatorErrorMessages.Add($"Network Blocks were not found.");
+                        bool remove = true;
+                        int count = 0;
+                        while (remove)
+                        {
+                            remove = Globals.ValidatorErrorMessages.Remove($"Network Nodes are not connected.");
+                            count++;
+                        }
+
+                        Globals.ValidatorIssueCount -= count;
                     }
 
                     var valAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);

@@ -528,7 +528,8 @@ namespace ReserveBlockCore.P2P
             string result = "0";
             if(Globals.WinningProofs.Count() != 0)
             {
-                var list = Globals.WinningProofs.Select(x => x.Value).ToList();
+                var heightMax = Globals.LastBlock.Height + 10;
+                var list = Globals.WinningProofs.Where(x => x.Key <= heightMax).Select(x => x.Value).ToList();
                 if(list != null)
                     result = JsonConvert.SerializeObject(list);
             }

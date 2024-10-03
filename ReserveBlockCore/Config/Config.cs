@@ -49,6 +49,7 @@ namespace ReserveBlockCore.Config
 		public bool LogMemory { get; set; }
 		public bool BlockSeedCalls { get; set; }
 		public string? SkipIPs { get; set; }
+		public int ElmahFileStore { get; set; }
 		public Bitcoin.Bitcoin.BitcoinAddressFormat BitcoinAddressFormat { get; set; }
 
         public static Config ReadConfigFile()
@@ -116,8 +117,9 @@ namespace ReserveBlockCore.Config
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
 				config.RejectAssetExtensionTypes = new List<string>();
+                config.ElmahFileStore = dict.ContainsKey("ElmahFileStore") ? Convert.ToInt32(dict["ElmahFileStore"]) : 10000;
 
-				var rejExtList = new List<string> { ".exe", ".pif", ".application", ".gadget", ".msi", ".msp", ".com", ".scr", ".hta",
+                var rejExtList = new List<string> { ".exe", ".pif", ".application", ".gadget", ".msi", ".msp", ".com", ".scr", ".hta",
 					".cpl", ".msc", ".jar", ".bat", ".cmd", ".vb", ".vbs", ".vbe", ".js", ".jse", ".ws", ".wsf" , ".wsc", ".wsh", ".ps1",
 					".ps1xml", ".ps2", ".ps2xml", ".psc1", ".psc2", ".msh", ".msh1", ".msh2", ".mshxml", ".msh1xml", ".msh2xml", ".scf",
 					".lnk", ".inf", ".reg", ".doc", ".xls", ".ppt", ".docm", ".dotm", ".xlsm", ".xltm", ".xlam", ".pptm", ".potm", ".ppam",
@@ -173,7 +175,8 @@ namespace ReserveBlockCore.Config
         {
 			Globals.Port = config.Port;
 			Globals.APIPort = config.APIPort;
-			Globals.APICallURL = config.APICallURL;
+			Globals.ElmahFileStore = config.ElmahFileStore;
+            Globals.APICallURL = config.APICallURL;
 			Globals.APICallURLLogging = config.APICallURLLogging;
 			Globals.NFTTimeout = config.NFTTimeout;
 			Globals.PasswordClearTime = config.PasswordClearTime;
