@@ -802,7 +802,7 @@ namespace ReserveBlockCore.Nodes
                 }
 
                 var blockDiff = (TimeUtil.GetTime() - Globals.LastBlockAddedTimestamp);
-                if((blockDiff >= 60 && !FirstRun) || blockDiff >= 120)
+                if((blockDiff >= 70 && !FirstRun) || blockDiff >= 140)
                 {
                     //begin proof removal.
                     string supposeValidatorAddress = "";
@@ -828,6 +828,8 @@ namespace ReserveBlockCore.Nodes
 
                         await ProofUtility.AbandonProof(supposedHeight, supposeValidatorAddress);
 
+                        await Task.Delay(10000);
+
                         await P2PValidatorClient.RequestCurrentWinners();
 
                         LockWinnerLock.Release();
@@ -835,7 +837,7 @@ namespace ReserveBlockCore.Nodes
                         RequestCurrentWinnersLock.Release();
 
                         FirstRun = true;
-                        await Task.Delay(10000);
+                        
                         continue;
                     }
                     else
