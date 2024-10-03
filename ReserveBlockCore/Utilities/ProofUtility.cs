@@ -246,21 +246,39 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AbandonProof(long height, string supposeValidatorAddress)
         {
-            Globals.FinalizedWinner.TryRemove(height, out _);
+            int maxRetries = 10;
+            int counter = 0;
+            while (!Globals.FinalizedWinner.TryRemove(height, out _) && counter < maxRetries)
+            {
+                counter++;
+                await Task.Delay(100);
+            }
+
+            counter = 0;
             Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 50);
             var proofList = Globals.WinningProofs;
             foreach (var proof in proofList)
             {
                 if (proof.Value.Address == supposeValidatorAddress)
                 {
-                    Globals.WinningProofs.TryRemove(proof);
+                    while (!Globals.WinningProofs.TryRemove(proof) && counter < maxRetries)
+                    {
+                        counter++;
+                        await Task.Delay(100);
+                    }
+                    counter = 0;
                     Globals.BackupProofs.TryGetValue(proof.Key, out var backupProofList);
                     if (backupProofList != null)
                     {
                         var newProof = backupProofList.Where(x => x.Address != supposeValidatorAddress).OrderBy(x => x.VRFNumber).FirstOrDefault();
                         if (newProof != null)
                         {
-                            Globals.WinningProofs.TryAdd(proof.Key, newProof);
+                            while (!Globals.WinningProofs.TryAdd(proof.Key, newProof) && counter < maxRetries)
+                            {
+                                counter++;
+                                await Task.Delay(100);
+                            }
+                            counter = 0;
                         }
                     }
                 }

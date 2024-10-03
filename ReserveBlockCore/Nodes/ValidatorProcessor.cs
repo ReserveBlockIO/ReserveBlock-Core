@@ -802,7 +802,7 @@ namespace ReserveBlockCore.Nodes
                 }
 
                 var blockDiff = (TimeUtil.GetTime() - Globals.LastBlockAddedTimestamp);
-                if(blockDiff >= 60 && !FirstRun)
+                if((blockDiff >= 60 && !FirstRun) || blockDiff >= 120)
                 {
                     //begin proof removal.
                     string supposeValidatorAddress = "";
