@@ -8,6 +8,8 @@ namespace ReserveBlockCore.Utilities
 {
     public class ProofUtility
     {
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
         public static async Task<List<Proof>> GenerateProofs(string address, string publicKey, long blockHeight, bool firstProof)
         {
             List<Proof> proofs = new List<Proof>();
@@ -246,44 +248,55 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AbandonProof(long height, string supposeValidatorAddress)
         {
-            int maxRetries = 10;
-            int counter = 0;
-            while (!Globals.FinalizedWinner.TryRemove(height, out _) && counter < maxRetries)
+            await _semaphore.WaitAsync();
+            try
             {
-                counter++;
-                await Task.Delay(100);
-            }
-
-            counter = 0;
-            Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 50);
-            var proofList = Globals.WinningProofs;
-            foreach (var proof in proofList)
-            {
-                if (proof.Value.Address == supposeValidatorAddress)
+                int maxRetries = 10;
+                int counter = 0;
+                while (!Globals.FinalizedWinner.TryRemove(height, out _) && counter < maxRetries)
                 {
-                    while (!Globals.WinningProofs.TryRemove(proof) && counter < maxRetries)
+                    counter++;
+                    await Task.Delay(100);
+                }
+
+                counter = 0;
+                Globals.FailedValidators.TryAdd(supposeValidatorAddress, height + 50);
+                var proofList = Globals.WinningProofs;
+                foreach (var proof in proofList)
+                {
+                    if (proof.Value.Address == supposeValidatorAddress)
                     {
-                        counter++;
-                        await Task.Delay(100);
-                    }
-                    counter = 0;
-                    Globals.BackupProofs.TryGetValue(proof.Key, out var backupProofList);
-                    if (backupProofList != null)
-                    {
-                        var newProof = backupProofList.Where(x => x.Address != supposeValidatorAddress).OrderBy(x => x.VRFNumber).FirstOrDefault();
-                        if (newProof != null)
+                        while (!Globals.WinningProofs.TryRemove(proof.Key, out _) && counter < maxRetries)
                         {
-                            while (!Globals.WinningProofs.TryAdd(proof.Key, newProof) && counter < maxRetries)
+                            counter++;
+                            await Task.Delay(100);
+                        }
+                        counter = 0;
+                        Globals.BackupProofs.TryGetValue(proof.Key, out var backupProofList);
+                        if (backupProofList != null)
+                        {
+                            var newProof = backupProofList.Where(x => x.Address != supposeValidatorAddress).OrderBy(x => x.VRFNumber).FirstOrDefault();
+                            if (newProof != null)
                             {
-                                counter++;
-                                await Task.Delay(100);
+                                while (!Globals.WinningProofs.TryAdd(proof.Key, newProof) && counter < maxRetries)
+                                {
+                                    counter++;
+                                    await Task.Delay(100);
+                                }
+                                counter = 0;
                             }
-                            counter = 0;
                         }
                     }
                 }
             }
+            catch (Exception ex)
+            {
 
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
             ValidatorLogUtility.Log($"Validator {supposeValidatorAddress} failed to produce block for height: {height} ", "ProofUtility.AbandonProof()");
         }
 
