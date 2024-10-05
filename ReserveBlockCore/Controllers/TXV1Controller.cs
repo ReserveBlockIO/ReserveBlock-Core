@@ -448,7 +448,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Creates a minting tranasctions
+        /// Creates a minting tranasctions *Deprecated*
         /// </summary>
         /// <param name="jsonData"></param>
         /// <returns></returns>
@@ -473,12 +473,15 @@ namespace ReserveBlockCore.Controllers
                     var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
                     var bytes = Encoding.Unicode.GetBytes(result.Item1);
                     var scBase64 = bytes.ToCompress().ToBase64();
+
+                    var function = result.Item3 ? "TokenDeploy()" : "Mint()";
                     var newSCInfo = new[]
                     {
-                            new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
+                            new { Function = function, ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
                     };
 
                     txData = JsonConvert.SerializeObject(newSCInfo);
+
                     var txJToken = JToken.Parse(txData.ToString());
                     //Type type = typeof(string);
                     //var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
@@ -489,6 +492,56 @@ namespace ReserveBlockCore.Controllers
             catch(Exception ex)
             {
                 output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString()});
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Creates a minting tranasctions
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
+        [HttpPost("GetSCMintDeployData")]
+        public async Task<string> GetSCMintDeployData([FromBody] object jsonData)
+        {
+            var output = "";
+
+            var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+
+            try
+            {
+                if (scMain == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "SC Main was null" });
+
+                var result = await SmartContractWriterService.WriteSmartContract(scMain);
+
+                var txData = "";
+
+                if (result.Item1 != null)
+                {
+                    var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
+                    var bytes = Encoding.Unicode.GetBytes(result.Item1);
+                    var scBase64 = bytes.ToCompress().ToBase64();
+
+                    var function = result.Item3 ? "TokenDeploy()" : "Mint()";
+                    var newSCInfo = new[]
+                    {
+                            new { Function = function, ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
+                    };
+
+                    txData = JsonConvert.SerializeObject(newSCInfo);
+
+                    var txJToken = JToken.Parse(txData.ToString());
+                    //Type type = typeof(string);
+                    //var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
+                    //txJToken["Data"] = dataTest;
+                    output = txData;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
 
             return output;

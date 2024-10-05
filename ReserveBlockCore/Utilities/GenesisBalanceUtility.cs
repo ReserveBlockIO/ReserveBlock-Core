@@ -14,7 +14,8 @@
             {
                 balanceSheet = new Dictionary<string, decimal> {
                     {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 25_000_000M},
-                    {"xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 100_000M }
+                    {"xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 100_000M },
+                    {"xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 10_000_000M }
                 }; // Address, Amount in Decimal
             }
 
