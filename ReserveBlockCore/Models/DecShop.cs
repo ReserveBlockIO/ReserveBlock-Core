@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Models
         public int Id { get; set; }
         public string UniqueId { get; set; }
         public string Name { get; set; } //User Submitted - 64 length
-        public string DecShopURL { get; set; } //User Submitted - 64 length - Do not add rbx://
+        public string DecShopURL { get; set; } //User Submitted - 64 length - Do not add vfx://
         public string? ThirdPartyBaseURL { get; set; }
         public string? ThirdPartyAPIURL { get; set; }
         public string Description { get; set; } //User Submitted - 200 words, or 1200 in length
@@ -74,10 +74,10 @@ namespace ReserveBlockCore.Models
                 Port = Globals.DSTClientPort;
             }
 
-            if (DecShopURL.ToLower().Contains("rbx://"))
-                return (false, "Please do not include 'rbx://' in your URL. It is automatically added.");
+            if (DecShopURL.ToLower().Contains("rbx://") || DecShopURL.ToLower().Contains("vfx://"))
+                return (false, "Please do not include 'vfx://' in your URL. It is automatically added.");
 
-            DecShopURL = $"rbx://{DecShopURL}";
+            DecShopURL = $"vfx://{DecShopURL}";
 
             Random rnd = new Random();
             var groupNum = Globals.IsTestNet ? 1 : rnd.Next(1, 6);
@@ -688,6 +688,8 @@ namespace ReserveBlockCore.Models
             bool output = false;
 
             url = url.ToLower().Replace("rbx://", "");
+
+            url = url.ToLower().Replace("vfx://", "");
 
             string pattern = @"^[A-Za-z][a-zA-Z0-9-.]{0,62}\z(?<=[a-zA-Z0-9])*$";
             Regex reg = new Regex(pattern);

@@ -618,7 +618,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets dec shop info from Network. Example : 'rbx://someurlgoeshere'
+        /// Gets dec shop info from Network. Example : 'rbx://someurlgoeshere' or 'vfx://someurlgoeshere'
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetDecShopByURL/{**url}")]
@@ -753,7 +753,7 @@ namespace ReserveBlockCore.Controllers
 
                             if(myDS.DecShopURL != decShop.DecShopURL)
                             {
-                                myDS.DecShopURL = $"rbx://{decShop.DecShopURL}";
+                                myDS.DecShopURL = $"vfx://{decShop.DecShopURL}";
                             }
 
                             if (decShop.HostingType == DecShopHostingType.SelfHosted)
@@ -978,7 +978,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Get network shop info rbx://someurlgoeshere'
+        /// Get network shop info rbx://someurlgoeshere' or 'vfx://someurlgoeshere'
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
@@ -1013,7 +1013,7 @@ namespace ReserveBlockCore.Controllers
 
 
         /// <summary>
-        /// Connects to a shop : 'rbx://someurlgoeshere'
+        /// Connects to a shop : 'rbx://someurlgoeshere' or 'vfx://someurlgoeshere'
         /// </summary>
         /// <param name="address"></param>
         /// <param name="url"></param>
@@ -1068,7 +1068,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets shop info : 'rbx://someurlgoeshere'
+        /// Gets shop info : 'rbx://someurlgoeshere' or 'vfx://someurlgoeshere'
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetShopInfo")]
