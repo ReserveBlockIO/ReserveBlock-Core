@@ -506,7 +506,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetSCMintDeployData([FromBody] object jsonData)
         {
             var output = "";
-
+            var defaultMD5 = "defaultvBTC.png::150b90aa9d06f7e4fc5703ca6d7f01db";
+            string? md5List = null;
             var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
 
             try
@@ -520,7 +521,11 @@ namespace ReserveBlockCore.Controllers
 
                 if (result.Item1 != null)
                 {
-                    var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
+                    if (scMain.SmartContractAsset.Location != "default")
+                        md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
+                    else
+                        md5List = defaultMD5;
+
                     var bytes = Encoding.Unicode.GetBytes(result.Item1);
                     var scBase64 = bytes.ToCompress().ToBase64();
 
