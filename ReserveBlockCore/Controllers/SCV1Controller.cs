@@ -556,7 +556,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// 
+        /// GetSmartContractsState
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>

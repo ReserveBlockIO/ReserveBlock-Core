@@ -599,7 +599,7 @@ namespace ReserveBlockCore.Bitcoin.Controllers
                 if (tokenizationDetails.Item1 == "FAIL")
                     return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item2 });
 
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Success", SmartContractUID = scUID, DepositAddress = tokenizationDetails.Item1, ProofJson = tokenizationDetails.Item2 });
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Success", SmartContractUID = scUID, DepositAddress = tokenizationDetails.Item1, ProofJson = tokenizationDetails.Item2.ToBase64() });
 
             }
             catch (Exception ex)
