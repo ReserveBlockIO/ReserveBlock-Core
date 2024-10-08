@@ -48,10 +48,13 @@ namespace ReserveBlockCore.Services
             //Save to local folder here for beacon transfer later
             if(!scAsset.Location.Contains("Asset Folder"))
             {
-                var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
-                if (result == false)
+                if(scAsset.Location != "default")
                 {
-                    return ("Failed to save smart contract asset. Please try again.", scMain, isToken);
+                    var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
+                    if (result == false)
+                    {
+                        return ("Failed to save smart contract asset. Please try again.", scMain, isToken);
+                    }
                 }
             }
             
