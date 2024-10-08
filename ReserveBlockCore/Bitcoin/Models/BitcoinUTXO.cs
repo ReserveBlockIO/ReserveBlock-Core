@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Data;
+﻿using ReserveBlockCore.Bitcoin.ElectrumX;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
 using System.Net;
@@ -93,6 +94,8 @@ namespace ReserveBlockCore.Bitcoin.Models
         #region Get Bitcoin Address Unspent UTXO List
         public static List<BitcoinUTXO> GetUnspetUTXOs(string address)
         {
+            ClientService.UpdateUTXO(address).Wait();
+
             List<BitcoinUTXO> utxoList = new List<BitcoinUTXO>();
             var bitcoin = GetBitcoinUTXO();
             if (bitcoin == null)
