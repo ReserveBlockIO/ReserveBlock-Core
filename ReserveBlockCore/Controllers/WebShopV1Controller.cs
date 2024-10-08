@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Connects to a shop : 'rbx://someurlgoeshere'
+        /// Connects to a shop : 'rbx://someurlgoeshere' or 'vfx://someurlgoeshere'
         /// </summary>
         /// <param name="address"></param>
         /// <param name="url"></param>

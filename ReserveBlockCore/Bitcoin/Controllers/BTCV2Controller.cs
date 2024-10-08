@@ -16,7 +16,6 @@ using System.Net;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using static ReserveBlockCore.Globals;
-using static ReserveBlockCore.Services.ArbiterService;
 
 namespace ReserveBlockCore.Bitcoin.Controllers
 {
@@ -583,6 +582,27 @@ namespace ReserveBlockCore.Bitcoin.Controllers
 
             }
             catch(Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: Message: {ex}" });
+            }
+        }
+
+        [HttpGet("GetTokenizationDetails/{vfxAddress}")]
+        public async Task<string> GetTokenizationDetails(string vfxAddress)
+        {
+            try
+            {
+                var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+                var tokenizationDetails = await ArbiterService.GetTokenizationDetails(vfxAddress, scUID);
+
+                if (tokenizationDetails.Item1 == "FAIL")
+                    return JsonConvert.SerializeObject(new { Success = false, Message = tokenizationDetails.Item2 });
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Success", SmartContractUID = scUID, DepositAddress = tokenizationDetails.Item1, ProofJson = tokenizationDetails.Item2 });
+
+            }
+            catch (Exception ex)
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: Message: {ex}" });
             }
