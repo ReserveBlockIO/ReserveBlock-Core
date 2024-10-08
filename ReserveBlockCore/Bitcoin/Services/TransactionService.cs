@@ -684,7 +684,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     FeeRate = chosenFeeRate,
                     Hash = fullySigned.GetHash().ToString(),
                     Signature = hexTx,
-                    Timestamp = TimeUtil.GetTime(),
+                    Timestamp = TimeUtil.GetTime(0, 0, 0, 999),
                     TransactionType = BTCTransactionType.MultiSigSend,
                     BitcoinUTXOs = coinListBtcUTXOs,
                 };
