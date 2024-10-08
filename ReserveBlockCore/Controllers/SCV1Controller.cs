@@ -556,6 +556,30 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("GetSmartContractsState/{**scUID}")]
+        public async Task<string> GetSmartContractsState(string scUID)
+        {
+            string output = "";
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (scState != null)
+            {
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Smart Contracts Found", SCState = scState }, Formatting.Indented);
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"No Smart Contracts Found" }, Formatting.Indented);
+            }
+
+            return output;
+
+        }
+
+        /// <summary>
         /// Returns the locator beacon information for a smart contract assets.
         /// </summary>
         /// <param name="scUID"></param>
