@@ -257,7 +257,7 @@ namespace ReserveBlockCore.Utilities
                 while (!Globals.FinalizedWinner.TryRemove(height, out _) && counter < maxRetries)
                 {
                     counter++;
-                    await Task.Delay(100);
+                    await Task.Delay(20);
                 }
 
                 counter = 0;
@@ -290,7 +290,7 @@ namespace ReserveBlockCore.Utilities
                                 while (!Globals.WinningProofs.TryAdd(proof.Key, newProof) && counter < maxRetries)
                                 {
                                     counter++;
-                                    await Task.Delay(100);
+                                    await Task.Delay(20);
                                 }
                                 counter = 0;
                             }
@@ -317,6 +317,8 @@ namespace ReserveBlockCore.Utilities
 
             var backupKeysToRemove = Globals.BackupProofs.Where(x => x.Key < blockHeight).ToList();
 
+            var networkBlockQueueToRemove = Globals.NetworkBlockQueue.Where(x => x.Key < blockHeight).ToList();
+
             foreach (var key in keysToRemove)
             {
                 try
@@ -331,6 +333,15 @@ namespace ReserveBlockCore.Utilities
                 try
                 {
                     Globals.BackupProofs.TryRemove(key.Key, out _);
+                }
+                catch { }
+            }
+
+            foreach(var key in networkBlockQueueToRemove)
+            {
+                try
+                {
+                    Globals.NetworkBlockQueue.TryRemove(key.Key, out _);
                 }
                 catch { }
             }

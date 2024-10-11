@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Nodes
         public static int ProofNumber = GenesisVal ? 20: 10;
         public static bool FirstRun = true;
         public static bool IsRunning { get; private set; }
-        
+
 
         public ValidatorProcessor(IHubContext<P2PValidatorServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -468,7 +468,7 @@ namespace ReserveBlockCore.Nodes
                 try
                 {
                     //TODO- CANT DO THIS. Must have previous block, so items must be queued fast.
-                    for(int i = 1; i <= 5; i++)
+                    for(int i = 1; i <= 3; i++)
                     {
                         var nextblock = Globals.LastBlock.Height + i;
                         if(Globals.FinalizedWinner.TryGetValue(nextblock, out var winner)) 
@@ -616,13 +616,18 @@ namespace ReserveBlockCore.Nodes
                                                         var sentWinner = order.First().Key;
                                                         if (sentWinner != winningProof.Address)
                                                         {
-                                                            Globals.FinalizedWinner.TryRemove(i, out _);
+                                                            Globals.FinalizedWinner[i] = sentWinner;
                                                             await P2PValidatorClient.RequestCurrentWinners();
                                                         }
                                                         else
                                                         {
                                                             // All good
                                                         }
+                                                    }
+                                                    else
+                                                    {
+                                                        //TIE - THIS SHOULD NEVER HAPPEN
+                                                        ValidatorLogUtility.Log($"Tie Occured on: {i}", "ValidatorProcessor.LockWinner()");
                                                     }
                                                 }
                                             }
@@ -828,16 +833,15 @@ namespace ReserveBlockCore.Nodes
 
                         await ProofUtility.AbandonProof(supposedHeight, supposeValidatorAddress);
 
-                        await Task.Delay(10000);
-
-                        await P2PValidatorClient.RequestCurrentWinners();
+                        //Possible loop here. Getting same bad value? 
+                        //await P2PValidatorClient.RequestCurrentWinners();
 
                         LockWinnerLock.Release();
                         SendWinningVoteLock.Release();
                         RequestCurrentWinnersLock.Release();
 
                         FirstRun = true;
-                        
+                        Globals.LastBlockAddedTimestamp = TimeUtil.GetTime(-30);
                         continue;
                     }
                     else

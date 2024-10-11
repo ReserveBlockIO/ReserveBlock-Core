@@ -448,6 +448,61 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns transaction from entire chain.
+        /// This is the thread safe, but slower version.
+        /// </summary>
+        /// <param name="txHash"></param>
+        /// <param name="startAtBlock"></param>
+        /// <param name="startAtBeginning"></param>
+        /// <returns></returns>
+        [HttpGet("GetNetworkTXByHashSafe/{txHash}/{startAtBlock?}/{startAtBeginning?}")]
+        public async Task<string> GetNetworkTXByHashSafe(string txHash, int startAtBlock = 0, bool startAtBeginning = false)
+        {
+            var output = "";
+
+            if (!string.IsNullOrEmpty(txHash))
+            {
+                try
+                {
+                    txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
+                    var blocks = BlockchainData.GetBlocks();
+                    var height = Convert.ToInt32(Globals.LastBlock.Height) - startAtBlock;
+                    bool resultFound = false;
+
+                    var integerList = startAtBeginning 
+                        ? Enumerable.Range(startAtBlock, height + 1) 
+                        : Enumerable.Range(startAtBlock, height + 1).Reverse();
+
+                    foreach (var blockHeight in integerList)
+                    {
+                        var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+                        if (block != null)
+                        {
+                            var txs = block.Transactions.ToList();
+                            var result = txs.FirstOrDefault(x => x.Hash == txHash);
+                            if (result != null)
+                            {
+                                resultFound = true;
+                                output = JsonConvert.SerializeObject(new { Success = true, Message = result }, Formatting.Indented);
+                                break; // Exit the loop once the transaction is found.
+                            }
+                        }
+                    }
+
+                    if (!resultFound)
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "No transaction found with that hash." }, Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = $"Error Performing Query: {ex.ToString()}" }, Formatting.Indented);
+                }
+
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Creates a minting tranasctions *Deprecated*
         /// </summary>
         /// <param name="jsonData"></param>
