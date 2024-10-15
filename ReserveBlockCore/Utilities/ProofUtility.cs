@@ -169,6 +169,7 @@ namespace ReserveBlockCore.Utilities
                 if (badProofFound)
                     return;
 
+                var processHeight = Globals.LastBlock.Height - 5;
                 var finalProof = new Proof();
                 foreach (var proof in proofs)
                 {
@@ -179,6 +180,9 @@ namespace ReserveBlockCore.Utilities
                         {
                             //Skip proof since winner was already found.
                             if (Globals.FinalizedWinner.ContainsKey(proof.BlockHeight))
+                                continue;
+
+                            if (processHeight > proof.BlockHeight)
                                 continue;
 
                             //Closer to zero wins.
@@ -196,7 +200,7 @@ namespace ReserveBlockCore.Utilities
                                 }
                                 else
                                 {
-                                    Globals.BackupProofs.TryAdd(currentWinningProof.Value.BlockHeight, new List<Proof> { currentWinningProof.Value });
+                                    await AddBackupProof(currentWinningProof.Value.BlockHeight, new List<Proof> { currentWinningProof.Value });
                                 }
                                 //Update winning proof with new proof if the value is greater.
                                 Globals.WinningProofs[proof.BlockHeight] = proof;
@@ -215,7 +219,7 @@ namespace ReserveBlockCore.Utilities
                                 }
                                 else
                                 {
-                                    Globals.BackupProofs.TryAdd(proof.BlockHeight, new List<Proof> { proof });
+                                    await AddBackupProof(proof.BlockHeight, new List<Proof> { proof });
                                 }
                             }
                         }
@@ -229,7 +233,7 @@ namespace ReserveBlockCore.Utilities
                     {
                         //No proof found, so add first one found.
                         if (proof.VerifyProof())
-                            Globals.WinningProofs.TryAdd(proof.BlockHeight, proof);
+                            await AddProof(proof.BlockHeight, proof);
                     }
 
                     finalProof = proof;
@@ -245,6 +249,22 @@ namespace ReserveBlockCore.Utilities
                 }
             }
             catch { return; }
+        }
+
+        public static async Task AddProof(long blockHeight, Proof proof)
+        {
+            var currentBlockHeight = Globals.LastBlock.Height - 5;
+
+            if(currentBlockHeight <= blockHeight)
+                Globals.WinningProofs.TryAdd(proof.BlockHeight, proof);
+        }
+
+        public static async Task AddBackupProof(long blockHeight, List<Proof> proof)
+        {
+            var currentBlockHeight = Globals.LastBlock.Height - 5;
+
+            if (currentBlockHeight <= blockHeight)
+                Globals.BackupProofs.TryAdd(blockHeight, proof);
         }
 
         public static async Task AbandonProof(long height, string supposeValidatorAddress)
@@ -324,12 +344,21 @@ namespace ReserveBlockCore.Utilities
                 try
                 {
                     var proofCountRemove = 0;
-                    while (!Globals.WinningProofs.TryRemove(key.Key, out _) && proofCountRemove < 10)
+                    bool removed = false;
+
+                    while (!removed && proofCountRemove < 10)
                     {
-                        proofCountRemove++;
-                        await Task.Delay(20);
+                        if (Globals.WinningProofs.ContainsKey(key.Key))
+                        {
+                            removed = Globals.WinningProofs.TryRemove(key.Key, out _);
+                        }
+
+                        if (!removed)
+                        {
+                            proofCountRemove++;
+                            await Task.Delay(20);
+                        }
                     }
-                    proofCountRemove = 0;
                 }
                 catch { }
             }
@@ -339,12 +368,21 @@ namespace ReserveBlockCore.Utilities
                 try
                 {
                     var backupProofCountRemove = 0;
-                    while (!Globals.BackupProofs.TryRemove(key.Key, out _) && backupProofCountRemove < 10)
+                    bool removed = false;
+
+                    while (!removed && backupProofCountRemove < 10)
                     {
-                        backupProofCountRemove++;
-                        await Task.Delay(20);
+                        if (Globals.BackupProofs.ContainsKey(key.Key))
+                        {
+                            removed = Globals.BackupProofs.TryRemove(key.Key, out _);
+                        }
+
+                        if (!removed)
+                        {
+                            backupProofCountRemove++;
+                            await Task.Delay(20);
+                        }
                     }
-                    backupProofCountRemove = 0;
                 }
                 catch { }
             }
@@ -354,12 +392,21 @@ namespace ReserveBlockCore.Utilities
                 try
                 {
                     var networkBlockQueueCountRemove = 0;
-                    while (!Globals.NetworkBlockQueue.TryRemove(key.Key, out _) && networkBlockQueueCountRemove < 10)
+                    bool removed = false;
+
+                    while (!removed && networkBlockQueueCountRemove < 10)
                     {
-                        networkBlockQueueCountRemove++;
-                        await Task.Delay(20);
+                        if (Globals.NetworkBlockQueue.ContainsKey(key.Key))
+                        {
+                            removed = Globals.NetworkBlockQueue.TryRemove(key.Key, out _);
+                        }
+
+                        if (!removed)
+                        {
+                            networkBlockQueueCountRemove++;
+                            await Task.Delay(20);
+                        }
                     }
-                    networkBlockQueueCountRemove = 0;
                 }
                 catch { }
             }
@@ -371,9 +418,24 @@ namespace ReserveBlockCore.Utilities
                     var failedValsToRemove = Globals.FailedValidators.Where(x => x.Value < blockHeight).ToList();
                     if (failedValsToRemove?.Count() > 0)
                     {
-                        foreach (var val in failedValsToRemove)
+                        foreach (var key in failedValsToRemove)
                         {
-                            Globals.FailedValidators.TryRemove(val.Key, out _);
+                            var FailedValidatorsCountRemove = 0;
+                            bool removed = false;
+
+                            while (!removed && FailedValidatorsCountRemove < 10)
+                            {
+                                if (Globals.FailedValidators.ContainsKey(key.Key))
+                                {
+                                    removed = Globals.FailedValidators.TryRemove(key.Key, out _);
+                                }
+
+                                if (!removed)
+                                {
+                                    FailedValidatorsCountRemove++;
+                                    await Task.Delay(20);
+                                }
+                            }
                         }
                     }
                 }
