@@ -29,9 +29,10 @@ namespace ReserveBlockCore.Nodes
         static SemaphoreSlim RequestCurrentWinnersLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim NotifyExplorerLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim HealthCheckLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ProofCleanupLock = new SemaphoreSlim(1, 1);
         public static long BlockStartHeight = 0;
         public static bool GenesisVal = false;
-        public static int ProofNumber = GenesisVal ? 20: 10;
+        public static int ProofNumber = GenesisVal ? 20 : 10;
         public static bool FirstRun = true;
         public static bool IsRunning { get; private set; }
 
@@ -58,6 +59,8 @@ namespace ReserveBlockCore.Nodes
             _ = ConfirmBlock();
             _ = NotifyExplorer();
             _ = HealthCheck();
+            _ = ProofCleanup();
+            
 
             return Task.CompletedTask;
         }
@@ -103,7 +106,7 @@ namespace ReserveBlockCore.Nodes
         #region Start Blocks
         public static async Task BlockStart()
         {
-            while(true)
+            while(true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 try
                 {
@@ -456,7 +459,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task ProduceBlock()
         {
-            while(true)
+            while(true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 2));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -567,7 +570,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task LockWinner()
         {
-            while (true)
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 12));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -765,7 +768,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task SendCurrentWinners()
         {
-            while (true)
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 10));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -797,7 +800,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task ConfirmBlock()
         {
-            while (true)
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 2));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -901,7 +904,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task GenerateProofs()
         {
-            while(true)
+            while(true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 15));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -947,7 +950,7 @@ namespace ReserveBlockCore.Nodes
                         continue;
                     }
 
-                    await ProofUtility.CleanupProofs();
+                    //await ProofUtility.CleanupProofs();
 
                     if (Globals.LastProofBlockheight == 0)
                     {
@@ -1011,7 +1014,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task CheckNetworkValidators()
         {
-            while(true)
+            while(true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, 30));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -1047,7 +1050,7 @@ namespace ReserveBlockCore.Nodes
 
         private async Task BroadcastNetworkValidators()
         {
-            while (true)
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 var delay = Task.Delay(new TimeSpan(0,5,0));
                 if (Globals.StopAllTimers && !Globals.IsChainSynced)
@@ -1092,7 +1095,7 @@ namespace ReserveBlockCore.Nodes
         {
             bool dupMessageShown = false;
 
-            while (true)
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 try
                 {
@@ -1208,6 +1211,39 @@ namespace ReserveBlockCore.Nodes
                 await delay;
             }
             
+        }
+
+        #endregion
+
+        #region Proof Cleanup
+        public static async Task ProofCleanup()
+        {
+            while (true && !string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                var delay = Task.Delay(new TimeSpan(0, 1, 0));
+                try
+                {
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    {
+                        await delay;
+                        continue;
+                    }
+
+                    await ProofCleanupLock.WaitAsync();
+
+                    await ProofUtility.ProofCleanup();
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    ProofCleanupLock.Release();
+                }
+
+                await delay;
+            }
         }
 
         #endregion

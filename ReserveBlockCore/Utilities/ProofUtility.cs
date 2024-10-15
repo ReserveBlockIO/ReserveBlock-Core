@@ -309,6 +309,78 @@ namespace ReserveBlockCore.Utilities
             ValidatorLogUtility.Log($"Validator {supposeValidatorAddress} failed to produce block for height: {height} ", "ProofUtility.AbandonProof()");
         }
 
+        public static async Task ProofCleanup()
+        {
+            var blockHeight = Globals.LastBlock.Height;
+
+            var keysToRemove = Globals.WinningProofs.Where(x => x.Key < blockHeight).ToList();
+
+            var backupKeysToRemove = Globals.BackupProofs.Where(x => x.Key < blockHeight).ToList();
+
+            var networkBlockQueueToRemove = Globals.NetworkBlockQueue.Where(x => x.Key < blockHeight).ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                try
+                {
+                    var proofCountRemove = 0;
+                    while (!Globals.WinningProofs.TryRemove(key.Key, out _) && proofCountRemove < 10)
+                    {
+                        proofCountRemove++;
+                        await Task.Delay(20);
+                    }
+                    proofCountRemove = 0;
+                }
+                catch { }
+            }
+
+            foreach (var key in backupKeysToRemove)
+            {
+                try
+                {
+                    var backupProofCountRemove = 0;
+                    while (!Globals.BackupProofs.TryRemove(key.Key, out _) && backupProofCountRemove < 10)
+                    {
+                        backupProofCountRemove++;
+                        await Task.Delay(20);
+                    }
+                    backupProofCountRemove = 0;
+                }
+                catch { }
+            }
+
+            foreach (var key in networkBlockQueueToRemove)
+            {
+                try
+                {
+                    var networkBlockQueueCountRemove = 0;
+                    while (!Globals.NetworkBlockQueue.TryRemove(key.Key, out _) && networkBlockQueueCountRemove < 10)
+                    {
+                        networkBlockQueueCountRemove++;
+                        await Task.Delay(20);
+                    }
+                    networkBlockQueueCountRemove = 0;
+                }
+                catch { }
+            }
+
+            if (Globals.FailedValidators.Count() > 0)
+            {
+                try
+                {
+                    var failedValsToRemove = Globals.FailedValidators.Where(x => x.Value < blockHeight).ToList();
+                    if (failedValsToRemove?.Count() > 0)
+                    {
+                        foreach (var val in failedValsToRemove)
+                        {
+                            Globals.FailedValidators.TryRemove(val.Key, out _);
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
         public static async Task CleanupProofs()
         {
             var blockHeight = Globals.LastBlock.Height;
