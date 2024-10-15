@@ -606,7 +606,11 @@ namespace ReserveBlockCore.Nodes
                                     {
                                         Globals.FinalizedWinner.TryAdd(i, winningProof.Address);
 
-                                        var result = await RequestLockedWinner(nextBlock);
+                                        //testing - remove me soon vvvvvvv
+                                        //var result = await RequestLockedWinner(nextBlock);
+                                        Dictionary<string, int>? result = null;
+                                        //testing - remove me soon ^^^^^^^
+
                                         if (result != null)
                                         {
                                             if (result.Count() > 0)
