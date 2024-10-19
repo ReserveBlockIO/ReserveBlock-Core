@@ -675,15 +675,15 @@ namespace ReserveBlockCore.Bitcoin.Services
                 if(!sigCheck)
                     return await SCLogUtility.LogAndReturn($"Signature was not valid.", "TokenizationService.WithdrawalCoin()", false);
 
-                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-
-                if (scMain == null)
-                    return await SCLogUtility.LogAndReturn($"Could not find smart contract.", "TokenizationService.WithdrawalCoin()", false);
-
                 var scState = SmartContractStateTrei.GetSmartContractState(scUID);
 
                 if (scState == null)
                     return await SCLogUtility.LogAndReturn($"Could not find smart contract state.", "TokenizationService.WithdrawalCoin()", false);
+
+                var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+
+                if (scMain == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract.", "TokenizationService.WithdrawalCoin()", false);
 
                 var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
 

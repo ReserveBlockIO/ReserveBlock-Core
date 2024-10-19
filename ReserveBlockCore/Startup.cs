@@ -67,6 +67,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BTCTokenizePayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<BTCTokenizeTransaction>>();
+                c.DocumentFilter<SwaggerDocumentFilter<BTCTokenizeWithdrawalRaw>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DSTConnection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
