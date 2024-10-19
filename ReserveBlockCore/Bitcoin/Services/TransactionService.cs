@@ -584,7 +584,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 // Get the count of inputs and outputs
                 int finalInputCount = unspentCoins.Count();
-                int finalOutputCount = 3; // one for recipient, one for change, one for uniqueID message
+                int finalOutputCount = 2; // one for recipient, one for change, one for uniqueID message
 
                 FeeRate feeRate = new FeeRate(chosenFeeRate * 1000);
 
@@ -603,12 +603,12 @@ namespace ReserveBlockCore.Bitcoin.Services
                     .SetChange(multiSigAddress);
 
                 var randomId = RandomStringUtility.GetRandomStringOnlyLetters(16);
-                string message = randomId;
-                byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(messageBytes);
+                //string message = randomId;
+                //byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+                //var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(messageBytes);
 
                 //Experimental
-                txBuilder.Send(opReturnScript, Money.Zero);
+                //txBuilder.Send(opReturnScript, Money.Zero);
 
                 NBitcoin.Transaction unsigned = txBuilder
                     .SendFees(new Money(finalFee, MoneyUnit.Satoshi))
@@ -768,7 +768,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     previousTotalInputAmount = totalInputAmount;
 
                     int inputCount = unspentCoins.Count();
-                    int outputCount = 3; // one for recipient, one for change
+                    int outputCount = 2; // one for recipient, one for change
 
                     FeeRate feeRateCalc = new FeeRate(chosenFeeRate * 1000);
 
@@ -812,7 +812,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 // Get the count of inputs and outputs
                 int finalInputCount = unspentCoins.Count();
-                int finalOutputCount = 3; // one for recipient, one for change, one for uniqueID message
+                int finalOutputCount = 2; // one for recipient, one for change, one for uniqueID message
 
                 FeeRate feeRate = new FeeRate(chosenFeeRate * 1000);
 
@@ -830,12 +830,12 @@ namespace ReserveBlockCore.Bitcoin.Services
                     .Send(recipientAddress, new Money(totalAmountSpent, MoneyUnit.Satoshi))
                     .SetChange(multiSigAddress);
 
-                string message = uniqueId;
-                byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(messageBytes);
+                //string message = uniqueId;
+                //byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+                //var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(messageBytes);
 
                 //Experimental
-                txBuilder.Send(opReturnScript, Money.Zero);
+                //txBuilder.Send(opReturnScript, Money.Zero);
 
                 NBitcoin.Transaction unsigned = txBuilder
                     .SendFees(new Money(finalFee, MoneyUnit.Satoshi))

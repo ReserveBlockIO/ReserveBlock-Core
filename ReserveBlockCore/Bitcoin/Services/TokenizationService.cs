@@ -727,8 +727,6 @@ namespace ReserveBlockCore.Bitcoin.Services
             {
                 return await SCLogUtility.LogAndReturn($"Unknown Error: {ex}", "TokenizationService.WithdrawalCoin()", false);
             }
-
-            return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.WithdrawalCoin()", false);
         }
 
         public static async Task<(ReserveBlockCore.Models.Transaction?, string)> CreateTokenizedWithdrawal(TokenizedWithdrawals tw, string fromAddress, string toAddress, Account account, string scUID, bool isArb = false)
