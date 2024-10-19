@@ -552,11 +552,11 @@ namespace ReserveBlockCore.Bitcoin.Services
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.TransferCoin()", false);
         }
 
-        public static async Task<string> WithdrawalCoin(string address, string toAddress, string scUID, decimal amount, long chosenFeeRate = 10)
+        public static async Task<string> WithdrawalCoin(string vfxAddress, string btcToAddress, string scUID, decimal amount, long chosenFeeRate = 10)
         {
             try
             {
-                var account = AccountData.GetSingleAccount(address);
+                var account = AccountData.GetSingleAccount(vfxAddress);
 
                 if(account == null)
                     return await SCLogUtility.LogAndReturn($"Account was either not found, or you are attempting to withdrawal from a Reserve Account.", "TokenizationService.WithdrawalCoin()", false);
@@ -592,9 +592,9 @@ namespace ReserveBlockCore.Bitcoin.Services
                 if (tknz == null)
                     return await SCLogUtility.LogAndReturn($"Token feature was null.", "TokenizationService.WithdrawalCoin()", false);
 
-                var isOwner = scState.OwnerAddress == address ? true : false;
+                var isOwner = scState.OwnerAddress == vfxAddress ? true : false;
 
-                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == address || x.FromAddress == address).ToList();
+                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == vfxAddress || x.FromAddress == vfxAddress).ToList();
 
                 if (vBTCBalances == null && !isOwner)
                     return await SCLogUtility.LogAndReturn($"Balances were null.", "TokenizationService.WithdrawalCoin()", false);
@@ -633,7 +633,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                             PubKey pubKey = new PubKey(proof.PublicKey);
                             pubKeys.Add(pubKey);
                         }
-                        return await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
+                        return await TransactionService.SendMultiSigTransactions(pubKeys, amount, account, btcToAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
                     }
                 }
                 else if(isOwner)
@@ -648,7 +648,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                         PubKey pubKey = new PubKey(proof.PublicKey);
                         pubKeys.Add(pubKey);
                     }
-                    return await TransactionService.SendMultiSigTransactions(pubKeys, amount, toAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
+                    return await TransactionService.SendMultiSigTransactions(pubKeys, amount, account, btcToAddress, btcTkn.DepositAddress, chosenFeeRate, scUID);
                 }
                 else
                 {

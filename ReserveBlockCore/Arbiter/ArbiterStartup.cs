@@ -121,8 +121,34 @@ namespace ReserveBlockCore.Arbiter
                                 {
                                     Transaction = postData.TransactionData,
                                     ScriptCoinList = postData.ScriptCoinListData,
-                                    SCUID = postData.SCUID
+                                    postData.SCUID,
+                                    postData.VFXAddress,
+                                    postData.Timestamp,
+                                    postData.Signature,
+                                    postData.Amount
                                 };
+
+                                var timeCheck = TimeUtil.GetTime(-45);
+
+                                if(timeCheck > result.Timestamp)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Timestamp too old." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var sigCheck = SignatureService.VerifySignature(result.VFXAddress, $"{result.VFXAddress}.{result.Timestamp}", postData.Signature);
+
+                                if(!sigCheck)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Invalid Signature from message: {result.VFXAddress}.{result.Timestamp}" }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
 
                                 var coinsToSpend = result.ScriptCoinList;
 
@@ -164,6 +190,45 @@ namespace ReserveBlockCore.Arbiter
                                     var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to find vBTC token at state level." }, Formatting.Indented);
                                     await context.Response.WriteAsync(response);
                                     return;
+                                }
+
+                                var totalOwned = 0.0M;
+
+                                if(scState.OwnerAddress != result.VFXAddress)
+                                {
+                                    if(scState.SCStateTreiTokenizationTXes != null)
+                                    {
+                                        var vBTCList = scState.SCStateTreiTokenizationTXes.Where(x => x.ToAddress == result.VFXAddress && x.FromAddress == result.VFXAddress).ToList();
+                                        if(vBTCList.Count() > 0)
+                                        {
+                                            //Also get the state level stuff we are saving now.
+                                            totalOwned = vBTCList.Sum(x => x.Amount);
+                                            if(totalOwned < postData.Amount)
+                                            {
+                                                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                                context.Response.ContentType = "application/json";
+                                                var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance" }, Formatting.Indented);
+                                                await context.Response.WriteAsync(response);
+                                                return;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                            context.Response.ContentType = "application/json";
+                                            var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Account not found as owner of vBTC." }, Formatting.Indented);
+                                            await context.Response.WriteAsync(response);
+                                            return;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                        context.Response.ContentType = "application/json";
+                                        var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Account not found as owner of vBTC." }, Formatting.Indented);
+                                        await context.Response.WriteAsync(response);
+                                        return;
+                                    }
                                 }
 
                                 var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);

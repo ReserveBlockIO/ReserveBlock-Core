@@ -165,6 +165,13 @@ namespace ReserveBlockCore.Utilities
 
                 var badProofFound = proofs.Where(x => !x.VerifyProof()).Count() > 0 ? true : false;
 
+                var address = proofs.FirstOrDefault()?.Address;
+                if (address == null)
+                    return;
+
+                if(Globals.ABL.Exists(x => x == address)) 
+                    return;
+
                 //If any proofs are bad the entire list is ignored.
                 if (badProofFound)
                     return;

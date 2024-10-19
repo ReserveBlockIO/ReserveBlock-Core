@@ -61,7 +61,6 @@ namespace ReserveBlockCore.Nodes
             _ = HealthCheck();
             _ = ProofCleanup();
             
-
             return Task.CompletedTask;
         }
         public static async Task ProcessData(string message, string data, string ipAddress)
@@ -365,6 +364,12 @@ namespace ReserveBlockCore.Nodes
             var transaction = JsonConvert.DeserializeObject<Transaction>(data);
             if (transaction != null)
             {
+                var ablList = Globals.ABL.ToList();
+                if (ablList.Exists(x => x == transaction.FromAddress))
+                {
+                    return;
+                }
+
                 var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
                 if (!isTxStale)
                 {

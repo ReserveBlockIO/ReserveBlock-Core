@@ -47,6 +47,15 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
+                var ablList = Globals.ABL.ToList();
+
+                if (ablList.Exists(x => x == address))
+                {
+                    BanService.BanPeer(peerIP, "Request malformed", "OnConnectedAsync");
+                    await EndOnConnect(peerIP, $"ABL Detected", $"ABL Detected: {peerIP}.");
+                    return;
+                }
+
                 Globals.P2PValDict.TryAdd(peerIP, Context);
 
                 if (Globals.P2PValDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
@@ -326,7 +335,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send to Mempool Vals
+        #region Send TX to Mempool Vals
         public async Task<string> SendTxToMempoolVals(Transaction txReceived)
         {
             try
@@ -336,6 +345,10 @@ namespace ReserveBlockCore.P2P
                     var result = "";
 
                     var data = JsonConvert.SerializeObject(txReceived);
+
+                    var ablList = Globals.ABL.ToList();
+                    if (ablList.Exists(x => x == txReceived.FromAddress))
+                        return "TFVP";
 
                     var mempool = TransactionData.GetPool();
 

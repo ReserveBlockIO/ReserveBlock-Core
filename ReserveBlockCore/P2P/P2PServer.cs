@@ -361,6 +361,10 @@ namespace ReserveBlockCore.P2P
 
                     var data = JsonConvert.SerializeObject(txReceived);
 
+                    var ablList = Globals.ABL.ToList();
+                    if (ablList.Exists(x => x == txReceived.FromAddress))
+                        return "TFVP";
+
                     var mempool = TransactionData.GetPool();
                     if (mempool.Count() != 0)
                     {

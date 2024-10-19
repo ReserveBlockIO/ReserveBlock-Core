@@ -406,9 +406,15 @@ namespace ReserveBlockCore.Data
                     {
                         var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
                         var queuedTxExist = queuedMempoolTxList.Exists(x => x.Hash == tx.Hash);
+
                         if (!txExist && !queuedTxExist)
                         {
                             var reject = false;
+
+                            var fromAddress = tx.FromAddress;
+                            if (Globals.ABL.Exists(x => x == fromAddress))
+                                reject = true;
+
                             if (tx.TransactionType != TransactionType.TX &&
                                 tx.TransactionType != TransactionType.ADNR &&
                                 tx.TransactionType != TransactionType.VOTE_TOPIC &&

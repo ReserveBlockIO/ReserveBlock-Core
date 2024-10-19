@@ -57,6 +57,26 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("getabl")]
+        public async Task<string> getabl()
+        {
+            var list = JsonConvert.SerializeObject(Globals.ABL, Formatting.Indented);
+            return list;
+        }
+
+        [HttpGet("checkaddress/{addr}")]
+        public async Task<string> checkaddress(string addr)
+        {
+            var result = Globals.ABL.Exists(x => x.Equals(addr));
+            return result.ToString();
+        }
+        [HttpGet("processabl")]
+        public async Task<string> processabl()
+        {
+            Config.Config.ProcessABL();
+            return "done";
+        }
+
         /// <summary>
         /// Unlock the API using Password
         /// </summary>

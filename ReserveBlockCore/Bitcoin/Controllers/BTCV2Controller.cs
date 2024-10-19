@@ -760,6 +760,31 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         }
 
         /// <summary>
+        /// Withdrawal to BTC address
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("WithdrawalCoinRawTX")]
+        [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
+        public async Task<string> WithdWithdrawalCoinRawTXrawalCoin([FromBody] BTCTokenizeTransaction jsonData)
+        {
+            try
+            {
+                if (jsonData == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"BTCTokenizeTransaction data was null" });
+
+                if (string.IsNullOrEmpty(jsonData.FromAddress))
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"VFX From address cannot be null here." });
+
+                var result = await TokenizationService.WithdrawalCoin(jsonData.FromAddress, jsonData.ToAddress, jsonData.SCUID, jsonData.Amount, jsonData.ChosenFeeRate);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Error: {ex}" });
+            }
+        }
+
+        /// <summary>
         /// Get base vBTC image
         /// </summary>
         /// <returns></returns>

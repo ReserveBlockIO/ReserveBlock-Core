@@ -492,7 +492,7 @@ namespace ReserveBlockCore.Bitcoin.Services
             
         }
 
-        public static async Task<string> SendMultiSigTransactions(List<PubKey> pubKeys, decimal sendAmount, string toAddress, string changeAddress, long chosenFeeRate, string scUID)
+        public static async Task<string> SendMultiSigTransactions(List<PubKey> pubKeys, decimal sendAmount, Account vfxAccount, string toAddress, string changeAddress, long chosenFeeRate, string scUID)
         {
             try
             {
@@ -613,11 +613,16 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 List<NBitcoin.Transaction> signedTransactionList = new List<NBitcoin.Transaction>();
 
+                var timestamp = TimeUtil.GetTime();
                 var sigData = new PostData.MultiSigSigningPostData
                 {
                     TransactionData = unsignedHex,
                     ScriptCoinListData = coinInputs,
-                    SCUID = scUID
+                    SCUID = scUID,
+                    VFXAddress = vfxAccount.Address,
+                    Timestamp = timestamp,
+                    Signature = SignatureService.CreateSignature(vfxAccount.GetKey, $"{vfxAccount.Address}.{timestamp}"),
+                    Amount = (amountToSend + finalFee)
                 };
 
                 var postData = JsonConvert.SerializeObject(sigData);
