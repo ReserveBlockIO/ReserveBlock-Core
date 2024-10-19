@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            if (txRequest.Fee <= 0)
+            if (txRequest.Fee <= 0 && txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
             {
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
@@ -205,7 +205,9 @@ namespace ReserveBlockCore.Services
                     || txRequest.TransactionType == TransactionType.TKNZ_BURN 
                     || txRequest.TransactionType == TransactionType.SC_MINT 
                     || txRequest.TransactionType == TransactionType.SC_TX
-                    || txRequest.TransactionType == TransactionType.SC_BURN)
+                    || txRequest.TransactionType == TransactionType.SC_BURN
+                    || txRequest.TransactionType == TransactionType.TKNZ_WD_ARB
+                    || txRequest.TransactionType == TransactionType.TKNZ_WD_OWNER)
                 {
                     try
                     {

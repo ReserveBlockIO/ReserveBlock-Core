@@ -14,6 +14,7 @@ namespace ReserveBlockCore.Arbiter
             public string Signature { get; set; }
             public long Timestamp { get; set; }
             public decimal Amount { get; set; }
+            public string UniqueId { get; set; }
         }
     }
 }

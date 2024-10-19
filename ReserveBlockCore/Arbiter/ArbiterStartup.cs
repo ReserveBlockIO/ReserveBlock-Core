@@ -3,8 +3,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using NBitcoin;
+using NBitcoin.Protocol;
 using Newtonsoft.Json;
 using ReserveBlockCore.Bitcoin.Models;
+using ReserveBlockCore.Bitcoin.Services;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.SecretSharing.Cryptography;
@@ -87,7 +90,7 @@ namespace ReserveBlockCore.Arbiter
 
                      var message = publicKey + scUID;
                     
-                     var signature = SignatureService.CreateSignature(message, Globals.ArbiterSigningAddress.GetPrivKey, Globals.ArbiterSigningAddress.PublicKey);
+                     var signature = Services.SignatureService.CreateSignature(message, Globals.ArbiterSigningAddress.GetPrivKey, Globals.ArbiterSigningAddress.PublicKey);
 
                      if(signature == "F")
                     
@@ -125,7 +128,8 @@ namespace ReserveBlockCore.Arbiter
                                     postData.VFXAddress,
                                     postData.Timestamp,
                                     postData.Signature,
-                                    postData.Amount
+                                    postData.Amount,
+                                    postData.UniqueId
                                 };
 
                                 var timeCheck = TimeUtil.GetTime(-45);
@@ -139,7 +143,7 @@ namespace ReserveBlockCore.Arbiter
                                     return;
                                 }
 
-                                var sigCheck = SignatureService.VerifySignature(result.VFXAddress, $"{result.VFXAddress}.{result.Timestamp}", postData.Signature);
+                                var sigCheck = Services.SignatureService.VerifySignature(result.VFXAddress, $"{result.VFXAddress}.{result.Timestamp}.{result.UniqueId}", postData.Signature);
 
                                 if(!sigCheck)
                                 {
@@ -297,17 +301,78 @@ namespace ReserveBlockCore.Arbiter
 
                                 var keySignedHex = keySigned.ToHex();
 
+                                var nTokenizedWithdrawal = new TokenizedWithdrawals
+                                {
+                                    Amount = result.Amount,
+                                    IsCompleted = false,
+                                    OriginalUniqueId = result.UniqueId,
+                                    OriginalRequestTime = result.Timestamp,
+                                    OriginalSignature = result.Signature,
+                                    RequestorAddress = result.VFXAddress,
+                                    SmartContractUID = result.SCUID,
+                                    TransactionHex = result.Transaction,
+                                    WithdrawalRequestType = WithdrawalRequestType.Arbiter,
+                                    Timestamp = TimeUtil.GetTime(),
+                                    ArbiterUniqueId = RandomStringUtility.GetRandomStringOnlyLetters(16)
+                                };
+
                                 var responseData = new ResponseData.MultiSigSigningResponse {
                                     Success = true,
                                     Message = "Transaction Signed",
-                                    SignedTransaction = keySignedHex
+                                    SignedTransaction = keySignedHex,
+                                    TokenizedWithdrawals = nTokenizedWithdrawal,
                                 };
 
-                                context.Response.StatusCode = StatusCodes.Status200OK;
-                                context.Response.ContentType = "application/json";
-                                var requestorResponseJson = JsonConvert.SerializeObject(responseData, Formatting.Indented);
-                                await context.Response.WriteAsync(requestorResponseJson);
-                                return;
+                                var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+
+                                if(account == null )
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Error with Validator/Arb Account." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var wtx = await TokenizationService.CreateTokenizedWithdrawal(nTokenizedWithdrawal, Globals.ValidatorAddress, result.VFXAddress, account, result.SCUID, true);
+
+                                if (wtx.Item1 == null)
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to create withdrawal transaction. Reason: {wtx.Item2}" }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
+
+                                var scTx = wtx.Item1;
+
+                                //var txresult = await TransactionValidatorService.VerifyTX(scTx);
+
+                                //if (txresult.Item1 == true)
+                                if(true)
+                                {
+                                    //scTx.TransactionStatus = TransactionStatus.Pending;
+
+                                    //if (account != null)
+                                    //{
+                                    //    await WalletService.SendTransaction(scTx, account);
+                                    //}
+  
+                                    context.Response.StatusCode = StatusCodes.Status200OK;
+                                    context.Response.ContentType = "application/json";
+                                    var requestorResponseJson = JsonConvert.SerializeObject(responseData, Formatting.Indented);
+                                    await context.Response.WriteAsync(requestorResponseJson);
+                                    return;
+                                }
+                                //else
+                                //{
+                                //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                //    context.Response.ContentType = "application/json";
+                                //    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to create withdrawal transaction." }, Formatting.Indented);
+                                //    await context.Response.WriteAsync(response);
+                                //    return;
+                                //}
 
                             }
                             else

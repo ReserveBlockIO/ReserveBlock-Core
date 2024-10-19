@@ -665,6 +665,199 @@ namespace ReserveBlockCore.Bitcoin.Services
             return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.WithdrawalCoin()", false);
         }
 
+        public static async Task<string> WithdrawalCoin(string vfxAddress, string btcToAddress, string scUID, decimal amount, long timestamp, string uniqueId, string signature, bool isTest, long chosenFeeRate = 10)
+        {
+            try
+            {
+                var message = $"{vfxAddress}.{timestamp}.{uniqueId}";
+                var sigCheck = ReserveBlockCore.Services.SignatureService.VerifySignature(vfxAddress, message, signature);
+
+                if(!sigCheck)
+                    return await SCLogUtility.LogAndReturn($"Signature was not valid.", "TokenizationService.WithdrawalCoin()", false);
+
+                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                if (scMain == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract.", "TokenizationService.WithdrawalCoin()", false);
+
+                var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                if (scState == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract state.", "TokenizationService.WithdrawalCoin()", false);
+
+                var btcTkn = await TokenizedBitcoin.GetTokenizedBitcoin(scUID);
+
+                if (btcTkn == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find vBTC Token.", "TokenizationService.WithdrawalCoin()", false);
+
+                if (btcTkn.DepositAddress == null)
+                    return await SCLogUtility.LogAndReturn($"Deposit Address cannot be null!", "TokenizationService.WithdrawalCoin()", false);
+
+                if (scMain.Features == null)
+                    return await SCLogUtility.LogAndReturn($"Could not find smart contract features", "TokenizationService.WithdrawalCoin()", false);
+
+                var tknzFeature = scMain.Features.Where(x => x.FeatureName == FeatureName.Tokenization).Select(x => x.FeatureFeatures).FirstOrDefault();
+
+                if (tknzFeature == null)
+                    return await SCLogUtility.LogAndReturn($"Found smart contract features, but not a vBTC token feature.", "TokenizationService.WithdrawalCoin()", false);
+
+                var tknz = (TokenizationFeature)tknzFeature;
+
+                if (tknz == null)
+                    return await SCLogUtility.LogAndReturn($"Token feature was null.", "TokenizationService.WithdrawalCoin()", false);
+
+                var isOwner = scState.OwnerAddress == vfxAddress ? true : false;
+
+                var vBTCBalances = scState.SCStateTreiTokenizationTXes?.Where(x => x.ToAddress == vfxAddress || x.FromAddress == vfxAddress).ToList();
+
+                if (vBTCBalances == null && !isOwner)
+                    return await SCLogUtility.LogAndReturn($"Balances were null.", "TokenizationService.WithdrawalCoin()", false);
+
+                if (amount >= btcTkn.Balance)
+                    return await SCLogUtility.LogAndReturn($"Withdrawal amount cannot exceed the total balance of the vBTC token.", "TokenizationService.WithdrawalCoin()", false);
+
+                if (vBTCBalances != null)
+                {
+                    var balance = vBTCBalances.Sum(x => x.Amount);
+                    bool good = false;
+                    if (isOwner)
+                    {
+                        var finalBalance = btcTkn.Balance + balance;
+                        if (finalBalance < amount)
+                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for Owner", "TokenizationService.WithdrawalCoin()", false); ;
+
+                        good = true;
+                    }
+                    else
+                    {
+                        var finalBalance = balance;
+                        if (finalBalance < amount)
+                            return await SCLogUtility.LogAndReturn($"Insufficient Balances for sub Owner", "TokenizationService.WithdrawalCoin()", false);
+                        good = true;
+                    }
+
+                    if (good)
+                    {
+                        //pass to transaction now.
+                        var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs.ToStringFromBase64());
+                        List<PubKey> pubKeys = new List<PubKey>();
+
+                        foreach (var proof in arbProofs)
+                        {
+                            PubKey pubKey = new PubKey(proof.PublicKey);
+                            pubKeys.Add(pubKey);
+                        }
+                        return await TransactionService.SendMultiSigTransactions(
+                            pubKeys, 
+                            amount, 
+                            btcToAddress, 
+                            btcTkn.DepositAddress, 
+                            chosenFeeRate, 
+                            scUID,
+                            signature,
+                            timestamp,
+                            vfxAddress,
+                            uniqueId,
+                            isTest);
+                    }
+                }
+                else if (isOwner)
+                {
+                    //Do this is you are owner and there are no state level balances yet.
+                    //pass to transaction now.
+                    var arbProofs = JsonConvert.DeserializeObject<List<ArbiterProof>>(tknz.PublicKeyProofs.ToStringFromBase64());
+                    List<PubKey> pubKeys = new List<PubKey>();
+
+                    foreach (var proof in arbProofs)
+                    {
+                        PubKey pubKey = new PubKey(proof.PublicKey);
+                        pubKeys.Add(pubKey);
+                    }
+                    return await TransactionService.SendMultiSigTransactions(
+                            pubKeys,
+                            amount,
+                            btcToAddress,
+                            btcTkn.DepositAddress,
+                            chosenFeeRate,
+                            scUID,
+                            signature,
+                            timestamp,
+                            vfxAddress,
+                            uniqueId,
+                            isTest);
+                }
+                else
+                {
+                    return await SCLogUtility.LogAndReturn($"No balances and you are not the owner.", "TokenizationService.WithdrawalCoin()", false);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                return await SCLogUtility.LogAndReturn($"Unknown Error: {ex}", "TokenizationService.WithdrawalCoin()", false);
+            }
+
+            return await SCLogUtility.LogAndReturn($"EOM ERROR", "TokenizationService.WithdrawalCoin()", false);
+        }
+
+        public static async Task<(ReserveBlockCore.Models.Transaction?, string)> CreateTokenizedWithdrawal(TokenizedWithdrawals tw, string fromAddress, string toAddress, Account account, string scUID, bool isArb = false)
+        {
+            var tx = new ReserveBlockCore.Models.Transaction();
+            var newSCInfo = new[]
+            {
+                new { Function = "TokenizedWithdrawalRequest()", ContractUID = scUID, TokenizedWithdrawal = tw }
+            };
+
+            var txData = JsonConvert.SerializeObject(newSCInfo);
+
+            tx = new ReserveBlockCore.Models.Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = isArb ? TransactionType.TKNZ_WD_ARB : TransactionType.TKNZ_WD_OWNER,
+                Data = txData,
+                UnlockTime = null //TODO: need to make compatible with reserve.
+            };
+
+            if(!isArb)
+            {
+                tx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(tx);
+            }
+
+            tx.Build();
+
+            if (account.GetPrivKey == null)
+            {
+                tx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(tx, true);
+                //return (null, $"Private key was null for account {fromAddress}");
+            }
+            var txHash = tx.Hash;
+            var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
+
+            if (signature == "ERROR")
+            {
+                tx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(tx, true);
+                //return (null, $"TX Signature Failed. SCUID: {scUID}");
+            }
+
+            tx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+            if (tx.TransactionRating == null)
+            {
+                var rating = await TransactionRatingService.GetTransactionRating(tx);
+                tx.TransactionRating = rating;
+            }
+
+            return (tx, "");
+        }
+
         private static async Task<(ReserveBlockCore.Models.Transaction?, string)> CreateVFXTokenizedTransaction(string fromAddress, string toAddress, Account account, decimal amount, string scUID)
         {
             var scTx = new ReserveBlockCore.Models.Transaction();

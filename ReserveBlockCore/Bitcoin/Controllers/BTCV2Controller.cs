@@ -765,17 +765,26 @@ namespace ReserveBlockCore.Bitcoin.Controllers
         /// <returns></returns>
         [HttpPost("WithdrawalCoinRawTX")]
         [ProducesResponseType(typeof(SwaggerResponse), StatusCodes.Status200OK)]
-        public async Task<string> WithdWithdrawalCoinRawTXrawalCoin([FromBody] BTCTokenizeTransaction jsonData)
+        public async Task<string> WithdWithdrawalCoinRawTXrawalCoin([FromBody] BTCTokenizeWithdrawalRaw jsonData)
         {
             try
             {
                 if (jsonData == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"BTCTokenizeTransaction data was null" });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"BTCTokenizeWithdrawalRaw data was null" });
 
-                if (string.IsNullOrEmpty(jsonData.FromAddress))
+                if (string.IsNullOrEmpty(jsonData.VFXAddress))
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"VFX From address cannot be null here." });
 
-                var result = await TokenizationService.WithdrawalCoin(jsonData.FromAddress, jsonData.ToAddress, jsonData.SCUID, jsonData.Amount, jsonData.ChosenFeeRate);
+                var result = await TokenizationService.WithdrawalCoin(
+                    jsonData.VFXAddress, 
+                    jsonData.BTCToAddress, 
+                    jsonData.SmartContractUID, 
+                    jsonData.Amount, 
+                    jsonData.Timestamp, 
+                    jsonData.UniqueId, 
+                    jsonData.VFXSignature,
+                    jsonData.IsTest,
+                    jsonData.ChosenFeeRate);
                 return result;
             }
             catch (Exception ex)

@@ -81,6 +81,8 @@ namespace ReserveBlockCore.Models
         TKNZ_MINT,//tokenization token mint
         TKNZ_TX,//tokenization token tx
         TKNZ_BURN,//tokenization token burn
+        TKNZ_WD_ARB,
+        TKNZ_WD_OWNER
     }
 
     public enum ReserveTransactionType
