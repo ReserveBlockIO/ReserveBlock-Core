@@ -816,7 +816,10 @@ namespace ReserveBlockCore.Services
                                                     return (txResult, $"TW is already complete.");
                                             }
 
-                                            if(txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
+                                            if(txRequest.Amount > 0.0M)
+                                                return (txResult, $"Amount not allowed in here.");
+
+                                            if (txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
                                                 return (txResult, $"Incorrect transaction type selected.");
 
                                             if(txRequest.ToAddress != tw.RequestorAddress)

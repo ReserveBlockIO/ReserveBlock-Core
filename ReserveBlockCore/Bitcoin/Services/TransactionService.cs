@@ -634,7 +634,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     Timestamp = timestamp,
                     UniqueId = randomId,
                     Signature = ReserveBlockCore.Services.SignatureService.CreateSignature($"{vfxAccount.Address}.{timestamp}.{randomId}", vfxAccount.GetPrivKey, vfxAccount.PublicKey),
-                    Amount = (amountToSend + finalFee)
+                    Amount = sendAmount
                 };
 
                 var postData = JsonConvert.SerializeObject(sigData);
