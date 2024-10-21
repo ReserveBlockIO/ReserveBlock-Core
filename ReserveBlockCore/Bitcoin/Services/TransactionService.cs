@@ -740,6 +740,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
         }
 
+        //for raw
         public static async Task<string> SendMultiSigTransactions(List<PubKey> pubKeys, decimal sendAmount, string toAddress, string changeAddress, long chosenFeeRate, string scUID, string signature, long timestamp, string vfxAddress, string uniqueId, bool isTest)
         {
             try
@@ -914,7 +915,8 @@ namespace ReserveBlockCore.Bitcoin.Services
                         else
                         {
                             //bad
-                            return await SCLogUtility.LogAndReturn($"Bad Status. Code; {response.StatusCode}", "TransactionService.SendMultiSigTransactions()", false);
+                            var responseString = await response.Content.ReadAsStringAsync();
+                            return await SCLogUtility.LogAndReturn($"Bad Status. Code; {response.StatusCode}. Response: {responseString}", "TransactionService.SendMultiSigTransactions()", false);
                         }
                     }
                 }

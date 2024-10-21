@@ -959,7 +959,8 @@ namespace ReserveBlockCore.Controllers
                     transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
                     transaction.Amount = transaction.Amount.ToNormalizeDecimal();
 
-                    var result = await TransactionValidatorService.VerifyTX(transaction);
+                    var twSkipVerify = transaction.TransactionType == TransactionType.TKNZ_WD_OWNER ? true : false;
+                    var result = !twSkipVerify ? await TransactionValidatorService.VerifyTX(transaction) : await TransactionValidatorService.VerifyTX(transaction, false, false, true);
                     if (result.Item1 == true)
                     {
 
@@ -1005,7 +1006,8 @@ namespace ReserveBlockCore.Controllers
                     transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
                     transaction.Amount = transaction.Amount.ToNormalizeDecimal();
 
-                    var result = await TransactionValidatorService.VerifyTX(transaction);
+                    var twSkipVerify = transaction.TransactionType == TransactionType.TKNZ_WD_OWNER ? true : false;
+                    var result = !twSkipVerify ? await TransactionValidatorService.VerifyTX(transaction) : await TransactionValidatorService.VerifyTX(transaction, false, false, true);
                     if (result.Item1 == true)
                     {
                         if (transaction.TransactionRating == null)
