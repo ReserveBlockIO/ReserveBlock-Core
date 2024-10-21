@@ -958,7 +958,7 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 var log = await SCLogUtility.LogAndReturn($"Transaction Success. Hash: {hashTx}", "TransactionService.SendMultiSigTransactions()", true);
 
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Transaction Success. Hash: {hashTx}", Hash = hashTx.ToString(), UniqueId = uniqueId, SmartContractUID = scUID });
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Transaction Success. Hash: {hashTx}", Hash = hashTx.ToString(), UniqueId = uniqueId, SmartContractUID = scUID });
 
                 
             }
