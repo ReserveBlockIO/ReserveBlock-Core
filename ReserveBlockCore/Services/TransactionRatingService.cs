@@ -62,6 +62,10 @@ namespace ReserveBlockCore.Services
                 {
                     rating = await VoteRating(tx);
                 }
+                if (tx.TransactionType == TransactionType.TKNZ_WD_ARB || tx.TransactionType == TransactionType.TKNZ_WD_OWNER)
+                {
+                    rating = TransactionRating.A;
+                }
 
                 return rating;
             }

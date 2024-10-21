@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Services
 
             if(Globals.LastBlock.Height > Globals.TXHeightRule2) //around April 7, 2023 at 18:30 UTC
             {
-                if (txRequest.Fee <= 0.000003M)
+                if (txRequest.Fee <= 0.000003M && txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
                 {
                     return (txResult, "Fee cannot be less than 0.000003 RBX");
                 }

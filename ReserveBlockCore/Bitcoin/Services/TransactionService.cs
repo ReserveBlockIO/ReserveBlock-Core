@@ -633,7 +633,7 @@ namespace ReserveBlockCore.Bitcoin.Services
                     VFXAddress = vfxAccount.Address,
                     Timestamp = timestamp,
                     UniqueId = randomId,
-                    Signature = SignatureService.CreateSignature(vfxAccount.GetKey, $"{vfxAccount.Address}.{timestamp}.{randomId}"),
+                    Signature = ReserveBlockCore.Services.SignatureService.CreateSignature($"{vfxAccount.Address}.{timestamp}.{randomId}", vfxAccount.GetPrivKey, vfxAccount.PublicKey),
                     Amount = (amountToSend + finalFee)
                 };
 
@@ -673,7 +673,8 @@ namespace ReserveBlockCore.Bitcoin.Services
                         else
                         {
                             //bad
-                            return await SCLogUtility.LogAndReturn($"Bad Status. Code; {response.StatusCode}", "TransactionService.SendMultiSigTransactions()", false);
+                            var responseString = await response.Content.ReadAsStringAsync();
+                            return await SCLogUtility.LogAndReturn($"Bad Status. Code; {response.StatusCode}. Response: {responseString}", "TransactionService.SendMultiSigTransactions()", false);
                         }
                     }
                 }
