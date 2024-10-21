@@ -187,7 +187,9 @@ namespace ReserveBlockCore.Data
                             || tx.TransactionType == TransactionType.TKNZ_BURN
                             || tx.TransactionType == TransactionType.SC_MINT
                             || tx.TransactionType == TransactionType.SC_TX
-                            || tx.TransactionType == TransactionType.SC_BURN)
+                            || tx.TransactionType == TransactionType.SC_BURN
+                            || tx.TransactionType == TransactionType.TKNZ_WD_ARB
+                            || tx.TransactionType == TransactionType.TKNZ_WD_OWNER)
                         {
                             string scUID = "";
                             string function = "";
@@ -269,6 +271,12 @@ namespace ReserveBlockCore.Data
                                         break;
                                     case "TransferCoin()":
                                         TransferCoin(tx);
+                                        break;
+                                    case "TokenizedWithdrawalRequest()":
+                                        TokenizedWithdrawalRequest(tx);
+                                        break;
+                                    case "TokenizedWithdrawalComplete()":
+                                        TokenizedWithdrawalComplete(tx);
                                         break;
                                     default:
                                         break;
@@ -1773,6 +1781,63 @@ namespace ReserveBlockCore.Data
                 }
             }
         }
+
+        private static void TokenizedWithdrawalRequest(Transaction tx)
+        {
+            try
+            {
+                var txData = tx.Data;
+                var jobj = JObject.Parse(txData);
+
+                var function = (string?)jobj["Function"];
+
+                var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                var tw = jobj["TokenizedWithdrawal"]?.ToObject<TokenizedWithdrawals?>();
+
+                if(tw != null)
+                {
+                    TokenizedWithdrawals.SaveTokenizedWithdrawals(tw);
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Tokenized Withdrawal was NULL.", "StateData.TokenizedWithdrawalRequest()");
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Failed to save TW From Arb. ERROR: {ex}", "StateData.TokenizedWithdrawalRequest()");
+            }
+        }
+
+        private static void TokenizedWithdrawalComplete(Transaction tx)
+        {
+            try
+            {
+                var txData = tx.Data;
+                var jobj = JObject.Parse(txData);
+
+                var function = (string?)jobj["Function"];
+
+                var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                var uniqueId = jobj["UniqueId"]?.ToObject<string?>();
+                var txHash = jobj["TransactionHash"]?.ToObject<string?>();
+                
+                if (uniqueId != null && scUID != null && txHash != null)
+                {
+                    TokenizedWithdrawals.CompleteTokenizedWithdrawals(tx.FromAddress, uniqueId, scUID, txHash);
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Tokenized Withdrawal was NULL.", "StateData.TokenizedWithdrawalRequest()");
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Failed to save TW From Arb. ERROR: {ex}", "StateData.TokenizedWithdrawalRequest()");
+            }
+        }
+
+
 
         private static void StartSaleSmartContract(Transaction tx)
         {

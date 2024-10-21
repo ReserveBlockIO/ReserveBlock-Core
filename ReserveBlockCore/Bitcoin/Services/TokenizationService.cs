@@ -732,12 +732,8 @@ namespace ReserveBlockCore.Bitcoin.Services
         public static async Task<(ReserveBlockCore.Models.Transaction?, string)> CreateTokenizedWithdrawal(TokenizedWithdrawals tw, string fromAddress, string toAddress, Account account, string scUID, bool isArb = false)
         {
             var tx = new ReserveBlockCore.Models.Transaction();
-            var newSCInfo = new[]
-            {
-                new { Function = "TokenizedWithdrawalRequest()", ContractUID = scUID, TokenizedWithdrawal = tw }
-            };
 
-            var txData = JsonConvert.SerializeObject(newSCInfo);
+            var txData = JsonConvert.SerializeObject(new { Function = "TokenizedWithdrawalRequest()", ContractUID = scUID, TokenizedWithdrawal = tw });
 
             tx = new ReserveBlockCore.Models.Transaction
             {
@@ -757,6 +753,55 @@ namespace ReserveBlockCore.Bitcoin.Services
                 tx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(tx);
             }
 
+            tx.Build();
+
+            if (account.GetPrivKey == null)
+            {
+                tx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(tx, true);
+                //return (null, $"Private key was null for account {fromAddress}");
+            }
+            var txHash = tx.Hash;
+            var signature = ReserveBlockCore.Services.SignatureService.CreateSignature(txHash, account.GetPrivKey, account.PublicKey);
+
+            if (signature == "ERROR")
+            {
+                tx.TransactionStatus = TransactionStatus.Failed;
+                TransactionData.AddTxToWallet(tx, true);
+                //return (null, $"TX Signature Failed. SCUID: {scUID}");
+            }
+
+            tx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+            if (tx.TransactionRating == null)
+            {
+                var rating = await TransactionRatingService.GetTransactionRating(tx);
+                tx.TransactionRating = rating;
+            }
+
+            return (tx, "");
+        }
+
+        public static async Task<(ReserveBlockCore.Models.Transaction?, string)> CompleteTokenizedWithdrawal(string fromAddress, Account account, string scUID, string btcTXHash, string uniqueId)
+        {
+            var tx = new ReserveBlockCore.Models.Transaction();
+
+            var txData = JsonConvert.SerializeObject(new { Function = "TokenizedWithdrawalComplete()", ContractUID = scUID, UniqueId = uniqueId, TransactionHash = btcTXHash });
+
+            tx = new ReserveBlockCore.Models.Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = fromAddress,
+                ToAddress = "TW_Base",
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = TransactionType.TKNZ_WD_OWNER,
+                Data = txData,
+                UnlockTime = null //TODO: need to make compatible with reserve.
+            };
+            
+            tx.Fee = ReserveBlockCore.Services.FeeCalcService.CalculateTXFee(tx);
             tx.Build();
 
             if (account.GetPrivKey == null)

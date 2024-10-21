@@ -380,7 +380,8 @@ namespace ReserveBlockCore.Nodes
                         var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
                         if (txFound == null)
                         {
-                            var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                            var twSkipVerify = transaction.TransactionType == TransactionType.TKNZ_WD_OWNER ? true : false;
+                            var txResult = !twSkipVerify ? await TransactionValidatorService.VerifyTX(transaction) : await TransactionValidatorService.VerifyTX(transaction, false, false, true);
                             if (txResult.Item1 == true)
                             {
                                 var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
@@ -416,7 +417,8 @@ namespace ReserveBlockCore.Nodes
                     }
                     else
                     {
-                        var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                        var twSkipVerify = transaction.TransactionType == TransactionType.TKNZ_WD_OWNER ? true : false;
+                        var txResult = !twSkipVerify ? await TransactionValidatorService.VerifyTX(transaction) : await TransactionValidatorService.VerifyTX(transaction, false, false, true);
                         if (txResult.Item1 == true)
                         {
                             var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);

@@ -234,6 +234,10 @@ namespace ReserveBlockCore.Arbiter
                                         return;
                                     }
                                 }
+                                else
+                                {
+                                    //TODO: Do owner balance check here!
+                                }
 
                                 var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
 
@@ -310,7 +314,7 @@ namespace ReserveBlockCore.Arbiter
                                     OriginalSignature = result.Signature,
                                     RequestorAddress = result.VFXAddress,
                                     SmartContractUID = result.SCUID,
-                                    TransactionHex = result.Transaction,
+                                    TransactionHash = "0",
                                     WithdrawalRequestType = WithdrawalRequestType.Arbiter,
                                     Timestamp = TimeUtil.GetTime(),
                                     ArbiterUniqueId = RandomStringUtility.GetRandomStringOnlyLetters(16)
@@ -347,32 +351,31 @@ namespace ReserveBlockCore.Arbiter
 
                                 var scTx = wtx.Item1;
 
-                                //var txresult = await TransactionValidatorService.VerifyTX(scTx);
+                                var txresult = await TransactionValidatorService.VerifyTX(scTx);
 
-                                //if (txresult.Item1 == true)
-                                if(true)
+                                if (txresult.Item1 == true)
                                 {
-                                    //scTx.TransactionStatus = TransactionStatus.Pending;
+                                    scTx.TransactionStatus = TransactionStatus.Pending;
 
-                                    //if (account != null)
-                                    //{
-                                    //    await WalletService.SendTransaction(scTx, account);
-                                    //}
-  
+                                    if (account != null)
+                                    {
+                                        await WalletService.SendTransaction(scTx, account);
+                                    }
+
                                     context.Response.StatusCode = StatusCodes.Status200OK;
                                     context.Response.ContentType = "application/json";
                                     var requestorResponseJson = JsonConvert.SerializeObject(responseData, Formatting.Indented);
                                     await context.Response.WriteAsync(requestorResponseJson);
                                     return;
                                 }
-                                //else
-                                //{
-                                //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                                //    context.Response.ContentType = "application/json";
-                                //    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to create withdrawal transaction." }, Formatting.Indented);
-                                //    await context.Response.WriteAsync(response);
-                                //    return;
-                                //}
+                                else
+                                {
+                                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                    context.Response.ContentType = "application/json";
+                                    var response = JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to create withdrawal transaction." }, Formatting.Indented);
+                                    await context.Response.WriteAsync(response);
+                                    return;
+                                }
 
                             }
                             else

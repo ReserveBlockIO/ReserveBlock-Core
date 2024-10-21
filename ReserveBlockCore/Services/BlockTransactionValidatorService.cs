@@ -481,6 +481,13 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
+                if(tx.TransactionType == TransactionType.TKNZ_WD_ARB)
+                {
+                    var txdata = TransactionData.GetAll();
+                    tx.TransactionStatus = TransactionStatus.Success;
+                    txdata.InsertSafe(tx);
+                }
+
                 if (tx.TransactionType == TransactionType.ADNR)
                 {
                     var scData = JObject.Parse(tx.Data);

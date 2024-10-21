@@ -1,6 +1,7 @@
 ﻿using NBitcoin.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Arbiter;
 using ReserveBlockCore.Bitcoin.Models;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
@@ -18,7 +19,7 @@ namespace ReserveBlockCore.Services
 {
     public class TransactionValidatorService
     {
-        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false, bool blockVerify = false)
+        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false, bool blockVerify = false, bool twSkipVerify = false)
         {
             bool txResult = false;
             bool runReserveCheck = true;
@@ -77,7 +78,8 @@ namespace ReserveBlockCore.Services
                 txRequest.ToAddress != "Topic_Base" && 
                 txRequest.ToAddress != "Vote_Base" && 
                 txRequest.ToAddress != "Reserve_Base" &&
-                txRequest.ToAddress != "Token_Base")
+                txRequest.ToAddress != "Token_Base" && 
+                txRequest.ToAddress != "TW_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
                     return (txResult, "To Address failed to validate");
@@ -790,6 +792,71 @@ namespace ReserveBlockCore.Services
                                                 }
                                             }
 
+                                            break;
+                                        }
+
+                                    case "TokenizedWithdrawalRequest()" :
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var tw = jobj["TokenizedWithdrawal"]?.ToObject<TokenizedWithdrawals?>();
+
+                                            if(tw == null)
+                                                return (txResult, $"Tokenized Withdrawal was null.");
+
+                                            var sigCheck = SignatureService.VerifySignature(tw.RequestorAddress, $"{tw.RequestorAddress}.{tw.OriginalRequestTime}.{tw.OriginalUniqueId}", tw.OriginalSignature);
+
+                                            if(!sigCheck)
+                                                return (txResult, $"Signature Check Failed.");
+
+                                            var twCheck = TokenizedWithdrawals.GetTokenizedRecord(tw.RequestorAddress, tw.OriginalUniqueId, tw.SmartContractUID);
+
+                                            if(twCheck != null)
+                                                return (txResult, $"Already a TW check in place.");
+
+                                            if(txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
+                                                return (txResult, $"Incorrect transaction type selected.");
+
+                                            if(txRequest.ToAddress != tw.RequestorAddress)
+                                                return (txResult, $"Request sent to incorrect address.");
+
+                                            break;
+                                        }
+
+                                    case "TokenizedWithdrawalComplete()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var uniqueId = jobj["UniqueId"]?.ToObject<string?>();
+                                            var txHash = jobj["TransactionHash"]?.ToObject<string?>();
+
+                                            if (txRequest.ToAddress != "TW_Base")
+                                                return (txResult, $"Incorrect To Address.");
+
+                                            if(uniqueId == null)
+                                                return (txResult, $"Unique ID cannot be null.");
+
+                                            if(scUID == null)
+                                                return (txResult, $"SmartContractUID cannot be null.");
+
+                                            if (txHash == null)
+                                                return (txResult, $"Transaction Hash cannot be null.");
+
+                                            if (txRequest.TransactionType != TransactionType.TKNZ_WD_OWNER)
+                                                return (txResult, $"Incorrect transaction type selected.");
+
+                                            if(!twSkipVerify)
+                                            {
+                                                var twCheck = TokenizedWithdrawals.GetTokenizedRecord(txRequest.FromAddress, uniqueId, scUID);
+
+                                                if (twCheck == null)
+                                                    return (txResult, $"There is no matching Request for UniqueId : {uniqueId} and SCUID: {scUID}");
+
+                                                if (twCheck.IsCompleted)
+                                                    return (txResult, $"Cannot attempt to complete an already completed withdrawal");
+
+                                                if (txRequest.FromAddress != twCheck.RequestorAddress)
+                                                    return (txResult, $"You are not the originator of this withdrawal.");
+                                            }
+                                            
                                             break;
                                         }
 

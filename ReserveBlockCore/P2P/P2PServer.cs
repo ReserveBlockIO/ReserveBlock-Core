@@ -374,7 +374,8 @@ namespace ReserveBlockCore.P2P
                             var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
                             if (!isTxStale)
                             {
-                                var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
+                                var twSkipVerify = txReceived.TransactionType == TransactionType.TKNZ_WD_OWNER ? true : false;
+                                var txResult = !twSkipVerify ? await TransactionValidatorService.VerifyTX(txReceived) : await TransactionValidatorService.VerifyTX(txReceived, false, false, true); //sends tx to connected peers
                                 if (txResult.Item1 == false)
                                 {
                                     try

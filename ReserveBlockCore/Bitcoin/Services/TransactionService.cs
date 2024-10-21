@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using NBitcoin;
 using NBitcoin.Crypto;
@@ -713,6 +714,22 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 Console.WriteLine($"Broadcast completed @ {DateTime.Now}");
 
+                var wtx = await TokenizationService.CompleteTokenizedWithdrawal(vfxAccount.Address, vfxAccount, scUID, hashTx.ToString(), randomId);
+
+                var scTx = wtx.Item1;
+
+                var txresult = await TransactionValidatorService.VerifyTX(scTx, false, false, true);
+
+                if (txresult.Item1 == true)
+                {
+                    scTx.TransactionStatus = TransactionStatus.Pending;
+
+                    if (vfxAccount != null)
+                    {
+                        await WalletService.SendTransaction(scTx, vfxAccount);
+                    }
+                }
+
                 return await SCLogUtility.LogAndReturn($"Transaction Success. Hash: {hashTx}", "TransactionService.SendMultiSigTransactions()", true);
             }
             catch (Exception ex)
@@ -938,7 +955,11 @@ namespace ReserveBlockCore.Bitcoin.Services
 
                 Console.WriteLine($"Broadcast completed @ {DateTime.Now}");
 
-                return await SCLogUtility.LogAndReturn($"Transaction Success. Hash: {hashTx}", "TransactionService.SendMultiSigTransactions()", true);
+                var log = await SCLogUtility.LogAndReturn($"Transaction Success. Hash: {hashTx}", "TransactionService.SendMultiSigTransactions()", true);
+
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Transaction Success. Hash: {hashTx}", Hash = hashTx, UniqueId = uniqueId, SmartContractUID = scUID });
+
+                
             }
             catch (Exception ex)
             {
