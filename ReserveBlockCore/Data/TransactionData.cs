@@ -367,7 +367,7 @@ namespace ReserveBlockCore.Data
         public static List<Transaction>? GetMempool()
         {
             var pool = GetPool();
-            if (pool.Count() != 0)
+            if (pool != null)
             {
                 var txs = pool.FindAll().ToList();
                 if(txs.Count() != 0)

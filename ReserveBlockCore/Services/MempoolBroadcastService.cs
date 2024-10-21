@@ -29,9 +29,10 @@ namespace ReserveBlockCore.Services
 
                     var currentTimeMinusFiveMins = TimeUtil.GetTime(-300);
 
-                    var mempool = TransactionData.GetMempool()?.Where(x => x.Timestamp <= currentTimeMinusFiveMins);
-                    if (mempool != null)
+                    var mempoolList = TransactionData.GetMempool();
+                    if (mempoolList != null)
                     {
+                        var mempool = mempoolList.Where(x => x.Timestamp <= currentTimeMinusFiveMins).ToList();
                         if (mempool.Count() > 0)
                         {
                             foreach (var mempoolEntry in mempool)
