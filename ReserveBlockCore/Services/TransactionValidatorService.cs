@@ -808,6 +808,14 @@ namespace ReserveBlockCore.Services
                                             if(!sigCheck)
                                                 return (txResult, $"Signature Check Failed.");
 
+                                            var twCheck = TokenizedWithdrawals.GetTokenizedRecord(tw.RequestorAddress, tw.OriginalUniqueId, tw.SmartContractUID);
+
+                                            if(twCheck != null)
+                                            {
+                                                if(twCheck.IsCompleted)
+                                                    return (txResult, $"TW is already complete.");
+                                            }
+
                                             if(txRequest.TransactionType != TransactionType.TKNZ_WD_ARB)
                                                 return (txResult, $"Incorrect transaction type selected.");
 
